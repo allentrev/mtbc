@@ -1,0 +1,22 @@
+// Filename: backend/contacts.jsw (web modules need to have a .jsw extension)
+
+import wixCrm from 'wix-crm-backend';
+
+//------------------------------------------------------------------------------------------------------
+//
+//	Function:	
+//
+//  Inputs:		i1		Object	note
+//	Output:		o2		String	note
+//				false	Boolean	insert failed
+//
+//------------------------------------------------------------------------------------------------------
+export async function getContactInfo(contactId) {
+	console.log("/backend/contacts getContact function");
+  return wixCrm.getContactById(contactId);
+}
+
+export async function dailyCheckBookings() {
+  console.log("/backend/contacts  dailyCheckBookings Checking bookings for " + Date().toString());
+  
+}

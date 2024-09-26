@@ -1,0 +1,824 @@
+import wixData from 'wix-data';
+import { authentication } from 'wix-members-backend';
+import _ from 'lodash';
+
+//import { TEAMPLAYER }						from	'public/objects/team.js';
+
+//======================= NEW lstLEAGUE and lstTEAM BASED ===================================================
+
+export async function findTeamByKey(pKey) {
+    const results = await wixData.query("lstTeams")
+        .eq("teamKey", pKey)
+        .find();
+    //console.log(results);
+    if (results.items.length === 0) {
+        return false;
+    } else if (results.items.length > 1) {
+        return false;
+    } else {
+        return results.items[0];
+        //	console.log("Type = " + wRole);
+    }
+}
+
+export async function getLeagueDropdownOptions(){
+	try {
+		let wOptions = {
+			"gender": "X",
+			"label": "None",
+			"value": "XXX"
+		}
+
+		let results = await wixData.query("lstTeams")
+			.ascending("gender")
+			.ascending("leagueName")
+			.find();
+		//console.log(results);
+		if (results.items.length === 0) {
+            return { "status": false, "options": wOptions, "error": "No leagues found" };
+		} else {
+			let wItems = results.items;
+			let wOptions = wItems.map(item => {
+				return {
+					"gender": item.gender,
+					"label": item.leagueKey,
+					"value": item.leagueName
+				}
+			})
+            return { "status": true, "options": wOptions, "error": null };
+		}
+	}
+	catch (err) {
+            console.log("/backend/backTeam getLeagueDropdownOptions Try-catch, err");
+            console.log(err);
+            return { "status": false, "options": null, "error": err };
+    }
+}
+
+export async function getNewLeagueForTeam(pTeamKey){
+	let options = {
+		"consistentRead": true,
+		"suppressAuth": true
+	};
+
+	try {
+		let res = await wixData.query('lstTeams')
+			.eq("teamKey", pTeamKey)
+			.ascending("leagueKey")
+			.ascending("division")
+			.limit(10)
+			.find();
+		if (res.items.length ===  0) {
+			console.log("/backend/backTeam getNewLeagueForTeam 0 records for ", pTeamKey);
+			return {"status": false, "league": null, "team": null, "error": "Cant find team"};
+		} else if (res.items.length >  1) {
+			console.log(`/backend/backTeam getNewLeagueForTeam found ${res.items.length} team records for `, pTeamKey);
+			return {"status": false, "league": null, "team": null, "error": "Too many teams"};
+		} else {
+			let wTeam = res.items[0];
+			let wLeagueKey = wTeam.leagueKey;
+			let wDivision = wTeam.division;
+			let wResult = await getNewLeague(wLeagueKey, wDivision);
+			if (wResult.status){
+				let wLeague = wResult.league;
+				return {"status": true, "league": wLeague, "team": wTeam, "error": null};
+			} else {
+				console.log(`/backend/backTeam getNewLeagueForTeam League ${wLeagueKey} and Div ${wDivision} not found for `, pTeamKey);
+				return {"status": false, "league": null, "team": null, "error": "League not found"};
+			}
+		}
+	}
+	catch (err) {
+		console.log("/backend/backTeam getNewLeagueForTeam Try-catch, err");
+		console.log(err);
+		return {"status": false, "league": null, "team": null, "error": err};
+	}
+}
+
+export async function getNewTeamsByLeague(pLeagueKey, pDivision) {
+    try {
+		let wDivision = parseInt(pDivision,10);
+        let results = await wixData.query("lstTeams")
+            .eq("leagueKey", pLeagueKey)
+            .eq("division", wDivision)
+            .ascending("teamName")
+            .find();
+        //console.log(results);
+        if (results.items.length === 0) {
+            console.log("/backend/backTeam getNewTeamsByLeague 0 records, err");
+            return { "status": false, "teams": [], "error": null };
+        } else {
+            return { "status": true, "teams": results.items, "error": null };
+            //	console.log("Type = " + wRole);
+        }
+    } catch (err) {
+        console.log("/backend/backTeam getNewTeamsByLeague Try-catch, err");
+        console.log(err);
+        return { "status": false, "teams": null, "error": err };
+    }
+}
+
+export async function getNewAllLeagues(){
+	let options = {
+		"consistentRead": true,
+		"suppressAuth": true
+	};
+
+	try {
+		let res = await wixData.query('lstLeagues')
+			.ascending("gender")
+			.ascending("leagueKey")
+			.ascending("division")
+			.limit(100)
+			.find();
+		if (res.items.length ===  0) {
+			console.log("/backend/backTeam getNewAllLeagues 0 records");
+			return {"status": false, "league": null, "error": "Cant find any leagues"};
+		} else {
+			let wLeagues = res.items;
+			return {"status": true, "leagues": wLeagues, "error": null};
+		}
+	}
+	catch (err) {
+		console.log("/backend/backTeam getNewAllLeagues Try-catch, err");
+		console.log(err);
+		return {"status": false, "league": null, "error": err};
+	}
+}
+
+
+export async function getNewAllLeagueOptions(){
+	let options = {
+		"consistentRead": true,
+		"suppressAuth": true
+	};
+
+	try {
+		let res = await wixData.query('lstLeagues')
+			.ascending("gender")
+			.ascending("leagueKey")
+			.ascending("division")
+			.limit(100)
+			.find();
+		if (res.items.length ===  0) {
+			console.log("/backend/backTeam getNewAllLeagueOptions 0 records");
+			return [];
+		} else {
+			let wLeagues = res.items;
+			let wOptions = [];
+			for (let wLeague of wLeagues) {
+				let wDivision = (wLeague.division === 0 ) ? "" : " Div " + String(wLeague.division);
+				let wLabel = wLeague.leagueName + wDivision;
+				let wValue =  (wLeague.division === 0 ) ? wLeague.leagueKey : wLeague.leagueKey + String(wLeague.division);
+				let wOption = {"label": wLabel.trim(), "value": wValue};
+				wOptions.push(wOption);
+			}
+			return wOptions;
+		}
+	}
+	catch (err) {
+		console.log("/backend/backTeam getNewAllLeagueOptions Try-catch, err");
+		console.log(err);
+		return {"status": false, "options": null, "error": err};
+	}
+}
+
+export async function getNewTeam(pTeamKey){
+	let options = {
+		"consistentRead": true,
+		"suppressAuth": true
+	};
+
+	try {
+		let res = await wixData.query('lstTeams')
+			.eq("teamKey",pTeamKey)
+			.limit(10)
+			.find();
+		if (res.items.length ===  0) {
+			console.log("/backend/backTeam getNewTeam 0 records for ", pTeamKey);
+			return {"status": false, "team": null, "error": "Cant find team"};
+		} else if (res.items.length >  1) {
+			console.log(`/backend/backTeam getNewTeam found ${res.items.length} team records for `, pTeamKey);
+			return {"status": false, "team": null, "error": "Too many team records"};
+		} else {
+			let wTeam = res.items[0];
+			return {"status": true, "team": wTeam, "error": null};
+		}
+	}
+	catch (err) {
+		console.log("/backend/backTeam getNewTeam Try-catch, err");
+		console.log(err);
+		return {"status": false, "team": null, "error": err};
+	}
+}
+
+
+export async function getNewLeague(pLeagueKey, pDivision){
+	let options = {
+		"consistentRead": true,
+		"suppressAuth": true
+	};
+
+	try {
+		let res = await wixData.query('lstLeagues')
+			.eq("leagueKey",pLeagueKey)
+			.eq("division",pDivision)
+			.limit(10)
+			.find();
+		if (res.items.length ===  0) {
+			console.log("/backend/backTeam getNewLeague 0 records for ", pLeagueKey + String(pDivision));
+			return {"status": false, "league": null, "error": "Cant find league/division"};
+		} else if (res.items.length >  1) {
+			console.log(`/backend/backTeam getNewLeague found ${res.items.length} records for `, 
+							pLeagueKey + String(pDivision));
+			return {"status": false, "league": null, "error": "Too many league/division records"};
+		} else {
+			let wLeague = res.items[0];
+			return {"status": true, "league": wLeague, "error": null};
+		}
+	}
+	catch (err) {
+		console.log("/backend/backTeam getNewLeague Try-catch, err");
+		console.log(err);
+		return {"status": false, "league": null, "error": err};
+	}
+}
+
+export async function getNewAllTeams(){
+	let options = {
+		"consistentRead": true,
+		"suppressAuth": true
+	};
+
+	try {
+		let res = await wixData.query('lstTeams')
+			.ascending("gender")
+			.ascending("teamKey")
+			.limit(200)
+			.find();
+		if (res.items.length ===  0) {
+			console.log("/backend/backTeam getNewAllTeams 0 records");
+			return {"status": false, "teams": null, "error": "Cant find any teams"};
+		} else {
+			let wTeams = res.items;
+			return {"status": true, "teams": wTeams, "error": null};
+		}
+	}
+	catch (err) {
+		console.log("/backend/backTeam getNewAllTeams Try-catch, err");
+		console.log(err);
+		return {"status": false, "teams": null, "error": err};
+	}
+}
+
+export async function getNewestLeagues() {
+    try {
+        let results = await wixData.query("lstLeagues")
+            .ascending("leagueKey")
+			.ascending("division")
+            .find();
+        //console.log(results);
+        if (results.items.length === 0) {
+            return { "status": false, "leagues": [], "error": "No leagues fouind" };
+        } else {
+            return { "status": true, "leagues": results.items, "error": null };
+            //	console.log("Type = " + wRole);
+        }
+    } catch (err) {
+        console.log("/backend/backTeam getNewestLeagues Try-catch, err");
+        console.log(err);
+        return { "status": false, "leagues": null, "error": err };
+    }
+}
+
+export async function getNewestTeams() {
+    try {
+        let results = await wixData.query("lstTeams")
+            .ascending("teamKey")
+            .find();
+        //console.log(results);
+        if (results.items.length === 0) {
+            return { "status": false, "teams": [], "error": "No teams found" };
+        } else {
+            return { "status": true, "teams": results.items, "error": null };
+            //	console.log("Type = " + wRole);
+        }
+    } catch (err) {
+        console.log("/backend/backTeam getNewestTeams Try-catch, err");
+        console.log(err);
+        return { "status": false, "teams": null, "error": err };
+    }
+}
+
+export async function getNewAllTeamOptions() {
+	let wResult1;
+	let wResult2;
+	let wTeams = [];
+	let wLeagues = [];
+	wResult1 = await getNewAllTeams()
+	if (wResult1.status) {
+		wTeams = wResult1.teams;
+		wResult2 = await getNewAllLeagues();
+		if (wResult2.status){ 
+			wLeagues = wResult2.leagues;
+		} else {
+			console.log("/backend/backTeam getNewAllTeamOptions getNewAllLeagues error");
+			return [];
+		}
+	} else {
+		console.log("/backend/backTeam getNewAllTeamOptions getNewAllTeams error");
+		return [];
+	}
+	let wOptions = [];
+	for (let wTeam of wTeams) {
+		let wLeague = wLeagues.find( item => (item.leagueKey === wTeam.leagueKey && item.division === wTeam.division));
+		let wDivision = (wTeam.division === 0) ? "" : String(wTeam.division);
+		let wLabel = wTeam.teamName + " " + wLeague.leagueKey + " " + wDivision;
+
+		let wOption = {"label": wLabel.trim(), "value": wTeam.teamKey};
+		wOptions.push(wOption)
+	}
+		return wOptions;
+}
+
+//======================= OLD LEAGUETEAMS BASED ===================================================
+
+// used by MatchCompleted()
+export async function getTeamPlayersByEvent(pEventId) {
+    return wixData.query("lstTeamPlayer")
+        .eq("eventId", pEventId)
+        .limit(500)
+        .find()
+        .then((results) => {
+            if (results.totalCount === 0) {
+                return false;
+            } else {
+                return results.items;
+            }
+        })
+        .catch((error) => {
+            console.log("backend/backTeam/ getTeamPlayersByEvent` catch " + error);
+            return false;
+        });
+
+}
+
+//`DEPRECATED
+export async function getTeamsByLeague(pLeague, pDivision) {
+    try {
+		let wDivision = parseInt(pDivision,10);
+        let results = await wixData.query("lstLeagueTeams")
+            .eq("league", pLeague)
+            .eq("division", wDivision)
+            .ascending("teamName")
+            .find();
+        //console.log(results);
+        if (results.items.length === 0) {
+            console.log("/backend/backTeam getTeamsByLeague 0 records, err");
+            return { "status": false, "teams": [], "error": null };
+        } else {
+            return { "status": true, "teams": results.items, "error": null };
+            //	console.log("Type = " + wRole);
+        }
+    } catch (err) {
+        console.log("/backend/backTeam getTeamsByLeague Try-catch, err");
+        console.log(err);
+        return { "status": false, "teams": null, "error": err };
+    }
+}
+
+//DEPRECATED
+export async function getLeagueForTeam(pTeam) {
+	try {
+		let results = await wixData.query("lstLeagueTeams")
+			.eq("teamKey", pTeam)
+			.find();
+		if (results.items.length === 0) {
+			console.log("/backend/backTeam getLeagueForTeam 0 records, err");
+			return { "status": false, "league": [], "error": null };
+		} else {
+			return { "status": true, "league": results.items, "error": null };
+		}
+	}
+	catch (err) {
+            console.log("/backend/backTeam getLeagueForTeam Try-catch, err");
+            console.log(err);
+            return { "status": false, "league": null, "error": err };
+    }
+}
+
+//DEPRECATED
+export async function getTeams() {
+	let results = await wixData.query("lstLeagueTeams")
+		.ascending("league")
+		.ascending("division")
+		.ascending("teamName")
+		.find();
+	//console.log(results);
+	if (results.items.length === 0) {
+		return false;
+	} else {
+		let wItems = results.items;
+		let wOptions = wItems.map(item => {
+			let wDivision = (item.division === 0) ? "" : String(item.division);
+			let wLeague = item.league + " " + wDivision;
+			let wLabel = item.teamName + " " + wLeague;
+			return {
+				"label": wLabel,
+				"value": item.teamKey
+			}
+		})
+		return wOptions;
+	}
+}
+
+//DEPRECATED
+export async function getLeagues() {
+	let results = await wixData.query("lstLeagueTeams")
+		.distinct("league");
+	//console.log(results);
+	if (results.items.length === 0) {
+		return false;
+	} else {
+		let wItems = results.items;
+		let wLeagueList = [];
+		for (let wItem of wItems) {
+			let wLeagueNames = await getLeagueByKey(wItem);
+			if (wLeagueNames.length > 0) {
+				wLeagueList.push(...wLeagueNames);
+			}
+		}
+		let wSortedList = _.sortBy(wLeagueList, ["value"])
+		return wSortedList;
+	}
+}
+
+//DEPRECATED
+export async function getLeagueByKey(pKey) {
+	let results = await wixData.query("lstLeagueTeams")
+		.eq("league", pKey)
+		.ascending("division")
+		.find()
+	//console.log(results);
+	if (results.items.length === 0) {
+		return [];
+	} else {
+		let wItems = results.items;
+		let wLeagues = wItems.map(item => {
+			let wLeague = "";
+			let wKey = "";
+			if (item.division === 0 || item.division === "") {
+				wLeague = item.leagueName;
+				wKey = pKey;
+			} else {
+				wLeague = item.leagueName + " Div  " + String(item.division);
+				wKey = pKey + String(item.division);
+			}
+			return {
+				"label": wLeague.trim(),
+				"value": wKey.trim()
+			}
+		})
+		const uniqueArr = Array.from(new Set(wLeagues.map(a => a.value))).map(id => {
+			return wLeagues.find(a => a.value === id)
+		})
+
+		return uniqueArr;
+	}
+}
+
+export function getNumPlayersForTeam(pMatch) {
+		let wNumPerTeam = 0;
+		switch (pMatch.gameType) {
+		case "S":
+			wNumPerTeam = 1;
+			break;
+		case "D":
+		case "P":
+			wNumPerTeam = 2;
+			break;
+		case "T":
+			wNumPerTeam = 3;
+			break;
+		case "X":
+		case "R":
+		case "F":
+			wNumPerTeam = 4;
+			break;
+		}
+		return wNumPerTeam;
+}
+
+/**
+ * Retrieves all league teams from the "lstLeagueTeams" collection.
+ *
+ * @function
+ * @returns {Promise<{status: boolean, teams: Array<any>}>} A Promise that resolves to an object.
+ *   - status {boolean} - A boolean indicating success or failure.
+ *   - teams {Array<any>} - An array containing league team items if successful, otherwise an empty array or error.
+ *
+ * @example
+ * const { status, teams } = await getAllLeagueTeams();
+ * if (status) {
+ *   // Process teams array
+ *   console.log("Successfully retrieved league teams:", teams);
+ * } else {
+ *   // Handle failure
+ *   console.error("Failed to retrieve league teams:", teams);
+ * }
+ */
+export function getAllLeagueTeams() {
+	return wixData.query("lstTeams")
+		.ascending("gender")
+		.ascending("league")
+		.ascending("division")
+		.find()
+		.then((results) => {
+			if (results.items.length > 0) {
+				return { "status": true, "teams": [...results.items] }
+			} else {
+				console.log("/backend/backTeam  getAllLeagueTeams 0 results");
+				return { "status": false, "teams": [] };
+			}
+		})
+		.catch((error) => {
+			console.log("/backend/backTeam getAllLeagueTeams catch, error ");
+			console.log(error);
+			return { "status": false, "teams": [] };
+		});
+}
+
+//DEPRECATED
+export function getLeagueTeamByTeamKey(pTeamKey) {
+
+	return wixData.query("lstLeagueTeams")
+		.eq("teamKey", pTeamKey)
+		.find()
+		.then((results) => {
+			if (results.items.length === 1) {
+				return results.items[0];
+			} else {
+				console.log("/backend/backTeam getLeagueTeamByTeamKey " + results.items.length + " results for ", pTeamKey);
+				return false;
+			}
+		})
+		.catch((error) => {
+			let errorMsg = error.message;
+			console.log("/backend/backTeam getLeagueTeamByTeamKey catch " + errorMsg);
+			return false;
+		});
+}
+
+export async function populateTeamDropdown(pTeam) {
+            //console.log(wTeam);
+
+	let wFirstOption = [{
+		"label": "",
+		"value": "X"
+	}]
+
+	let wTeams = [];
+	let wResult;
+	let wTeamsInLeague = [];
+
+	if (pTeam !== "") {
+		let wType = pTeam.substring(0, 2);
+		let wDivision = parseInt(pTeam.substring(pTeam.length - 1, pTeam.length), 10) || 0;
+		let wLeague = (wDivision === 0) ? pTeam : pTeam.substring(0, pTeam.length - 1);
+		let wEventType = (wType === "FG") ? "FG" : "LG";
+		//console.log(wLeague, wDivision);
+
+		wResult = await getNewTeamsByLeague(wLeague, wDivision);
+		if (wResult.status) {
+			wTeamsInLeague = wResult.teams;
+		}
+		//console.log(wTeamsInLeague);
+		if (wTeamsInLeague) {
+			wTeams = wTeamsInLeague.map(item => {
+				return { "label": item.teamName, "value": item.teamKey }
+			})
+		} else {
+			wTeams = [];
+		}
+		wTeams.unshift(...wFirstOption);
+		//console.log(wTeams);
+		return { "eventType": wEventType, "teams": wTeams };
+		//$w(`#inp${pTarget}Team`).options = wTeams;
+	}
+}
+
+export async function validateTeamLeagueDropdowns(pTeam, pLeague, pDIvision) {
+	let wLeagues = [];
+	let wLeague = {};
+	let wTeamsInLeague = [];
+	let wResult;
+	let wTeamKey = "";
+	let wLeagueKey = "";
+	let wMix ="X";
+
+	if /** Case 1 : No Team, No League */ (pTeam !== "X" || pLeague !== "X") {
+		if /** Case 4: Team, League */ (pTeam !== "X" && pLeague !== "X") {
+			wResult = await getNewLeagueForTeam(pTeam);
+			if (wResult.status) {
+				wTeamKey = pTeam;
+				let wLeague = wResult.league;
+				let wDivision = wLeague.division;
+				wMix = wLeague.gender;
+				if (wDivision > 0) {
+					wLeagueKey = wLeague.leagueKey + String(wDivision);
+				} else {
+					wLeagueKey = wLeague.leagueKey;
+				}
+				if (pLeague === wLeagueKey) {
+					return { "status": true, "case": 4, "valid": true, "teamKey": wTeamKey, "leagueKey": wLeagueKey, "mix": wMix, "showValue": 13 };
+				} else {
+					return { "status": true, "case": 4, "valid": false, "teamKey": wTeamKey, "leagueKey": wLeagueKey, "mix": wMix, "showValue": 0 };
+				}
+			} else {
+				console.log("/backend/backTeam validateTeamLeagueDropdowns (team/League) getNewLeagueForTeam fail");
+				return { "status": false, "case": 4, "valid": false, "teamKey": "X", "leagueKey": "X", "mix": wMix, "showValue": 0 };
+			}
+		} /** Case 2: No Team, League */
+		else if (pTeam === "X") {
+			let [wLeagueBase, wDivision, wEventType, wMix] = parseLeagueName(pLeague);
+			wResult = await getNewTeamsByLeague(wLeagueBase, wDivision);
+			if (wResult.status) {
+				wTeamsInLeague = wResult.teams;
+				let wTeamInLeague = wTeamsInLeague[0];
+				wTeamKey = wTeamInLeague.teamKey;
+				wMix = wTeamInLeague.gender;
+				return { "status": true, "case": 2, "valid": true, "teamKey": wTeamKey, "leagueKey": "X", "mix": wMix, "showValue": 13 };
+			} else {
+				console.log("/backend/backTeam validateTeamLeagueDropdowns (no team/League) getNewTeamsByLeague fail");
+				return { "status": false, "case": 2, "valid": false, "teamKey": "X", "leagueKey": "X", "mix": wMix, "showValue": 0 };
+			}
+		} else
+			/** Case 3: Team, No League */ {
+			//showError("Event",12);
+			wResult = await getNewLeagueForTeam(pTeam);
+			if (wResult.status) {
+				wLeague = wResult.league;
+				let wLeagueKey = "";
+				if (wLeague.division > 0) {
+					wLeagueKey = wLeague.leagueKey + String(wLeague.division);
+				} else {
+					wLeagueKey = wLeague.leagueKey;
+				}
+				wMix = wLeague.gender;
+				return { "status": true, "case": 3, "valid": true, "teamKey": "X", "leagueKey": wLeagueKey, "mix": wMix, "showValue": 12 };
+			} else {
+				console.log("/backend/backTeam validateTeamLeagueDropdowns (team/no league) getLeagueForTeam fail");
+				return { "status": false, "case": 3, "valid": false, "teamKey": "X", "leagueKey": "X", "mix": wMix, "showValue": 0 };
+			}
+		}
+	} // Neither team or league selected, so drop through
+	return { "status": true, "case": 1, "valid": true, "teamKey": "X", "leagueKey": "X", "mix": wMix, "showValue": 0 };
+}
+
+	//======================= IMPORTED ===================================================
+//TODO - this is hack code. get rid of it
+export function parseLeagueName (pLeague) {
+	let wLeagueRoot = pLeague.substring(0, 2);
+	let wLeagueBase = "";
+	let wEventType = "";
+	let wDivision = 0;
+	let wMix = "";
+	switch (wLeagueRoot) {
+		case "FG":
+			wDivision = 0;
+			wLeagueBase = pLeague;
+			wEventType = "FG";
+			wMix = pLeague.slice(-1);
+			break;
+		case "RS":
+			wDivision = 1;
+			wLeagueBase = wLeagueRoot;
+			wEventType = "LG";
+			wMix = "L";
+			break;
+		case "TV":
+			wLeagueBase = pLeague.slice(0, -1);
+			wDivision = pLeague.slice(-1);
+			wDivision = parseInt(wDivision, 10);
+			wEventType = "LG";
+			wMix = "L";
+			break;
+		default:
+			wLeagueBase = pLeague.slice(0, -1);
+			wDivision = pLeague.slice(-1);
+			wDivision = parseInt(wDivision, 10);
+			wEventType = "LG";
+			wMix = "M";
+			break;
+	}
+	return [wLeagueBase, wDivision, wEventType, wMix];
+}
+
+export function bulkSaveTeamPlayers(pData) {
+
+	return wixData.bulkSave("lstTeamPlayer", pData)
+		.then((results) => {
+			return results;
+		})
+		.catch((err) => {
+			console.log("backend/backTeam bulkSaveTeamPlayers Catch " + err);
+			return false;
+		});
+};
+
+export async function saveSquadChanges(pTeamKey, pMembers) {
+
+	pMembers.shift(); //remove first entry which is a heading
+	let wSquad = pMembers.map(item => {
+		//if (item._id.includes(gTeam.teamKey)) { 
+		if (item._id.includes(pTeamKey)) {
+			return {
+				teamId: item.teamId,
+				memberId: item.memberId,
+				teamKey: item.teamKey,
+				name: item.name,
+				numPlayed: item.numPlayed,
+				emailSent: false,
+				comPref: item.comPref,
+				emailAddress: item.emailAddress,
+				mobilePhone: item.mobilePhone,
+				homePhone: item.homePhone
+			}
+		} else {
+			return item;
+		}
+	})
+	let res = await bulkSaveTeamSquad(wSquad);
+	let wText = "Save complete: Inserts (" + String(res.inserted) + ") Updates (" + String(res.updated) +
+		") Errors (" + String(res.errors.length) + ")";
+	if (res.errors.length > 0) {
+		console.log("/backend/backTeam saveSqudChanges bulk save errors:");
+		res.errors.array.forEach(error => {
+			console.log(error);
+		});
+	}
+	//log(wText);
+}
+
+export function bulkSaveTeamSquad(pData) {
+
+	return wixData.bulkSave("lstTeamSquad", pData)
+		.then((results) => {
+			return results;
+		})
+		.catch((err) => {
+			let errorMsg = err;
+			console.log("/backend/backTeam/bulkSaveTeamSquad Catch " + errorMsg);
+			return false;
+		});
+};
+/**
+ * A captain may be forced to play a match with an incomplete number of sides, or with sides only partially filled
+ * In this case, the Force parameter is set to override the completeness checks and the updates will take place direcly from what
+ * is set up in the sides. Therefore, the captain needs to make sure this actually reflects the events of the match to keep an 
+ * accurate record.
+ */
+export async function matchCompleted(pForce, pEventId) {
+
+	// matchid = 238d508d-cfef-446c-913d-6e54272cd174
+	// check that got all necessary players in sides
+	// get the set of players who make up the match sides, who are not P
+	// update TEam Squad numPlayed for each
+	// update numPlayed in gTeamPlayers
+	// update status of TeamPlayer to P
+	let wMatch = await getEvent(pEventId);
+	let wTeamKey = wMatch.team;
+	let wTeam = await findTeamByKey(wTeamKey);
+	let wNoPerTeam = getNumPlayersForTeam(wMatch);
+	let wNoRinks = parseInt(wMatch.rinks, 10);
+	let wNoPlayersRequired = wNoRinks * wNoPerTeam;
+
+	let wTeamPlayers = await getTeamPlayersByEvent(pEventId);
+	// Now, update wSides with appropriate entries from gTeamPlayers
+	let wAllAllocations = wTeamPlayers.filter(item => item.game !== null);
+	//console.log(wAllAllocations);
+	let wSelectedPlayers = wAllAllocations.filter(item => item.game !== 0); //players
+	//console.log(wSelectedPlayers);
+	let wPlayersInTeam = wSelectedPlayers.filter(item => item.role !== null);
+	//	Check that all sides are complete
+	if (!pForce) {
+		if (wPlayersInTeam.length !== wNoPlayersRequired) {
+			throw 100; //Sides not complete
+		}
+	}
+	let wPlayers = wPlayersInTeam.filter(item => item.status !== TEAMPLAYER.PLAYED); // dont double count played
+	for (let wPlayed of wPlayers) {
+		wPlayed.status = TEAMPLAYER.PLAYED;
+	}
+	let res = await bulkSaveTeamPlayers(wPlayers);
+	let wText = "Save complete: Inserts (" + String(res.inserted) + ") Updates (" + String(res.updated) +
+		") Errors (" + String(res.errors.length) + ")";
+	if (res.errors.length > 0) {
+		console.log("/backend/backTeam matchCompleted bulk save errors list:");
+		res.errors.array.forEach(error => {
+			console.log(error);
+		});
+	}
+	//console.log(wText);
+	return wPlayers;
+}

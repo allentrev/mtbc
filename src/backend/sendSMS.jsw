@@ -1,0 +1,59 @@
+
+import {fetch} from 'wix-fetch';
+import twilio from 'twilio';
+import {getSecret} from 'wix-secrets-backend';
+
+export async function sendSMS( toPhone, message) {
+   	let fromPhone = await getSecret('fromPhone');
+	const accountSID = await getSecret('accountSID');
+	const authToken = await getSecret('authToken')
+
+    const client = twilio(accountSID, authToken);
+    
+    //fromPhone = 'whatsapp:+14155238886';
+    //toPhone = 'whatsapp:+6593210160';
+	try {
+        await client.messages.create({
+            body: message,
+            from: fromPhone,
+            to: toPhone
+        });
+        return true;
+    }
+	catch (error) {
+    	console.log( '/backend/sendSMS sendSMS Failed to send SMS ', error);
+        console.log(error);
+        return false;
+    }
+}
+
+export async function getCurrentTemp(city) {
+  const url = 'https://api.openweathermap.org/data/2.5/weather?q=';
+  const key = await getSecret("weatherAPIKey");
+
+  let fullUrl = url + city + '&APPID=' + key + '&units=imperial'; 
+  
+  return fetch(fullUrl, {method: 'get'})
+    .then(response => response.json())
+    .then(json => json.main.temp);
+}
+
+export async function getTinyURL(pURL) { 
+
+	var TinyURL = require('tinyurl');
+
+		let wA = await TinyURL.shorten(pURL);
+	//console.log(wA);
+	return wA
+//let wB = await TinyURL.resolve("https://tinyurl.com/2tx");
+let wB = await TinyURL.resolve(wA);
+console.log("Wb = ", wB); //Returns http://google.com, the full URL located at http://tinyurl.com/2tx
+}
+
+export async function resolveTinyURL (pTinyURL) { 
+
+	var TinyURL = require('tinyurl');
+	let wB = await TinyURL.resolve(pTinyURL);
+	return wB;
+}
+

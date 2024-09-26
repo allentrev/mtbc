@@ -1,0 +1,76 @@
+import {mediaManager}	from 'wix-media-backend';
+import rp 				from 'request-promise';
+
+const os = require('os');
+
+export async function doUpload(url) {
+	console.log("Im in the backend");
+	return rp.get({ url, encoding: null })
+}
+
+export async function uploadImage(url, filename, pMediaType, folder_path) {
+	let image = "";
+	//try {
+	//	image = await rp.get({ url, encoding: null });
+	//}
+	//catch (error) {
+	//	console.log("backend uploadImage: catch rp eror");
+	//	console.log(error);
+	//	return false;
+	//}
+	
+	try {
+		let result = await mediaManager.upload(
+			folder_path,
+			image,
+			filename,
+			//url,
+			{
+				"mediaOptions": {
+					"mediaType": pMediaType
+				},
+				"metadataOptions": {
+					"isPrivate": false,
+					"isVisitorUpload": false,
+					"context": {
+						"someKey1": "someValue1",
+						"someKey2": "someValue2"
+					}
+				}
+			}
+		);
+		return result;
+	}	
+	catch (error) {
+		console.log("Backend uoload catch error");
+		console.log(error);
+	}
+}
+
+export function OLDuploadImage(url, filename, pMediaType, folder_path) {
+	return rp.get({ url, encoding: null })
+		.then( (image) => {
+		return mediaManager.upload(
+			folder_path,
+			image,
+			filename,
+			{
+				"mediaOptions": {
+					"mediaType": pMediaType
+				},
+				"metadataOptions": {
+					"isPrivate": false,
+					"isVisitorUpload": false,
+					"context": {
+						"someKey1": "someValue1",
+						"someKey2": "someValue2"
+					}
+				}
+			}
+		);
+	})
+	.catch( (error) => {
+		console.log("Backend error");
+		console.log(error);
+	});
+}

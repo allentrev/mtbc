@@ -1,0 +1,81 @@
+import wixData  from 'wix-data';
+
+export async function confirm_booking() {
+
+    let allItems = [];
+    let results = await wixData.query("lstBookings")
+    .eq("status", "O")
+    .limit(300)
+    .ascending("resourceKey")
+    .find();
+
+    allItems.push(results.items);
+
+    while(results.hasNext()) {
+        results = await results.next();
+        allItems.push(results.items);
+    }
+
+    let wRecords = [];
+    for (let i=0; i<allItems.length; i++) {
+        let wSet = allItems[i];
+        let x = wSet.length;
+        for (let j=0; j < x; j++) {
+            wRecords.push(wSet[j])
+        }
+    }
+
+    let wLast = "";
+    let wNoRecs = wRecords.length;
+    let wHits = new Set ();
+    if(wRecords.length > 0) {
+        for (let i=0; i<wNoRecs; i++) {
+            let item = wRecords[i];
+            if (item.resourceKey === wLast) {
+                wHits.add(item.resourceKey);
+                console.log("/backend/scheduled_jobs/bookings confirmBooking team Found = " + item.resourceKey);
+            }
+            wLast = item.resourceKey;
+        }
+        if (wHits.size === 0 ){
+            console.log("/backend/scheduled_jobs/bookings confirmBookings.jsw/ No duplicates found in " + String(wNoRecs) + " records");
+        }else {
+            console.log("/backend/scheduled_jobs/bookings confirmBookings.jsw/ " + String(wHits.size) + " duplicates found in " + String(wNoRecs) + " records");
+        }
+    } else {
+        console.log("/backend/scheduled_jobs/bookings confirmBookings.jsw/ No bookings found");
+    }
+}
+
+export async function checkTeamPlayers() {
+
+    let eventList = await wixData.query("lstTeamPlayer")
+    .distinct("eventId");
+
+    let memberList = await wixData.query("lstTeamPlayer").limit(300)
+    .distinct("playerId");
+
+    let wDataSet = await wixData.query("lstTeamPlayer")
+                .limit(500)
+                .find();
+
+    let wErrorCount = 0;
+    let wError = false;
+    for (let wEventId of eventList.items){
+        for (let wPlayerId of memberList.items) {
+            let wRecs = wDataSet.items.filter ( item => item.eventId === wEventId)
+                                .filter ( item => item.playerId === wPlayerId);
+            if (wRecs.length > 1) {
+                wError = true;
+                wErrorCount++;
+                console.log("/backend/scheduled_jobs/bookings checkTeamPlayers error ", wEventId.substring(0,6), wPlayerId.substring(0.6), wRecs.length); 
+            }   
+        }
+    }    
+    if (wError) {
+        console.log("/backend/scheduled_jobs/bookings  checkTeamPlayers found " + String(wErrorCount) + " errors");
+    } else { 
+       console.log("/backend/scheduled_jobs/bookings checkTeamPlayers finished with no errors");
+    }
+
+}

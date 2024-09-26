@@ -1,0 +1,52 @@
+import { authentication } from 'wix-members-backend';
+
+import wixCaptcha from 'wix-captcha-backend'; // Import the authorize() function from the wix-captcha-backend module
+
+export function processSubmissionRequest(submissionRequest) {
+	// Use authorize() to check the captcha token before submitting the form
+	let errorResponse = {}
+	return wixCaptcha.authorize(submissionRequest.token)
+		.then(() => {
+            let wRequest = submissionRequest.form;
+			let options  = {
+				"contactInfo": {
+					"firstName": wRequest.firstName,
+					"lastName": wRequest.lastName,
+					"gender": wRequest.gender,
+					"contactpref": wRequest.contactpref
+				},
+			"privacyStatus": 'PUBLIC'
+			}
+			//console.log(options);
+            console.log(`/backend/captchaModule Registration request for ${wRequest.firstName} ${wRequest.lastName} using ${wRequest.email} gender ${wRequest.gender}`);
+			return authentication.register(wRequest.email, wRequest.password, options)
+			.then((registrationResult) => {
+		    	return registrationResult;
+			})
+			.catch((error) => {
+				errorResponse.status = 'error'
+				errorResponse.type = 'registration error'
+				errorResponse.message = `Error: Authenticate Registration failed: ${error}`
+				throw errorResponse
+			})
+
+            /*
+            return wixData.insert('BetaApplications', submissionRequest.form)
+				.catch(error => {
+					errorResponse.status = 'error'
+					errorResponse.type = 'insertion error'
+					errorResponse.message = `Error: database collection insertion failed: ${error}`
+					throw errorResponse
+				})
+            */
+		})
+		.catch(error => {
+			if (error.type === 'insertion error') {
+				throw error
+			}
+			errorResponse.status = 'error'
+			errorResponse.type = 'authorization error'
+			errorResponse.message = `Error: reCAPTCHA authorization failed: ${error}`
+			throw errorResponse
+		})
+}

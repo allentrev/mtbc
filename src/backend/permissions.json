@@ -1,0 +1,30 @@
+{
+  "web-methods": {
+    "*": {
+      "*": {
+        "siteOwner": {
+          "invoke": true
+        },
+        "siteMember": {
+          "invoke": true
+        },
+        "anonymous": {
+          "invoke": true
+        }
+      }
+    },
+    "backend/scheduled_jobs/bookings.jsw": {
+      "confirm_booking": {
+        "siteOwner": {
+          "invoke": true
+        },
+        "siteMember": {
+          "invoke": true
+        },
+        "anonymous": {
+          "invoke": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,453 @@
+import wixData from 'wix-data';
+
+export const COMPETITOR = Object.freeze({
+  NEW:		"N",
+  ACTIVE:	"P",
+  WITHDRAWN:"W",
+  DELETED:	"D"
+});
+
+export const MAINTAINED = Object.freeze({
+  AUTO:		"A",
+  MANUAL:	"M"
+});
+
+export const COMPETITION = Object.freeze({
+  NEW:			"N",	
+  OPEN:			"O",
+  CLOSED:		"C",
+  REFERENCE:	"R"
+});
+
+export const MIX = Object.freeze({
+  LADIES:	"L",
+  MENS:		"M",
+  MIXED:	"X"
+});
+
+export async function initialiseData(pYear) {
+	try {
+		
+	const countNew = (accumulator, item) => {
+		if (item.status === COMPETITION.NEW) {
+			accumulator++; 
+		}
+		return accumulator++; 
+	};
+	const countOpen = (accumulator, item) => {
+		if (item.status === COMPETITION.OPEN) {
+			accumulator++; 
+		}
+		return accumulator++; 
+	};
+	const countClosed = (accumulator, item) => {
+		if (item.status === COMPETITION.CLOSED) {
+			accumulator++; 
+		}
+		return accumulator++; 
+	};
+
+	//let wLadiesCount = {"new": 0, "open": 0, "closed": 0};
+	//let wMensCount = {"new": 0, "open": 0, "closed": 0};
+	//let wMixedCount = {"new": 0, "open": 0, "closed": 0};
+	let [nLN, nLO, nLC] = [0,0,0];
+	let [nMN, nMO, nMC] = [0,0,0];
+	let [nXN, nXO, nXC] = [0,0,0];
+
+	//let wReferenceSet = await getReferenceSet();
+	let status;
+	let wCompetitions = [];
+	let wResult = await getAllClubComp(pYear);
+	if (wResult.status){
+		wCompetitions = [...wResult.competitions];
+	} else {
+		wCompetitions = [];
+	}
+	nLN = wCompetitions.filter( item => item.mix === MIX.LADIES).reduce(countNew, 0);
+	nLO = wCompetitions.filter( item => item.mix === MIX.LADIES).reduce(countOpen, 0);
+	nLC = wCompetitions.filter( item => item.mix === MIX.LADIES).reduce(countClosed, 0)
+	nMN = wCompetitions.filter( item => item.mix === MIX.MENS).reduce(countNew, 0);
+	nMO = wCompetitions.filter( item => item.mix === MIX.MENS).reduce(countOpen, 0);
+	nMC = wCompetitions.filter( item => item.mix === MIX.MENS).reduce(countClosed, 0)
+	nXN = wCompetitions.filter( item => item.mix === MIX.MIXED).reduce(countNew, 0);
+	nXO = wCompetitions.filter( item => item.mix === MIX.MIXED).reduce(countOpen, 0);
+	nXC = wCompetitions.filter( item => item.mix === MIX.MIXED).reduce(countClosed, 0)
+
+	let wLadiesCount = {"mix": "Ladies", "new": nLN, "open": nLO, "closed": nLC};
+	let wMensCount = {"mix": "Mens", "new": nMN, "open": nMO, "closed": nMC};
+	let wMixedCount = {"mix": "Mixed", "new": nXN, "open": nXO, "closed":nXC};
+	let wOptions = [wLadiesCount, wMensCount, wMixedCount];
+
+	return wOptions; 
+	//let wReference = wCompetitions.filter( item => item.)
+	} catch (error) {
+		console.log("/backend/backClubComp initialiseData try-catch error, err");
+		console.log(error);		
+	}
+
+}
+/**
+ * Summary:	Retrieves all club competitions for a specific year from the "lstClubComp" collection.
+ *
+ * @function
+ * @param {number} pYear - The year for which club competitions are requested.
+ * @returns {Promise<{status: boolean, competitions: Array<any>}>} A Promise that resolves to an object.
+ *   - status {boolean} - A boolean indicating success or failure.
+ *   - competitions {Array<any>} - An array containing club competition items if successful, otherwise an empty array or error.
+ *
+ * @example
+ * const year = 2022;
+ * getAllClubComp(year)
+ *   .then(({ status, competitions }) => {
+ *     if (status) {
+ *       // Process competitions array
+ *       console.log("Successfully retrieved club competitions:", competitions);
+ *     } else {
+ *       // Handle failure
+ *       console.error("Failed to retrieve club competitions:", competitions);
+ *     }
+ *   })
+ *   .catch((error) => {
+ *     // Handle unexpected errors
+ *     console.error("An unexpected error occurred:", error);
+ *   });
+*/
+export function getAllClubComp(pYear) {
+	return wixData.query('lstClubComp')
+		.eq("compYear",pYear)
+		.ascending("mix")
+		.ascending("title")
+		.find()
+		.then( (results) => {
+			if(results.items.length > 0) {
+				let wTempRecords = results.items.map( item => {
+					let wTemp = {...item};
+					wTemp.selected = false;
+					return wTemp;
+				});
+				return {"status": true, "competitions": [...wTempRecords] }
+			} else {
+				console.log("/backend/backClubComp  getAllClubComp 0 results");
+				return {"status": false, "competitions": []};
+			}
+		})
+		.catch( (error) => {
+			console.log("/backend/backClubComp  getAllClubComp catch, error ");
+			console.log(error);
+			return {"status": false, "competitions": []};
+		});
+}
+
+export async function getOpenClubCompCount(pYear) {
+	let res = await wixData.query('lstClubComp')
+		.eq("compYear",pYear)
+		.eq("status", COMPETITION.CLOSED)
+		.ascending("mix")
+		.ascending("title")
+		.find();
+	return res.items.length
+}
+/**
+ * Summary: Retrieves reference set competitions from the "lstClubComp" collection.
+ *
+ * @function
+ * @returns {Promise<{status: boolean, competitions: Array<any>}>} A Promise that resolves to an object.
+ *   - status {boolean} - A boolean indicating success or failure.
+ *   - competitions {Array<any>} - An array containing reference set competition items if successful, otherwise an empty array or error.
+ *
+ * @example
+ * getReferenceSet()
+ *   .then(({ status, references }) => {
+ *     if (status) {
+ *       // Process references array
+ *       console.log("Successfully retrieved reference set competitions:", references);
+ *     } else {
+ *       // Handle failure
+ *       console.error("Failed to retrieve reference set competitions:", references);
+ *     }
+ *   })
+ *   .catch((error) => {
+ *     // Handle unexpected errors
+ *     console.error("An unexpected error occurred:", error);
+ *   });
+ */
+export function getRefCompSet() {
+	return wixData.query('lstClubComp')
+		.eq("status", COMPETITION.REFERENCE)
+		.ascending("title")
+		.find()
+		.then( (results) => {
+			if(results.items.length > 0) {
+				let wTempRecords = results.items.map( item => {
+					let wTemp = {...item};
+					wTemp.selected = false;
+					wTemp.ladies = false;
+					wTemp.mens=false;
+					wTemp.mixed = false;
+					return wTemp;
+				});
+				return {"status": true, "competitions": [...wTempRecords] }
+			} else {
+				console.log("/backend/backClubComp  getRefCompSet 0 results");
+				return {"status": false, "competitions": []};
+			}
+		})
+		.catch( (error) => {
+			console.log("/backend/backClubComp  getRefCompSet catch, error ");
+			console.log(error);
+			return {"status": false, "competitions": []};
+		});
+}
+
+export async function getClubCompById(pId) {
+	let res = await wixData.get('lstClubComp', pId);
+	if (res) {
+		return res;
+	} else {
+		return false;
+	}
+}
+
+export async function insertClubComp(pRec) {
+  	try {
+
+		const {selected, ladies, mens, mixed, ...pNewRec } = pRec;
+        let results = await wixData.insert("lstClubComp", pNewRec)
+  		if	(results) {
+			return results._id;
+		} else {
+			console.log("/backend/backClubComp insertClubComp Insert failed: Result=", results);
+			return false;
+		}
+	  }
+	catch (error) {
+		console.log("/backend/backClubComp insertClubComp TryCatch " + error);
+		return false;
+	}
+}
+
+export async function saveClubComp(pRec) {
+  	try {
+		// strip out properties added to the data to support pagination
+		const {selected, ladies, mens, mixed, ...pNewRec } = pRec;
+        let result = await wixData.save("lstClubComp", pNewRec);
+  		if	(result) {
+			return {"status": true, "item": result, "error": null};
+		} else {
+			console.log("/backend/backClubComp saveClubComp Save failed: Result=");
+			console.log(result);
+			return {"status": false, "item": result, "error": null};
+		}
+	}
+	catch (error) {
+		console.log("/backend/backClubComp saveClubComp Try-Catch, error ");
+		console.log(error);
+		return {"status": true, "item": null, "error": error};
+	}
+}
+
+export function bulkSaveClubComp(pData) {
+	// strip out properties added to the data to support pagination
+	const pNewData = pData.map(obj => {
+		const { selected, ladies, mens, mixed, ...rest } = obj;
+		return rest;
+	});
+	return wixData.bulkSave("lstClubComp", pNewData)
+  		.then( (results) => {
+			return {"status": true, "results": results, "error": null};
+		})
+		.catch( (err) => {
+			console.log("/backend/backClubComp saveClubComp Save failed: Err=");
+			console.log(err);
+			return {"status": false, "results": null, "error": null};
+		});
+}
+
+export function deleteClubComp(pRecId) {
+	console.log("/backend/backClubComp.jsw/deleteClubCOmp/ Deleting Club Comp", pRecId);
+	return wixData.remove("lstClubComp", pRecId)
+  		.then( (item) => {
+			return true;
+		})
+  		.catch( (err) => {
+			console.log("/backend/backClubComp.jsw/deleteClubCOmp/ catch fail ", err);
+			return false;
+  		});
+}
+
+export async function loadDropSeason(){
+	let wYear =  new Date().getFullYear();
+	const wStartYear = 2019;
+	let wOptions = [];
+	for (let i = wYear; i >= wStartYear; i--){
+		let wRec = {
+			"label": String(i),
+			"value": String(i)
+		}
+		wOptions.push(wRec);
+	}
+	// Now, find first year that has any results 
+	let wYearList = wOptions.map (item => parseInt(item.value,10));
+	let x = 0;
+	let wTempYear = 0;
+	do{
+		wTempYear = wYearList[x];
+		let wYearCount = await getOpenClubCompCount(wTempYear);
+		if (wYearCount !== 0){
+			break;
+		}
+		x++;
+	} while (x <= wYearList.length);
+	return [wOptions,parseInt(wTempYear,10), x];
+}
+/**
+ *		pNo Integer
+ * 		pKOType = "S" Opponents play each other once as in FA Cup match
+ * 				= "M" Opponents play each other home and away, and winner is team with highest aggragate score eg League Cup
+ * 
+ * 	pFinalsType = 2	Play FInal only
+ * 				= 4 Play Final and Runner Up matches 
+ */
+export function calcParameters(pKOType, pFinalsType, pNo) {
+    let index = 0;
+    let wUpper = 0;
+    let wNoRounds = 0;
+    let wNoByes = 0;
+    let wNoMatches = 0;
+    while (wUpper < pNo && index < 8) {                        // 2**8 = 256
+        index++;
+        wUpper = 2**index;
+    }
+    let wByes = wUpper - pNo;
+    wNoRounds = index;
+    wNoByes = wByes;
+    if /** final only */ (pFinalsType === "2"){ 
+        wNoMatches = pNo -1;
+    } /** extra match for 3rd place */ else { 
+        wNoMatches = pNo;
+    }
+	if (pKOType === "M") { 
+        wNoMatches = wNoMatches * 2;
+    }
+    
+    return [wNoRounds, wNoByes, wNoMatches];
+}
+
+export async function getComp(pYear, pCompRef) {
+	let res = await wixData.query('lstClubComp')
+	.eq("compYear",pYear)
+	.eq("compRef", pCompRef)
+	.find();
+	return res.items[0]
+}
+
+export async function getCompStages(pYear, pCompRef) {
+	let res = await wixData.query('lstClubCompStages')
+	.eq("compYear",pYear)
+	.eq("compRef", pCompRef)
+	.ascending("stage")
+	.ascending("div")
+	.find();
+	return res.items
+}
+export async function getCompCompetitors(pYear, pCompRef, pStage, pDiv) {
+	let res = await wixData.query('lstClubCompCompetitors')
+	.eq("compYear",pYear)
+	.eq("compRef", pCompRef)
+	.eq("stage", pStage)
+	.eq("div", pDiv)
+	.ascending("competitorId")
+	.find();
+	return res.items
+}
+
+export async function getCompBookings(pYear, pCompRef, pStage, pDiv) {
+	let wKey = "S" + String(pStage).padStart(2, "0") + "D" + String(pDiv).padStart(2,"0");
+	let res = await wixData.query('lstBookings')
+	.eq("requiredYear",pYear)
+	.eq("compRef", pCompRef)
+	.startsWith("matchKey", wKey)
+	.ascending("matchKey")
+	.find();
+	return res.items
+}
+
+export async function clearCompStages(pYear, pCompRef){
+	let wStages = await getCompStages(pYear, pCompRef);
+	if (wStages.length === 0) { return true};
+	if (wStages.length > 1) {
+		console.log("/backend/backClubComp clearCompStages Multiple stages");
+		return false;	//TODO add code to iterate through stage/Divs
+	}
+	// Only 1 Stage
+	let wStageId = wStages[0]._id;
+	let res = await wixData.remove("lstClubCompStages", wStageId);
+	return true;
+}
+
+export async function clearCompCompetitors(pYear, pCompRef, pStage, pDiv){
+	let wCompetitors = await getCompCompetitors(pYear, pCompRef, pStage, pDiv);
+	if (wCompetitors.length === 0) { return true};
+	let wCompetitorsId = wCompetitors.map (item => item._id);
+	let res = await wixData.bulkRemove("lstClubCompCompetitors", wCompetitorsId);
+	return true;
+}
+
+export async function clearCompBookings(pYear, pCompRef, pStage, pDiv){
+	let wBookings = await getCompBookings(pYear, pCompRef, pStage, pDiv);
+	if (wBookings.length === 0) { return true};
+	let wBookingsId = wBookings.map (item => item._id);
+	//console.log(wBookingsId);
+	let res = await wixData.bulkRemove("lstBookings", wBookingsId);
+	//console.log(res);
+	return true;
+}
+
+
+export async function updateClubComp(pId, pStatus) {
+
+    return wixData.get("lstClubComp", pId)
+  		.then( (item) => {
+			item.status = pStatus;
+    		wixData.update("lstClubComp", item);
+  			return item;
+		} )
+  		.catch( (err) => {
+			console.log("/backend/backclubComp updateClubComp catch err ", err)
+			return false;
+  		} );
+}
+
+
+export async function resetCompetition (pYear, pCompRef) {
+	let wComp = await getComp(pYear, pCompRef);
+	//console.log("Clear, wCOmp");
+	//console.log(wComp);
+	let wStages = await getCompStages( pYear, pCompRef);
+	//console.log("Clear, wStages");
+	//console.log(wStages);
+	if (wStages && wStages.length > 0){
+		for (let wStage of wStages){
+			let res = await clearCompStages(pYear, pCompRef);
+			//console.log("clear stages result");
+			//console.log(res);
+			res = await clearCompCompetitors(pYear, pCompRef, wStage.stage, wStage.div);
+			//console.log("cleaer competitors result");
+			//console.log(res);
+			res = await clearCompBookings(pYear, pCompRef, wStage.stage, wStage.div);
+			//console.log("clear bookings reseult");
+			//console.log(res);
+		}
+	} else {
+			let res = await clearCompCompetitors(pYear, pCompRef, 0, 0);
+			//console.log("cleaer competitors result 2");
+			//console.log(res);
+			res = await clearCompBookings(pYear, pCompRef, 0,0);
+			//console.log("clear bookings reseult 2");
+			//console.log(res);
+	}
+	let res2 = await updateClubComp(wComp._id, COMPETITION.NEW);
+	//console.log("Status update");
+	//console.log(res2);
+	return res2;
+}

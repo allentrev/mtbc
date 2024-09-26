@@ -1,0 +1,145 @@
+import wixData from 'wix-data';
+
+export async function getSettingsRoundDateArray(pRound) {
+  	try {
+        const wKey = "RD" + String(pRound);
+		const results = await wixData.query("lstSettings")
+    		.eq("title", wKey)
+    		.find();
+		if (results.items.length ===  0) {
+			return [];
+		} else {
+            let item = results.items[0].roundDateArray;
+            let wId = results.items[0]._id;
+            let count =0;
+            let wEntry = item.map ( rec => {
+                let wTmp = { "_id": wKey + String(count), 
+                            "round": String(count+1),
+                            "roundDate": rec
+                        }
+                count++;
+                return wTmp;
+            })
+			return [wId,wEntry];
+		}
+	}
+	catch (error) {
+		console.log("/backend/backSystem getSettingsRoundDateArray TryCatch " + error);
+		return [];
+	}
+}
+export async function updateSettingsRoundDateArray(pId, pDateArray) {
+	// add the item to the collection
+	return wixData.get("lstSettings", pId)
+		.then((item) => {
+			item.roundDateArray = pDateArray;
+			wixData.update("lstSettings", item);
+			return true;
+		})
+		.catch((err) => {
+    		console.log("/backend/backSystem updateSettingsRoundDateArray TryCatch " + err);
+			return false;
+		});
+}
+
+export async function loadReferenceData() {
+	try{
+		let res = await wixData.query('lstSettings')
+			.ascending("refKey")
+			.find();
+		if (res.items.length ===  0) {
+			return {"status": false, "refData": [], "error": null};
+		} else {
+			return {"status": true, "refData": res.items, "error": null};
+		}
+	}
+	catch (err) {
+		console.log("/backend/backSystem loadReferenceData Try-catch, err");
+		console.log(err);
+		return {"status": false, "refData": null, "error": err};
+	}
+}
+
+export async function loadDlistOptions() {
+	try{
+		let res = await wixData.query('lstSettings')
+			.startsWith("title", "DL")
+			.ascending("name")
+			.find();
+		if (res.items.length ===  0) {
+			return {"status": false, "options": [], "error": null};
+		} else {
+			let wList = res.items;
+			let wOptions = wList.map( item => {
+				return {"label": item.name,
+						"value": item.title				}
+			})
+			return {"status": true, "options": wOptions, "error": null};
+		}
+	}
+	catch (err) {
+		console.log("/backend/backSystem loadDlistOptions Try-catch, err");
+		console.log(err);
+		return {"status": false, "options": null, "error": err};
+	}
+}
+
+export async function getStandingDataItemByKey(pKey) {
+	let wKey = pKey.toUpperCase();
+	try{
+		let res = await wixData.query('lstSettings')
+			.eq("refKey", wKey)
+			.find();
+		if (res.items.length ===  0) {
+			return {"status": false, "value": [], "error": null};
+		} else {
+			let wItem = res.items[0];
+			return {"status": true, "value": wItem.value, "error": null};
+		}
+	}
+	catch (err) {
+		console.log("/backend/backSystem getStandingDataItemByKey Try-catch, err");
+		console.log(err);
+		return {"status": false, "value": null, "error": err};
+	}
+}
+
+export async function loadStandingData(pPage){
+	
+	let wStandingData = [];
+	let wValue  = "";
+	let wResult = {};
+	let wIds = [];
+
+	switch (pPage) {
+		case "Home":
+			wIds = ["SD001", "SD002", "SD003", "SD029"];
+			break;
+		case "About Us":
+			wIds = ["SD004", "SD005", "SD006", "SD007", "SD008", "SD009"];
+			break;
+		case "History":
+			wIds = ["SD010", "SD011", "SD012", "SD013", "SD014", "SD015", "SD016", "SD017"];
+			break;
+		case "Social":
+			wIds = ["SD018", "SD019", "SD020", "SD021", "SD022", "SD023", "SD024", "SD025","SD026", "SD027"];
+			break;
+		case "Contact Us":
+			wIds = ["SD028"];
+			break;
+		case "OpenDay":
+		case "Open Day":
+			wIds = ["SD030", "SD031", "SD032"];
+			break;
+		default:
+			console.log("backend/backSystem loadStandingData invalid pPage value, pPage", pPage);
+			break;
+	}
+	
+	for (let wId of wIds) {
+		wResult = await getStandingDataItemByKey(wId);
+		wValue = wResult.value
+		wStandingData.push(wValue);
+	}
+	return wStandingData;
+}

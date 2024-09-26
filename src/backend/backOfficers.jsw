@@ -1,0 +1,108 @@
+//------------------------------------------------------------------------------------------------------
+import wixData from 'wix-data';
+import { findLstMember }	from 'backend/backMember.jsw';
+
+//------------------------------------------------------------------------------------------------------
+//
+//	Function:	loadCommittee
+//
+//  Inputs:		none
+//	Output:		res{}	Object array	list of committee records
+//				false	boolean			none found
+//
+//------------------------------------------------------------------------------------------------------
+export async function loadCommittee() {
+	try{
+		let res = await wixData.query('lstCommittee')
+			.ascending("order")
+			.find();
+		if (res.items.length ===  0) {
+			return {"status": false, "committees": [], "error": null};
+		} else {
+			let dlist = res.items.map(item => {
+				return {
+					label: item.name,
+					value: item.title
+				}});
+			return {"status": true, "committees": dlist, "error": null};
+		}
+	}
+	catch (err) {
+		console.log("/backend/backOfficers loadCommittee Try-catch, err");
+		console.log(err);
+		return {"status": false, "committees": null, "error": err};
+	}
+}
+
+export async function findOfficer(pKey){
+	try{
+		let res = await wixData.query('lstOfficers')
+			.eq("refKey", pKey)
+			.find();
+		if (res.items.length ===  0) {
+			return {"status": false, "officer": [], "error": "Not found"};
+		} else {
+			let wOfficer = res.items[0];
+			let wOfficerId = wOfficer.holderId;
+			let wResult = await findLstMember(wOfficerId);
+			if (wResult && wResult.status){
+				let wMember = wResult.member;
+				if (wMember){
+					return {"status": true, "officer": wMember, "error": null};
+				} else {
+					return {"status": false, "officer": null, "error": "Lst Member Not Found 1"};
+				}
+			} else {
+					return {"status": false, "officer": null, "error": "Lst Member Not Found 2"};
+			}
+		}
+	}
+	catch (err) {
+		console.log("/backend/backOfficers findOfficer Try-catch, err");
+		console.log(err);
+		return {"status": false, "officer": null, "error": err};
+	}
+}
+
+export async function loadOfficers() {
+	try{
+		let res = await wixData.query('lstOfficers')
+			.ascending("committee")
+			.ascending("order")
+			.find();
+		if (res.items.length ===  0) {
+			return {"status": false, "officers": [], "error": null};
+		} else {
+			return {"status": true, "officers": res.items, "error": null};
+		}
+	}
+	catch (err) {
+		console.log("/backend/backOfficers loadOfficers Try-catch, err");
+		console.log(err);
+		return {"status": false, "officers": null, "error": err};
+	}
+}
+
+//------------------------------------------------------------------------------------------------------
+//
+//	Function:	
+//
+//  Inputs:		i1		Object	note
+//	Output:		o2		String	note
+//				false	Boolean	insert failed
+//
+//------------------------------------------------------------------------------------------------------
+export async function findCommitteeId(pValue){
+	//console.log("find committee " + pValue);
+	
+	let commId = (await wixData.query("lstCommittee")
+   		 .eq("title", pValue)			//title field holds the commKey field eg MB
+		 .find()).items[0];
+	let res = (await wixData.query('Jobs2')
+		.hasSome('commKey', commId._id)
+		.ascending("order")
+		.find());
+	return res.items;					// returns a list of jobs making up that committee
+	//console.log("Jobs = " + wData.toSource());
+}
+

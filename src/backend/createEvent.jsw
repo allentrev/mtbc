@@ -1,0 +1,228 @@
+import wixData 				from 'wix-data';
+
+import {createClient} 		from 'backend/config.jsw';
+import {getClientConfig}	from 'backend/config.jsw';
+import {getCalendarId}		from 'public/objects/calendar.js';
+
+const {google} = require("googleapis");
+
+
+let options = {
+	"suppressAuth": true //suppress db auth to allow secure db permissions
+};
+
+export async function insertCalendarEvent(calendarKey, toInsert, pDates) {
+	const authorizedAuthClient = await createAuthorizedClient("maidenheadtownbc@gmail.com");
+	let wCalendarId = await getCalendarId(calendarKey);
+	let wDescription = toInsert.desc1 + toInsert.desc2 + toInsert.desc3 + toInsert.desc4;
+	const res = await insertEvent(authorizedAuthClient, wCalendarId,
+						 toInsert.summary, toInsert.location, wDescription, 
+						 pDates.start.dateTime, pDates.end.dateTime);
+	if (res) {
+		return res;
+	} else {
+		console.log("/backend/createEvent insertCalendarEvent: Return false");
+		return false;
+	}
+}
+
+export async function updateCalendarEvent(calendarKey, eventId, toUpdate, pDates) {
+	//console.log("UCE", start, end);
+	const authorizedAuthClient = await createAuthorizedClient("maidenheadtownbc@gmail.com");
+	let wCalendarId = await getCalendarId(calendarKey);
+	let wDescription = toUpdate.desc1 + toUpdate.desc2 + toUpdate.desc3 + toUpdate.desc4;
+	const res = await updateEvent(authorizedAuthClient, wCalendarId, eventId,
+		toUpdate.summary, toUpdate.location, wDescription, pDates.start.dateTime, pDates.end.dateTime);
+	if (res) {
+		return res;
+	} else {
+		console.log("/backend/createEvent updateCalendarEvent: Return false");
+		return false;
+	}
+}
+
+
+export async function deleteCalendarEvent(calendarKey, eventId) {
+	const authorizedAuthClient = await createAuthorizedClient("maidenheadtownbc@gmail.com");
+	let wCalendarId = await getCalendarId(calendarKey);
+	const res = await deleteEvent(authorizedAuthClient, wCalendarId, eventId);
+	if (res) {
+		return res;
+	} else {
+		console.log("/backend/createEvent deleteCalendarEvent: Return false");
+		return false;
+	}
+}
+//--------------------------------------------Create Authorized Client-----------------------------------------------//
+export async function createAuthorizedClient(account) {
+	//console.log("cac 1 " + account);
+	try {
+		const oAuth2Client = await createClient(account);
+		let tokens = await getTokens(account);
+		oAuth2Client.setCredentials(tokens);
+		const tokensRes = await oAuth2Client.refreshAccessToken(tokens);
+		oAuth2Client.getTokenInfo(tokensRes); // checks validity of tokens
+		return oAuth2Client;
+	} catch (err) {
+		console.log("/backend/createEvent createAuthorisedClient catch  - failed to refreh token: " + err);
+		return false;
+	}
+}
+//--------------------------------------------Create Access Token to validate the api call to Google-----------------------------------------------//
+async function getTokens(account) {
+	//console.log("gt 1 " + account);
+	try {
+		const response = await wixData.query("config").eq('account', account).eq('title', 'refresh token').find(options);
+		if(response.items.length === 0) return null;
+		return JSON.parse(response.items[0].value);
+	} catch(err) {
+		console.log("getTokens catch Fail " +err);
+		return false;
+	}
+}
+
+//--------------------------------------------Insert the new event-----------------------------------------------//
+async function insertEvent(authorizedAuthClient, calendarId, summary, location, description, start, end) {
+	const calendar = google.calendar('v3');
+	const event = {
+		'summary': summary,
+		'location': location,
+		'description': description,
+		'start': {
+			'dateTime': start
+		},
+		'end': {
+			'dateTime': end
+		},
+		'reminders': {
+  			'useDefault': true
+ 		}
+	};
+	try {
+		let response = await calendar.events.insert({
+			auth: authorizedAuthClient,
+  			calendarId: calendarId,
+  			resource: event
+		}); 
+		if (response) {
+			return response.data.id;
+		}
+		console.log("/backend/createEvent insertEvent error: response = " + response);
+		return false;
+		
+	} catch (err) {
+			console.log("/backend/createEvent insertEvent catch error " + err);
+			return false;
+	}
+}
+//--------------------------------------------Update the event-----------------------------------------------//
+async function updateEvent(authorizedAuthClient, calendarId, eventId,
+ 												summary, location, description, start, end) {
+	const calendar = google.calendar('v3');
+	const event = {
+		'summary': summary,
+		'location': location,
+		'description': description,
+		'start': {
+			'dateTime': start
+		},
+		'end': {
+			'dateTime': end
+		},
+		'reminders': {
+  			'useDefault': true
+ 		}
+	};
+	//try {
+	let response = await calendar.events.update({
+		auth:  authorizedAuthClient,
+		calendarId: calendarId,
+		eventId: eventId,
+		resource: event
+	});
+	if (response) {
+		return response.data.id;
+	} else {
+		console.log("/backend/createEvent updateEvent error: response = " + response);
+		return false;
+	}
+		
+	//} catch (err) {
+	//		console.log("updateRow error in append values" + err);
+	//}
+}
+//--------------------------------------------delete the event-----------------------------------------------//
+async function deleteEvent(authorizedAuthClient, calendarId, eventId) {
+	const calendar = google.calendar('v3');
+	
+	try {
+		let response = await calendar.events.delete({
+			auth: authorizedAuthClient,
+  			calendarId: calendarId,
+  			eventId: eventId
+		}); 
+		if (response) {
+			return true;
+		}
+		console.log("/backend/createEvent deleteEvent error: response = " + response);
+			return false;
+		
+	} catch (err) {
+			console.log("/backend/createEvent deleteEvent catch error " + err);
+			return false;
+	}
+}
+
+//--------------------------------------------Listings -----------------------------------------------------//
+/**
+ * Lists the next 10 events on the user's primary calendar.
+ * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
+ */
+export async function listEvents() {
+	const auth = await createAuthorizedClient("maidenheadtownbc@gmail.com");
+	const calendar = google.calendar({version: 'v3', auth});
+
+  	calendar.events.list({
+    calendarId: 'co2c7ccejdo54nsa5oi265u4po@group.calendar.google.com',
+    timeMin: (new Date()).toISOString(),
+    maxResults: 10,
+    singleEvents: true,
+    orderBy: 'startTime',
+  }, (err, res) => {
+    if (err) return console.log('/backend/createEvent listEvents The API returned an error: ' + err);
+    const events = res.data.items;
+    if (events.length) {
+      //console.log('Upcoming 10 events:');
+      events.map((event, i) => {
+        const start = event.start.dateTime || event.start.date;
+        //console.log(`${start} - ${event.summary}`);
+      });
+    } else {
+      //console.log('No upcoming events found.');
+    }
+  });
+}
+
+/**
+ * Lists the calendars availble on the Google account.
+ * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
+ */
+export async function listGoogleCalendars() {
+	const auth = await createAuthorizedClient("maidenheadtownbc@gmail.com");
+	const calendar = google.calendar({version: 'v3', auth});
+
+  	calendar.calendarList.list({
+    maxResults: 10,
+  }, (err, res) => {
+    if (err) return console.log('/backend/createEvent listGoogleCalendars The API returned an error: ' + err);
+    const calendars = res.data.items;
+    if (calendars.length) {
+      console.log('/backend/createEvent listGoogleCalendars Calendar List:');
+      calendars.map((cal, i) => {
+        console.log(`/backend/createEvent  listGoogleCalendars ${cal.id} - ${cal.summary}`);
+      });
+    } else {
+      console.log('/backend/createEvent  listGoogleCalendars No calendars found.');
+    }
+  });
+}

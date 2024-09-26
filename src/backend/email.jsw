@@ -1,0 +1,574 @@
+//email.jsw
+import wixData 					from 'wix-data';
+import { sendWithService } 		from 'backend/sendGrid';
+import  sgMail 					from '@sendgrid/mail';
+import { getSecret }			from 'wix-secrets-backend';
+//import { getEmailAddress }		from 'public/objects/member';
+//import { formatDateString }		from 'public/fixtures.js';
+import { findOfficer }			from 'backend/backOfficers.jsw';
+
+export async function testV3(pTo, pSubject, pMsg) {
+
+	const apiKey = await getSecret("sendGrid3");
+
+	sgMail.setApiKey(apiKey);
+	
+	const msg = {
+  		to: pTo, // Change to your recipient
+  		//to:'allentrev88@gmail.com',
+  		from: 'maidenheadtownbc@gmail.com', // Change to your verified sender
+  		subject: pSubject,
+  		//text: 'Hello plain world!',
+  		//html: '<p>Hello HTML world!</p>',
+		content: [
+    		{
+      			type: "text/html",
+      			value: pMsg
+	  		}
+  		],
+	
+	}
+
+	sgMail
+  	.send(msg)
+  	.then(() => {
+    	console.log('/backend/email testV3 Email sent to ', pTo)
+  	})
+  	.catch((error) => {
+		console.error("/backend/email testV3 catch error, err" );
+    	console.error(error)
+  	})
+}
+
+export async function testV4(pTo, pSubject, pMsg) {
+
+	const apiKey = await getSecret("sendGrid3");
+
+	sgMail.setApiKey(apiKey);
+	
+	const msg = {
+		personalizations: [
+			{
+				to: [
+					{
+					email: pTo
+					}
+				],
+				cc: [
+					{
+					email: 'maidenheadtownbc@gmail.com'
+					}
+				]
+			}
+		],
+  		from: 'maidenheadtownbc@gmail.com', // Change to your verified sender
+  		subject: pSubject,
+		content: [
+    		{
+      			type: "text/html",
+      			value: pMsg
+	  		}
+  		],
+	}
+	return sgMail
+  	.send(msg)
+  	.then(() => {
+    	console.log('/backend/email testV4 Register Email sent to ', pTo);
+		return {
+			"status": true,
+			"error": null
+	  	};
+  	})
+  	.catch((error) => {
+		console.error("/backend/email testV4 catch error, err" );
+    	console.error(error);
+		return {
+			"status": false,
+			"error": error
+	  	};
+  	})
+}
+
+//DEPRECATED
+export async function sendEmail(subject, body) {
+	const key = "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";
+	const sender = "maidenheadtownbc@gmail.com";
+	const recipient = "allentrev88@gmail.com";
+	return sendWithService(key, sender, recipient, subject, body);
+}
+
+//DEPRECATED
+export async function sendRequestEmail(subject, body, recipient) {
+	const key = "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";
+	//const key3 = "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";
+	const sender = "maidenheadtownbc@gmail.com";
+	const links = `<html><a href="http://www.maidenheadtownbc.com/manage-team-players?res=&quotYes&quot&eid=&quot1234&quot">Visit me</a></html>`
+	//const sender = "allentrev88@gmail.com";
+	//const recipient = "allentrev88@gmail.com";
+	//const subject = "test email";
+	//const body = "the quick brown fox jumped over the lazy dog";
+	return sendWithService(key, sender, recipient, subject, body);
+}
+
+export async function sendEmailWithRecipient(subject, body, recipient) {
+  	const key = "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";
+  	const sender = "maidenheadtownbc@gmail.com";
+  	return await sendWithService(key, sender, recipient, subject, body);
+}
+
+export async function sendConfirmationEmail(pEmail) {
+	const toEmail = {
+		"bookingRef": "",
+		"dateRequired": "",
+		"rink": 0,
+		"slot": "",
+		"noPlayers": 0,
+		"bookerId": "",
+		"booker": "",
+		"usage": "",
+		"playerAId": "",
+		"playerA": "",
+		"playerBId": "",
+		"playerB": "",
+		"dateBooked": ""
+	}
+	let w_booker_email = "";
+	let w_playerA_email = "";
+	let w_playerB_email = "";
+	let w_first_name = pEmail.booker.toString().split()[0];
+	if (pEmail.bookerId) {
+		if (pEmail.bookerId === ".") {
+			w_booker_email = await getEmailAddress(pEmail.playerAId);
+		} else { 
+			w_booker_email = await getEmailAddress(pEmail.bookerId);
+		}
+	}
+	//console.log("Backend email address for ", pEmail.bookerId);
+	//console.log(w_booker_email);
+	if (pEmail.playerAId) {
+		if (pEmail.playerAId === pEmail.bookerId){
+			w_playerA_email = w_booker_email;
+		} else {
+			//w_playerA_email = await getEmailAddress(pEmail.playerAId);
+		}
+	}
+	if (pEmail.playerBId) {
+		//w_playerB_email = await getEmailAddress(pEmail.playerBId);
+		//console.log(w_playerB_email);
+	}
+	let players_message = "";
+	if (pEmail.noPlayers > 0) {
+		players_message = String(pEmail.noPlayers);
+	} else {
+		players_message = "Not specified";
+	}
+	const subject = `Booking Confirmation`;
+
+	const body = `Dear ${w_first_name},\n
+	This is to confirm that you booked a rink at the club. The details of the booking made are:\n
+	Booked on Date: ${pEmail.dateBooked}\n
+	Booking reference: ${pEmail.bookingRef}\n\n
+	Date required: ${pEmail.dateRequired}\n
+	Time slot: ${pEmail.slot}\n
+	Nominal rink: ${pEmail.rink}\n
+	Number of players: ${players_message}\n\n
+	Usage: ${pEmail.usage}\n\n
+	Player A: ${pEmail.playerA}\n
+	Player B: ${pEmail.playerB}\n\n
+	If you have not booked this event, then please contact the club immediately.\n
+	You may go to the website to delete or edit this booking up to the date of the booking.\n\n
+	The committee reserves the right to cancel this booking and to re-allocate this rink for another use, should a priority need arise.\n
+	Thank you for using the booking system\n
+	Regards,\n
+	The Secretary,\n
+	Maidenhead Town Bowls Club
+  	`
+  	const recipient = w_booker_email;
+
+  	let response = await sendEmailWithRecipient(subject, body, recipient);
+
+	return true;
+}	
+/**
+ * Input
+ * 		pRec.method				U for username, E for Email address
+ * 		pRec.username
+ * 		pRec.loginEmail
+ * 		pRec.contactEmail
+ * 		pRec.firstName
+ * 		pRec.surname
+ */
+export function sendCreateMemberConfirmationEmail(pRec) {
+
+	let wLogInItem = pRec.loginEmail;
+	let wLogInMethod = "login Email address";
+	let wToEmail = pRec.loginEmail;
+	if (pRec.method === "U") {
+		wLogInMethod = "username";
+		wLogInItem = pRec.username;
+		wToEmail = pRec.contactEmail;
+	}
+
+	let wName = pRec.firstName + " " + pRec.surname;
+
+	const subject = `Registration Confirmation`;
+
+	const body = `Dear ${wName},\n
+	This is to confirm that you have been registered with the club's web site.\n
+	To log in to the site please use your ${wLogInMethod} of "${wLogInItem}".\n
+	The first time you try to log in, you will be asked to reset the temporary password that has been assigned to you.\n
+	Simply follow the instructions that will be displayed on your screen.\n 
+	Once you have changed your password, you will be a fully registered member and you should then be able to sign onto the site as per normal\n
+	When you are fully registered, you may also change your Username using Log In and selecting "Change Username" instead of "Log In".\n\n
+	Regards,\n
+	The Secretary,\n
+	Maidenhead Town Bowls Club
+  	`
+  	const recipient = wToEmail;
+
+  	return sendEmailWithRecipient(subject, body, recipient)
+	.then( (response) => {
+		return [true, response];
+	})
+	.catch( (err) => {
+		return [false, err];
+	})
+}	
+
+export async function sendRequestAvailabilityEmail(pEmail) {
+
+	let wEid = pEmail.shortEventId;
+	let wMid = pEmail.shortMemberId;
+	let wTeamKey = pEmail.teamKey;
+	let wDay = pEmail.startDate.day;
+	let wDate = pEmail.startDate.date;
+	let wMonth = pEmail.startDate.month;
+	let wTo = pEmail.to;
+	let wName = pEmail.name;
+	let wCaptain = pEmail.captain;
+	//			pEMail.proxy;
+	let wUser = pEmail.booker;
+	let wHomeAway = pEmail.homeAway;
+	let wSubject = pEmail.subject;
+	let wLeague = pEmail.league;
+	let wStart = pEmail.start;
+	let wNotes = (pEmail.notes === null) ? "" : "<br>" + pEmail.notes + "<br>";
+
+	let wDisplayDate = wDay + ", " + wDate + " " + wMonth;
+	let wManagerType = (pEmail.managerType === "T") ? "Team Captain" : "Day Captain";
+	let wKey = `&eid=${wEid}&mid=${wMid}&teamKey=${wTeamKey}`;
+	let wAvailable = `<a href="https://www.maidenheadtownbc.com/manage-team-member?res=A${wKey}">YES</a>,`;
+	let wNotAvailable = `<a href="https://www.maidenheadtownbc.com/manage-team-member?res=N${wKey}">NO</a>`;
+	let wSeePlayers = `<a href="https://www.maidenheadtownbc.com/manage-team-member?res=V${wKey}">View availability</a>`;
+	let wProxy = (pEmail.proxy) ? `${wUser} on behalf of, <br>` : ``;
+	const wTitle = `Team Availability Request`;
+
+	const wMsg = `<p>Dear ${wName},</p>
+	Note: this is an automated email message so please respond using the links below and not the email reply button <br><br>
+	I am now looking for players to participate in the following ${wHomeAway} ${wLeague} match:<br><br>
+	${wDisplayDate} ${wSubject} at ${wStart}<br><br>
+	Are you availabile for this match?<br><br>
+	${wAvailable}.<br><br>
+	or 
+	${wNotAvailable}.<br><br>
+	Regards,<br>
+	${wProxy}
+	${wCaptain}<br>
+	${wManagerType},<br>
+	Maidenhead Town Bowls Club<br>
+	${wNotes}
+	`;
+
+  	//console.log("Avail request sent to ", wTo);
+  	let response = await testV3(wTo, wTitle, wMsg);
+
+	return true;
+}	
+
+export async function sendTeamSheet(pEmail) {
+
+	let wEid = pEmail.shortEventId;
+	let wMid = pEmail.shortMemberId;
+	let wTeamKey = pEmail.teamKey;
+	let wDay = pEmail.startDate.day;
+	let wDate = pEmail.startDate.date;
+	let wMonth = pEmail.startDate.strMonth;
+	let wLongDate = pEmail.startDate.longDate;
+	let wTo = pEmail.to;
+
+	let wSides = pEmail.sides;
+
+	let wCaptain = pEmail.captain;
+	let wName = pEmail.name;
+//	let wProxy = pEmail.proxy				// this comment is included here so you get a full view of whats needed in toEMail	
+	let wUser = pEmail.booker;
+	let wHomeAway = pEmail.homeAway;
+	let wSubject = pEmail.subject;
+	let wLeague = pEmail.league;
+	let wStart = pEmail.start;
+//	let wNotes = pEmail.notes				// as above
+
+	let wNotes = (pEmail.notes === null) ? "" : "<br>" + pEmail.notes + "<br>";
+	//let wDisplayDate = wDay + ", " + wDate + " " + wMonth;
+	let wDisplayDate = wLongDate;
+	let wKey = `&eid=${wEid}&mid=${wMid}&teamKey=${wTeamKey}`;
+	let wConfirm = `<a href="https://www.maidenheadtownbc.com/manage-team-member?res=C${wKey}">I can still play and have seen the team sheet</a>,`;
+	let wProxy = (pEmail.proxy) ? `${wUser} on behalf of, <br>` : ``;
+	const wTitle = `Team Sheet`;
+
+	const wText = `<p>Dear ${wName},</p>
+	The team sheet for the following ${wHomeAway} ${wLeague} match:<br><br>
+	${wDisplayDate} ${wSubject} at ${wStart}<br><br>
+	is as follows. Please use the link below to acknowledge that you have seen this email and can still participate in this match.<br><br>
+	${wSides}<br>
+	The captain for the day is ${wCaptain}<br><br>
+	${wConfirm}.<br><br>
+	Regards,<br>
+	${wProxy}
+	${wCaptain}<br>
+	Team Captain,<br>
+	Maidenhead Town Bowls Club<br>
+	${wNotes}
+  	`
+  	//To = "allentrev88@gmail.com";
+	let response = await testV3(wTo, wTitle, wText);
+
+	return true;
+}	
+
+export async function sendConfirmationEmail2(pEmail) {
+
+	let wPaverList = pEmail.paverList;
+	let wNoOfPavers = wPaverList.length;
+	let wCost = String(5*wNoOfPavers);
+	let w_first_name = pEmail.fullName;
+	let w_booker_email = pEmail.contactEmail;
+	let wDate = pEmail.dateBooked;
+
+	let wDateString = formatDateString(wDate);
+	//console.log(wDateString);
+	
+	let wPaverListOutput = "";
+	wPaverList.sort(function(a, b){return a-b});
+	for (let i = 0; i < wPaverList.length; i++){
+		wPaverListOutput = wPaverListOutput + wPaverList[i] + ", ";
+	}
+	let wS = wPaverListOutput.slice(0, wPaverListOutput.length - 2);
+	wS = wS + "\n";
+	wPaverListOutput = wS;
+
+	const subject = `Paver Sponsorship`;
+
+	const body = `Dear ${w_first_name},\n
+	Thank you for supporting the club by sponsoring one or more pavers. \n
+	You have chosen to sponsor the following pavers:
+	${wPaverListOutput}\n
+	The booking was made on date: ${wDateString}\n
+	The charge for this is £${wCost}. \n
+	If you have not sponsored these pavers, then please contact the club immediately.\n
+	The Paver will be held in your name until payment is taken, when sponsorship of it will be fully transferred to you. 
+	You may make a payment either by internet banking to Richard, our Treasurer, or by sending him a cheque. Payment details are:
+	
+	Internet Banking:
+	Account name - Maidenhead Town Bowls Club - Sort Code: 30-95-36, Account number: 00033500. Please put your name as reference.
+	By Cheque:
+	Send a cheque Payable to "Maidenhead Town Bowls Club" to RIchard Smith, 17 Rystone Close, Maidenhead, SL6 3HT\n
+	Thank you again for assisting the club.\n
+	Regards,\n
+	The Secretary,\n
+	Maidenhead Town Bowls Club
+  	`
+  	const recipient = w_booker_email;
+
+  	let response = await sendEmailWithRecipient(subject, body, recipient);
+	
+	if (response){
+				
+		console.log("/backend/email sendConfirmationEmail2 Email sent", recipient, response);
+		return true;
+	} else {
+		console.log("/backend/email sendConfirmationEmail2 Email failure", recipient, response);
+		return false;
+	}
+}	
+
+
+export async function sendRegisterRequest(pName, pEmail) {
+
+	let wTo = pEmail;
+	const wTitle = `New Member Registration Request`;
+	const wText = `<p>Dear ${pName},</p>
+	Thank you for your request to become a member of the Maidenhead Town Bowls Club.<br><br>
+	A member of the club will contact you shortly by email to explain the process to become a member.
+	<br><br>
+	Regards,<br>
+	The Secretary,
+	Maidenhead Town Bowls Club<br>
+  	`
+  	//To = "allentrev88@gmail.com";
+	let response = await testV4(wTo, wTitle, wText);
+
+	return true;
+}	
+
+export async function sendChangePassword(pName, pLstId, pEmail) {
+
+	let wTo = pEmail;
+	let wConfirm = `<a href="https://www.maidenheadtownbc.com/refresh?lstId=${pLstId}">Change Password</a>,`;
+	const wTitle = `Change Password Request`;
+	const wText = `<p>Dear ${pName},</p>
+	<br>
+	You have requested to change your password. If you did not request this, then please ignore this email. Otherwise, please click the button below.
+	<br><br>
+	<div>
+  		${wConfirm}
+	</div>
+	<br><br><br>
+	Regards,<br>
+	The Secretary,
+	Maidenhead Town Bowls Club<br>
+  	`
+  	//To = "allentrev88@gmail.com";
+	let response = await testV4(wTo, wTitle, wText);
+	return doResponseReturn(response);
+}	
+
+
+export async function sendForgotPassword(pName, pLstId, pEmail) {
+
+	let wTo = pEmail;
+	let wConfirm = `<a href="https://www.maidenheadtownbc.com/refresh?type='Password'&lstId=${pLstId}">Reset Password</a>,`;
+	const wTitle = `Reset Password Request`;
+	const wText = `<p>Dear ${pName},</p>
+	<br>
+	We have received a request to reset your password. If you did not request this, then please ignore this email. Otherwise, please click the button
+	below and follow the instructions shown on the screen that is loaded.
+	<br><br>
+	<div>
+  		${wConfirm}
+	</div>
+	<br><br><br>
+	Regards,<br>
+	The Secretary,
+	Maidenhead Town Bowls Club<br>
+  	`
+  	//To = "allentrev88@gmail.com";
+	let response = await testV4(wTo, wTitle, wText);
+	return doResponseReturn(response);
+}	
+
+export async function sendForgotUsername(pFirstName, pSurname) {
+	let wOfficer = {};
+	let wResult = await findOfficer("CSEC"); //get current secretary
+	if (wResult.status){
+		wOfficer = wResult.officer;
+	} else {
+		return {"status": false, "error": "Couldnt find officer" };
+	}
+	let wTo = wOfficer.contactEmail;
+	const wTitle = `Forgotten Username Reset Request`;
+	const wText = `<p>Secretary,</p>
+	<br>
+	We have received a request to reset ${pFirstName} ${pSurname}'s username. Could you pleasde determine their log in
+	credentials, reply to them with those details and set their status to "Pending".
+	<br><br>
+	<br><br><br>
+	Regards,<br>
+	The Secretary,
+	Maidenhead Town Bowls Club<br>
+  	`
+  	//To = "allentrev88@gmail.com";
+	let response = await testV4(wTo, wTitle, wText);
+	return doResponseReturn(response);
+}	
+
+export function doResponseReturn (pResponse) {
+	if (pResponse.status) {
+		return {
+			"status": true,
+			"error": null
+		};
+	} else {
+		return {
+			"status": false,
+			"error": pResponse.error
+		};
+	}
+}
+
+//NOT USED
+export async function sendUsernameRecovery(pEmail) {
+
+	let wTo = pEmail;
+	const wTitle = `Username Recovery Request`;
+	const wText = `<p>Dear Sir or Madam,</p>
+	Thank you for your request to recover your username.<br><br>
+	A member of the club will contact you shortly by email to provide you with your username, if one exists.<br><br>
+	Regards,<br>
+	The Secretary,
+	Maidenhead Town Bowls Club<br>
+  	`
+  	//To = "allentrev88@gmail.com";
+	let response = await testV4(wTo, wTitle, wText);
+
+	return true;
+}	
+
+
+export async function findLstMember(pUserId) {
+	// this replicates the find-MemberProfile function, but using the read-all lstMembers 
+	// collection instead of the proper members collection
+	//console.log("Inside find-MemberProfile async" + pUserId);
+  	try {
+		const results = await wixData.query("lstMembers")
+    		.eq("_id", pUserId)
+    		.find();
+		if (results.items.length ===  0) {
+			return [false,{}];
+		} else {
+			return [true, results.items[0]];
+		}
+	}
+	catch (error) {
+		console.log("/backend/email findLstMember TryCatch ");
+		console.log(error);
+		return [false,{}];
+	}
+}
+
+
+export async function getEmailAddress (pUserId) {
+  	try {
+		let [status, wMember] = await findLstMember(pUserId);
+		if (status) {
+			return wMember.contactEmail;
+		} else {
+			console.log("/backend/email.jsw GetEmailAddress Error: cant find Lst Member record " + pUserId);
+			return false;
+		}
+	}
+	catch (error) {
+		console.log("/backend/email.jsw GetEmailaddress TryCatch ");
+		console.log(error);
+		return false;
+	}
+
+}
+
+
+export function formatDateString(pDate, pType = "Long"){
+	const months = ['Jan', 'Feb', 'Mar', 'Apr','May','June','July', 'Aug', 'Sept','Oct', 'Nov','Dec'];
+	const days = ['Sun','Mon','Tues','Wed','Thurs','Fri','Sat'];
+
+	const year = pDate.getFullYear();
+	const date = pDate.getDate();
+	const monthName = months[pDate.getMonth()];
+	const dayName = days[pDate.getDay()];
+	let stringDate = "";
+	if (pType === "Short") {
+		stringDate = `${dayName}, ${date} ${monthName}`;
+	} else {
+		stringDate = `${dayName}, ${date} ${monthName}  ${year}`;
+	}
+	return stringDate;
+}

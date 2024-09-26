@@ -1,0 +1,826 @@
+
+import wixData from 'wix-data';
+
+
+
+const EVENT = Object.freeze({
+  NEW:		"N",						// new, and no bookings generated yet
+  ACTIVE:	"A",						// event has been processed for bookings
+  COMPLETED:"C",						// event completed: not used as yet
+  DELETED:	"D"	,						// deleted
+  CANCELLED: "X"						// shown as cancelled in fixture list. Bookings deleted
+});
+
+const BOOKING = Object.freeze({
+  NEW:		"N",
+  READY:	"R",
+  OPEN:		"O",
+  COMPLETED:"P",
+  MOVED:	"M",
+  DELETED:	"D"
+});
+
+//FOR R&D only
+export async function test() {
+    let wDate = new Date();
+
+	let wRes = await parseDateTimeFromInput(wDate,"10:15", "01:30");
+    console.log(wRes);
+}
+
+//FOR R&D only
+export async function countFreeSlots (pYear, pJDate, pRangeId, pSlot){
+
+	//console.time();
+	const filter1 = wixData.filter().hasSome("status", ["N", "O", "P"]);
+	const filter2 = wixData.filter().eq("requiredYear", pYear);
+	const filter3 = wixData.filter().eq("requiredJDate", pJDate);
+	let filter4 = filter1.and(filter2);
+	let filter5 = filter4.and(filter3);
+	const having = wixData.filter().eq("rangeId", pRangeId);
+
+	wixData.aggregate("lstBookings")
+	.filter(filter5)
+	.group("slotId")
+	.count()
+	.ascending("slotId")
+	.run()
+	.then((results) => {
+		//console.timeEnd();
+		//console.log(results.items);
+    	//console.log(results.length);
+	})
+	.catch((error) => {
+		let errorMsg = error.message;
+		let code = error.code;
+		console.log("/backend/backEvents countFreeSlots aggregate error", error);
+	});
+}
+//FOR R&D only
+export async function getNoFreeRinks(pYear, pJDate, pRangeId, pSlot){
+	let no_rinks = 6;
+	let wNumbers = new Array(no_rinks).fill(true);
+	let wData = await getBookingsForJulianDate(pYear, pJDate);
+	let wSchedulesGames = wData.filter ( item => item.status !== "R");
+	let wSlotGames = wSchedulesGames.filter ( item => item.slotId === pSlot && item.rangeId === pRangeId);
+	for (let wBooking of wSlotGames){
+		let wRnk = parseInt(wBooking.rink,10);
+		wNumbers[wRnk -1] = false;
+	}
+	let wX = wSlotGames.length;
+	let wNoRinks = (no_rinks >= wX) ? no_rinks - wX : 0;
+	//console.log("getNoFreeRinks ", pJDate, wNoRinks);
+	return [wNoRinks, wNumbers];
+	
+}
+//FOR R&D only
+export async function getBookingsForJulianDate(pYear, pJDate) {
+
+	return wixData.query("lstBookings")
+		.hasSome("status",["N","O","P", "R"])
+		.eq("requiredYear", pYear)
+		.eq("requiredJDate", pJDate)
+		.ascending("slotId")				//TODO consider effect of limit(1)
+		.ascending("rink")
+		.find()
+		.then( (results) => {
+			if (results.items.length !== 0) {
+				return results.items;
+			} else {
+				return [];
+			}
+		})
+		.catch( (err) => {
+			console.log("/backend/backEvents getBookingsForJulianDate catch fail ", err);
+			return [];
+		})
+}
+
+
+export async function parseDateTimeFromInput(pDatePicker, pTimePicker, pDuration) {
+
+	const results = {
+		"start": {
+			"dateTime": null,			// date
+			"strDate": "",			// string	
+			"nTime": 0,				// numeric
+			"strTime": "",			// string
+			"decTime": 0
+		},
+		"end": {
+			"dateTime": null,	
+			"strDate": "",
+			"nTime": 0,
+			"strTime": "",
+			"decTime": 0
+		},
+		"duration": 0
+	}
+	let wHours = parseInt(pTimePicker.split(":")[0],10);
+	let wMins = parseInt(pTimePicker.split(":")[1],10);
+	let wX = wMins / 60;
+	results.start.decTime = wHours + parseFloat(wX.toFixed(3));
+	var wStartDateTime = new Date(pDatePicker.getFullYear(), pDatePicker.getMonth(), pDatePicker.getDate(), wHours, wMins, 0);
+	wHours = parseInt(pDuration.split(":")[0],10);
+	wMins = parseInt(pDuration.split(":")[1],10);
+	var wEndDateTime = new Date(wStartDateTime);
+	wEndDateTime.setHours(wStartDateTime.getHours() + wHours);
+	wEndDateTime.setMinutes(wStartDateTime.getMinutes() + wMins);
+	let wDuration = (wHours + (wMins / 60));
+	wHours = wEndDateTime.getHours();
+	wMins = wEndDateTime.getMinutes();
+	wX = wMins / 60;
+	results.end.decTime = wHours + parseFloat(wX.toFixed(3));
+	results.start.dateTime = wStartDateTime;
+	results.start.nTime = wStartDateTime.getTime();
+	results.start.strDate = formatDateString(wStartDateTime);
+	results.start.strTime = getTime(wStartDateTime);
+	results.end.dateTime = wEndDateTime;
+	results.end.nTime = wEndDateTime.getTime();
+	results.end.strDate = formatDateString(wEndDateTime);
+	results.end.strTime = getTime(wEndDateTime);
+	results.duration = wDuration;
+	return results;
+}
+
+
+export function formatDateString(pDate, pType = "Long"){
+	const months = ['Jan', 'Feb', 'Mar', 'Apr','May','June','July', 'Aug', 'Sept','Oct', 'Nov','Dec'];
+	const days = ['Sun','Mon','Tues','Wed','Thurs','Fri','Sat'];
+
+	const year = pDate.getFullYear();
+	const date = pDate.getDate();
+	const monthName = months[pDate.getMonth()];
+	const dayName = days[pDate.getDay()];
+	let stringDate = "";
+	if (pType === "Short") {
+		stringDate = `${dayName}, ${date} ${monthName}`;
+	} else {
+		stringDate = `${dayName}, ${date} ${monthName}  ${year}`;
+	}
+	return stringDate;
+}
+
+export function convertDuration(pDuration) {
+  let wHours = Math.floor(pDuration);
+  let wMin = Math.round((pDuration % 1)*100)/100;
+  return wHours.toString().padStart(2,0) + ":" + (60*wMin).toString().padStart(2,0);
+}
+
+export function getDuration(pStart, pEnd){
+//	returns the number of minutes between pStart amd pEnd; pStart >= pEnd
+	if (compareTime(pStart, "<", pEnd)) { return false}	
+	if (compareTime(pStart, "=", pEnd)) { return 0}	
+	let wMins = 0;
+	let wAHours = parseInt(pStart.split(":")[0],10);
+	let wAMins = parseInt(pStart.split(":")[1],10);
+	let wBHours = parseInt(pEnd.split(":")[0],10);
+	let wBMins = parseInt(pEnd.split(":")[1],10);
+	if (wBMins > wAMins){
+		wBHours++;
+		wMins = (60-wBMins) + wAMins;
+	} else {
+		wMins = wAMins - wBMins;
+	}
+	wMins = wMins + 60*(wAHours-wBHours);
+	return wMins;
+}
+
+export function getTime(pDate) {
+  let wHours = pDate.getHours();
+  let wMin = pDate.getMinutes();
+  return wHours.toString().padStart(2,0) + ":" + wMin.toString().padStart(2,0);
+}
+
+export function compareTime(pATime, pOp, pBTime){
+	//console.log(pATime + "/" + pOp + "/" + pBTime);
+	let wAHours = parseInt(pATime.split(":")[0],10);
+	let wAMins = parseInt(pATime.split(":")[1],10);
+	let wBHours = parseInt(pBTime.split(":")[0],10);
+	let wBMins = parseInt(pBTime.split(":")[1],10);
+
+	let wATime = new Date();
+	let wBTime = new Date();
+
+	wATime.setHours(wAHours,wAMins,0,0);
+	wBTime.setHours(wBHours,wBMins,0,0);
+	switch (pOp) {
+		case "=":
+			return (wATime === wBTime);
+			break;
+		case "<":
+			return (wATime < wBTime);
+			break;
+		case ">":
+			return (wATime > wBTime);
+			break;
+		case ">=":
+			return (wATime >= wBTime);
+			break;
+		case "<=":
+			return (wATime <= wBTime);
+			break;
+		default:
+			return false;
+			break;
+	}
+}
+
+/**
+ * Summary:	Convert Date to Ordinal Day
+ * 
+ * Description: Converts the given date string to an ordinal date.	
+ * 
+ * @function
+ * @param { Date} pDate - The Date object to convert.
+ * 
+ * @returns {number} The ordinal date (day of the year), or -1 if the input is invalid.
+ */
+export function DateToOrdinal(pDate){
+	try {
+		const dayCount = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+		if (typeof pDate === "string"){ return -1}
+		const dte = new Date(pDate);
+		//initialize date variable
+		const yy = dte.getFullYear()
+		let julianDate = 0;
+		//add days for previous months
+		for (let i = 0; i < dte.getMonth(); i++) {
+			julianDate = julianDate + dayCount[i];
+		}
+		//add days of the current month
+		julianDate = julianDate + dte.getDate();
+		//check for leap year
+		if (dte.getFullYear() % 4 == 0 && dte.getMonth() > 1) {
+			julianDate++;
+		}
+
+		return parseInt(julianDate,10);
+	}
+	catch (err) {
+		console.log("/backend/backEvents DateToOrdinal Try-catch, err");
+		console.log(err);
+		return -1;
+	}
+}
+
+export function toJulian(pDate){   //convert passed string to date object
+	const dayCount = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+   
+	const dte = new Date(pDate);
+	//initialize date variable
+	const yy = dte.getFullYear()
+	let julianDate = 0;
+	//add days for previous months
+	for (let i = 0; i < dte.getMonth(); i++) {
+    	julianDate += dayCount[i];
+	}
+	//add days of the current month
+	julianDate += dte.getDate();
+	//check for leap year
+	if (dte.getFullYear() % 4 == 0 && dte.getMonth() > 1) {
+		julianDate++;
+	}
+	return String(yy) + String(julianDate).padStart(3,"0");
+}
+
+export function stringToDate(pIn, pSep){
+	let res = pIn.split(pSep);
+	let wDay = parseInt(res[0],10);
+	let wMonth = parseInt(res[1],10);
+	let wYear = parseInt(res[2],10);
+	return new Date(wYear, wMonth-1, wDay, 10,0,0,0);
+}
+
+let w_time_slots = [
+	{"_id": "0", "start": "10:00", "end": "11:30", "txt": "10:00\nto\n11:30"},
+	{"_id": "1", "start": "11:30", "end": "13:00", "txt": "11:30\nto\n13:00"},
+	{"_id": "2", "start": "14:00", "end": "15:30", "txt": "14:00\nto\n15:30"},
+	{"_id": "3", "start": "15:30", "end": "17:00", "txt": "15:30\nto\n17:00"},
+	{"_id": "4", "start": "18:00", "end": "21:00", "txt": "18:00\nto\n21:00"},
+];
+
+let w_slot_range = 1;
+let no_slots = 5;
+
+export function getStartSlot(pMaxSlots, pStartTime){
+	let idx = 0;
+	while (idx < pMaxSlots) {
+		let wSlot = w_time_slots[idx];
+		let wSlotEnd = wSlot.end;
+		if (pStartTime < wSlotEnd) {
+			return idx;
+		}
+		idx++;
+	}
+	return idx-1;
+}
+
+export function getEndSlot(pMaxSlots, pEndTime){
+	let idx = 0;
+	while (idx < pMaxSlots) {
+		let wSlot = w_time_slots[idx];
+		let wSlotEnd = wSlot.end;
+		//console.log("idx, wSlotEnd, pEndTime", idx, wSlotEnd, pEndTime);
+		if (pEndTime <= wSlotEnd) {
+			return idx;
+		} else {
+			let wSlotStart = w_time_slots[idx+1].start;
+			//console.log("idx, wSlotStart, pEndTime", idx, wSlotStart, pEndTime);
+			if (pEndTime <= wSlotStart) {
+				return idx;
+			}
+		}
+		idx++;
+	}
+	return idx-1;
+}
+
+export function convertDurationToString (pIn){ 
+	let wHours = Math.floor(pIn);			// 2.5 -> 2
+	let wX = pIn - wHours;					// 2.5 -> ).5
+	let wMins = wX * 60;
+	let wOut = String(wHours).padStart(2,"0") + ":" + String(wMins).padStart(2,"0");
+	return wOut;
+}
+
+
+// this s for test purposes onlu, as it can be run as backend test
+export async function getBookingsForJulianDateTEST(pYear, pJDate) {
+
+	return wixData.query("lstBookings")
+		.hasSome("status",["N","O","P", "R"])
+		.eq("requiredYear", pYear)
+		.eq("requiredJDate", pJDate)
+		.ascending("slotId")				//TODO consider effect of limit(1)
+		.ascending("rink")
+		.find()
+		.then( (results) => {
+			if (results.items.length !== 0) {
+				return results.items;
+			} else {
+				return [];
+			}
+		})
+		.catch( (err) => {
+			console.log("/backend/backEvents getBookingsForJulianDateTEST catch fail ", err);
+			return [];
+		})
+}
+
+
+export function getRinksValue (pMax, pIn){
+	
+	let wNoRinks = 0;
+	switch (pIn) {
+		case "A":
+			wNoRinks = parseInt(pMax,10);
+			break;
+		case "0":
+			wNoRinks = 0;
+			break;
+		case "None":
+			wNoRinks = 0;
+			break;
+		default:
+			wNoRinks = parseInt(pIn,10) || 0;
+			break;
+	}
+	return wNoRinks;
+}
+
+
+// ================================================= Candidate Maintenance Backend functions =================================================
+//
+//
+/**
+ * Summary: Retrieves all events for a specified year from the "lstEvents" collection.
+ *
+ * @function
+ * @async
+ * @param {number} pYear - The year for which events are to be retrieved.
+ * @returns {Promise<{ status: boolean, events: Array<Object> }>} - A Promise resolving to an object with a boolean status indicating success and
+ *  an array of event items.
+ * @throws {Error} - Throws an error if the retrieval process encounters an issue.
+ *
+ */
+export async function getAllEventsForYear(pYear) {
+
+		return wixData.query("lstEvents")
+    		.eq("requiredYear", pYear)
+    		.ascending("startDate")
+			.ne("status", EVENT.DELETED)
+			.limit(1000)
+			.find()
+			.then ( results => {
+				let wTempRecords = [];
+				if (results.items.length > 0) {
+					wTempRecords = results.items.map ( item => {
+						let wTemp = {...item};
+						wTemp.selected = false;
+						return wTemp;
+					})
+				}
+				return { "status": true, "events": [...wTempRecords]};
+			})
+			.catch ( err => {
+				console.log("backend/backEvents getAllEventsForYear catch ", err);
+				console.log(err);
+				return { "status": false, "events": err};
+			})
+}
+
+export async function getEventBookings(pId) {
+
+		return wixData.query("lstBookings")
+    		.eq("eventId", pId)
+			.ne("status", BOOKING.MOVED)
+			.ne("status", BOOKING.DELETED)
+    		.ascending("rink")
+    		.ascending("slotId")
+			.limit(1000)
+			.find()
+			.then ( results => {
+				if (results.items.length ===  0) {
+					return {"status": true, "bookings": [], "error": null};
+				} else {
+					return {"status": true, "bookings": results.items, "error": null};
+				}
+			})
+			.catch ( err => {
+				console.log("/backend/backEvents getEventBookings catch, err ");
+				console.log(err);
+				return {"status": false, "bookings": [], "error": err};
+			})
+}
+
+export async function getRefEventSet() {
+	try {
+		let res = await wixData.query('lstReferenceEvent')
+			.ascending("eventType")
+			.ascending("subject")
+			.limit(500)
+			.find();
+			return {"status": true, "events": res.items, "error": null};
+	}
+	catch (err) {
+		console.log("/backend/backEvents getRefEventSet Try-catch, err");
+		console.log(err);
+		return {"status": false, "events": null, "error": err};
+	}
+}
+
+export async function getCanEventSet() {
+	try {
+		let res = await wixData.query('lstCandidateEvent')
+			.ascending('requiredJDate')
+			.ascending('startTime')
+			.descending('homeAway')
+			.ascending('subject')
+			.limit(1000)
+			.find();
+			return {"status": true, "events": res.items, "error": null}
+	}
+	catch (err) {
+		console.log("/backend/backEvents getCanEventSet Try-catch, err");
+		console.log(err);
+		return {"status": false, "events": null, "error": err};
+	}
+}
+
+export async function getOpponentSet() {
+	try {
+		let res = await wixData.query('lstLeagueOpponents')
+			.ascending("league")
+			.ascending("teamName")
+			.limit(500)
+			.find();
+			return {"status": true, "opponents": res.items, "error": null}
+	}
+	catch (err) {
+		console.log("/backend/backEvents getOpponentSet Try-catch, err");
+		console.log(err);
+		return {"status": false, "opponents": null, "error": err};
+	}
+}
+
+export function convertDateToString(pInput){
+    if (typeof pInput === "string") {
+        let wBits = pInput.split("-");
+        let nYear = parseInt(wBits[0],10);
+        let nMonth = parseInt(wBits[1],10);
+        let nDate = parseInt(wBits[2],10);
+        let wDate = new Date(nYear, nMonth-1, nDate);
+    }
+}
+
+export async function getFixtureSet() {
+	try {
+		let res = await wixData.query('lstKennetImport')
+			.ascending("league")
+			.ascending("division")
+			.ascending("week")
+			.ascending('playOn')
+			.limit(500)
+			.find();
+			return {"status": true, "fixtures": res.items, "error": null};
+		}
+	catch (err) {
+		console.log("/backend/backEvents getOpponentSet Try-catch, err");
+		console.log(err);
+		return {"status": false, "fixtures": null, "error": err};
+	}
+}
+
+export async function getTownTeams() {
+	try {
+		let res = await wixData.query('lstLeagueTeams')
+			.ascending("league")
+			.ascending("division")
+			.limit(500)
+			.find();
+		if (res.items.length ===  0) {
+			console.log("/backend/backEvents getTownTeams 0 records, err");
+			return {"status": false, "teams": [], "error": null};
+		} else {
+			let wTeams = res.items.map( item => {
+				return {"code": item.teamKey, "name": item.teamName, "league": item.league,
+						"division": item.division, "useType": item.useType};
+			})
+			return {"status": true, "teams": wTeams, "error": null};
+		}
+	}
+	catch (err) {
+		console.log("/backend/backEvents getTownTeams Try-catch, err");
+		console.log(err);
+		return {"status": false, "teams": null, "error": err};
+	}
+}
+
+export async function insertRecord(pDataset, pRec) {
+	let options = {
+		"consistentRead": true,
+		"suppressAuth": true
+	};
+
+  	try {
+		let insertedRec = await wixData.insert(pDataset, pRec, options)
+  		if	(insertedRec) {
+			return insertedRec._id;
+		} else {
+			console.log(`backend/backEvents insertRecord Insert failed in dataset ${pDataset} `);
+			return false;
+		}
+	  }
+	catch (error) {
+		console.log(`backend/backEvents insertRecord TryCatch in dataset ${pDataset} `);
+		console.log(error);
+		return false;
+	}
+}
+
+export async function saveRecord(pDataset, pRec) {
+
+	try {
+		let options = {
+			"consistentRead": true,
+			"suppressAuth": true
+		};
+		//console.log("saverecord, pRec take away selected, chnMkr");
+		//console.log(pRec);
+		const {selected, chainMkr,...pNewRec } = pRec;
+
+		let savedRec = await wixData.save(pDataset, pNewRec, options);
+  		if	(savedRec) {
+			return {"status": true, "savedRecord": savedRec,  "error": null};
+		} else {
+			console.log(`/backend/backEvents saveRecord Save failed in dataset ${pDataset}: Result=`, savedRec);
+			return {"status": false, "savedRecord": savedRec,  "error": null};
+		}
+	}
+	catch (error) {
+		console.log(`/backend/backEvents saveRecord TryCatch in dataset ${pDataset} + error`);
+		console.log(error);
+		return {"status": false, "savedRecord": null,  "error": error};
+	}
+}
+
+export function bulkSaveRecords(pDataset, pRecs) {
+
+	try {
+		let options = {
+			"consistentRead": true,
+			"suppressAuth": true
+		};
+		const pNewData = pRecs.map(obj => {
+			const { selected, chainMkr, ...rest } = obj;
+			return rest;
+		});
+
+		return wixData.bulkSave(pDataset, pNewData, options)
+			.then( (results) => {
+				//console.log(`backend/backEvents BulkSaveRecordRecord bulk save failed in dataset ${pDataset}: Result=`, results);
+				return {"status": true, "results": results,  "error": null};
+			})
+			.catch( (err) => {
+				console.log(`/backend/backEvents bulkSaveRecord TryCatch in dataset ${pDataset} ` + err);
+				return {"status": false, "results": null,  "error": err};
+			});
+	}
+	catch (error) {
+		console.log(`/backend/backEvents bulksaveRecord TryCatch in dataset ${pDataset} + error`);
+		console.log(error);
+		return {"status": false, "results": null,  "error": error};
+	}
+}
+
+export function deletRecord(pDataset, pRecId) {
+		let options = {
+			"consistentRead": true,
+			"suppressAuth": true
+		};
+	return wixData.remove(pDataset, pRecId,options)
+  		.then( (item) => {
+			return true;
+		})
+  		.catch( (err) => {
+			console.log(`/backend/backEvents deleteRecord TryCatch in dataset ${pDataset} ` + err);
+			return false;
+  		} );
+}
+
+export function bulkDeleteRecords(pSrc, pUserId, pDataset, pRecIds) {
+
+		let options = {
+			"consistentRead": true,
+			"suppressAuth": true
+		};
+
+	if (pRecIds && pRecIds.length > 31){
+		console.log(`/backend/backEvents BulkDeleteRecords from ${pSrc} by user ${pUserId} Too many deletions for dataset ${pDataset}`);
+		return false;
+	}
+	return wixData.bulkRemove(pDataset, pRecIds, options)
+  		.then( (results) => {
+			console.log(`/backend/backEvents BulkDeleteRecords from ${pSrc} by user ${pUserId} bulk delete ok dataset ${pDataset} ${results.removed} deleted `);
+			//console.log(results);
+			return true;
+		})
+		.catch( (err) => {
+			let errorMsg = err;
+			console.log(`/backend/backEvents bulkDeleteRecords  from ${pSrc} by user ${pUserId} TryCatch in dataset ${pDataset}, err `);
+			console.log(err);
+			return false;
+		});
+}
+
+
+//------------------------------------------------------------------------------------------------------
+//
+//	Function:	updateEventStatus	
+//
+//  Inputs:		pId			String	id of event record
+//				pStatus		String	new event status: N = new, not uploaded, A = new & uploaded,
+//													  C = Completed,  D = deleted
+//	Output:		true		boolean	update OK
+//				false		Boolean	update failed
+//
+//------------------------------------------------------------------------------------------------------
+export async function updateEventStatus (pId, pStatus) {
+	try {
+		let options = {
+			"consistentRead": true,
+			"suppressAuth": true
+		};
+
+		let item = await wixData.get("lstEvents", pId)
+		if (item) {
+			item.uploadStatus = pStatus;
+			item.status = pStatus;
+			let res = await wixData.update("lstEvents", item,options);
+			if (res) {
+				return {"status": true, "event": res, "error": null };
+			} else {
+				console.log("/backend/backEvents updateEventStatus: ID " + pId + " not updated")
+				return {"status": false, "event": {}, "error": item };	
+			}
+		} else {
+				console.log("/backend/backEvents updateEventStatus: cant find event in DB");
+				return {"status": false, "event": {}, "error": item };
+		}
+	}
+	catch (error) {
+		console.log(`/backend/backEvents updateEventStatus TryCatch ` + error);
+		return {"status": false, "event": {}, "error": error };
+	}
+}
+
+export async function updateEventStartDate (pId, pToDate, pTime) {
+	try {
+		let options = {
+			"consistentRead": true,
+			"suppressAuth": true
+		};
+		let wToYear = pToDate.year;
+		let wToMonth = pToDate.month;
+    	let wToDate = pToDate.date;
+		let wToJDate = pToDate.jdate;
+
+		let wBits = pTime.split(":");
+		let wHours = parseInt(wBits[0],10);
+		let wMins = parseInt(wBits[1],10);
+
+		let wStartDateTime = new Date(wToYear, wToMonth, wToDate, wHours, wMins,0);
+
+		//console.log("BE gefore set tieme USDT pTo,h,m,wstart", pToDate, wHours, wMins, wStartDateTime);
+		//console.log("backEventsl after set time, pTo, wSD");
+		//console.log(pToDate, wStartDateTime);
+		let item = await wixData.get("lstEvents", pId)
+		if (item) {
+			item.startDate = wStartDateTime;
+			item.requiredYear = wToYear;
+			item.requiredJDate = wToJDate;
+			let res = await wixData.update("lstEvents", item,options);
+			if (res) {
+				//console.log("SaVED event RECORD");
+				//console.log(res);
+				return {"status": true, "event": res, "error": null };
+			} else {
+				console.log("/backend/backEvents updateEventStartDate: ID " + pId + " not updated")
+				return {"status": false, "event": {}, "error": item };	
+			}
+		} else {
+				console.log("/backend/backEvents updateEventStartDate: cant find event in DB");
+				return {"status": false, "event": {}, "error": item };
+		}
+	}
+	catch (error) {
+		console.log(`/backend/backEvents updateEventStartDate TryCatch ` + error);
+		return {"status": false, "event": {}, "error": error };
+	}
+}
+
+export function getCalKey (pEventType, pLeague) {
+
+    let wCal = "";
+    switch (pEventType){
+        case "CN":
+        case "CC":
+        case "CE":
+        case "CG":
+            wCal = "MTBC";
+            break;
+        case "HG":
+            wCal = "HG";
+            break;
+        case "FG":
+        case "FGM":
+        case "FGL":
+        case "FGX":
+            wCal = "FG";
+            break;
+        case "LG":
+			switch (pLeague){
+				case "KLE":
+				case "KLE1":
+				case "KLE2":
+				case "KLE3":
+				case "KL1":
+				case "KL2":
+				case "KL3":
+					wCal = "KL";
+					break;
+				case "KLVE":
+				case "KLVE1":
+				case "KLVE2":
+				case "KLVE3":
+				case "KLVCE":
+				case "KLVCE1":
+				case "KLVCE2":
+				case "KLVCE3":
+				case "KLV1":
+				case "KLV2":
+				case "KLV3":
+					wCal = "KV";
+					break;
+				case "RS":
+				case "RS1":
+					wCal = "RSL";
+					break;
+				case "TV":
+				case "TV1":
+				case "TV2":
+				case "TV3":
+					wCal = "TVL";
+					break;
+				default:
+					wCal = "MTBC";
+					break;
+			}
+            break;
+        default:
+            wCal = "";
+            break;
+    }
+    return wCal;
+}

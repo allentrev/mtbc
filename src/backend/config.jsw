@@ -1,0 +1,106 @@
+//------------------------------------------------------------------------------------------------------
+//
+//	NOTE DO NOT TOUCH THIS CODE
+//
+//  It is code supplied by Wix to handle the Google Calendar interface.
+//
+//------------------------------------------------------------------------------------------------------
+import wixData from 'wix-data';
+
+const {google} = require("googleapis");
+
+const SCOPES = ['https://www.googleapis.com/auth/calendar']; //the url of the api
+
+let options = {
+	"suppressAuth": true //suppress db auth to allow secure db permissions
+};
+
+//-----------------------------Insert Client Config File Into Database----------------------------//
+
+export async function client(account, config) {
+	let response = await wixData.query("config").eq('account', account).eq('title', 'client config').find(options);
+	if (response.items.length === 0) {
+		const toInsert = {
+			"account": account,
+			"title": "client config",
+			"value": config
+		};
+		response = await wixData.insert("config", toInsert);
+		return;
+	}
+
+	let items = response.items;
+	let item = items[0];
+	let updated;
+	const toUpdate = {
+		"_id": item._id,
+		"account": account,
+		"title": "client config",
+		"value": config
+	};
+	return await wixData.update("config", toUpdate, options);
+}
+
+//-----------------------------Get Link For Access Token----------------------------//
+
+export async function getAuthUrl(account) {
+	const oAuth2Client = await createClient(account);
+	const res = oAuth2Client.generateAuthUrl({
+		access_type: 'offline',
+		scope: SCOPES,
+	})
+	return Promise.resolve(res);
+}
+
+export async function createClient(account) {
+	//console.log("confg/cc 1 " + account);
+	let val = await getClientConfig(account);
+	let credentials = JSON.parse(val);
+	const { client_secret, client_id, redirect_uris } = credentials.installed;
+	return new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+}
+
+export async function getClientConfig(account) {
+	//console.log("confg/gcc 1 " + account);
+	try {
+		const response = await wixData.query("config").eq('account', account).eq('title', 'client config').find(options);
+		if(response.items.length === 0) return null;
+		return response.items[0].value;
+	}
+	catch (err) {
+		console.log("/backend/confg getClientConfig catch = " + err);
+	}
+}
+
+//-----------------------------Generate Tokens For Accessing Google Calendar API----------------------------//
+
+export async function generateTokens(account, offlineCode) {
+	const authClient = await createClient(account);
+	return authClient.getToken(offlineCode, async (err, tokenJson) => {
+		if (err) {
+			console.log("/backend/config generateTokens error, err ");
+			console.log(err);
+		} else {
+			let response = await wixData.query("config").eq('account', account).eq('title', 'refresh token').find(options);
+			if (response.items.length === 0) {
+				const toInsert = {
+					"account": account,
+					"title": "refresh token",
+					"value": JSON.stringify(tokenJson)
+				};
+				response = await wixData.insert("config", toInsert);
+				return;
+			}
+
+			let items = response.items;
+			let item = items[0];
+			const toUpdate = {
+				"_id": item._id,
+				"account": account,
+				"title": "refresh token",
+				"value": JSON.stringify(tokenJson)
+			};
+			const ret = await wixData.update("config", toUpdate, options);
+		}
+	})
+}
