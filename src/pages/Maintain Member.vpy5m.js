@@ -66,7 +66,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = (gTest) ? true : authentication.loggedIn();
@@ -1650,35 +1650,40 @@ async function updateLstMembers(pSource, pN, pStatus) {
     let wToday = new Date();
     for (let wMemberId of gSelectLeftStack) {
         let wMember = gLstMembers.find(item => item._id === wMemberId)
-        if (wMember === -1) {
+        if (wMember) {
+            if (pSource === "btnLstPast"){ 
+                wMember.status = pStatus;
+                wMember.dateLeft = wToday;
+            } else {
+                wMember.type = "Test";
+            }
+            wUpdateStack.push(wMember);
+            removeFromSet(pN, wMemberId);
+        } else {
             console.log("/MaintainMember ${pSource} Lst Not found", wMemberId);
         }
-        if (pSource === "btnLstPast"){ 
-            wMember.status = pStatus;
-            wMember.dateLeft = wToday;
-        } else {
-            wMember.type = "Test";
-        }
-        wUpdateStack.push(wMember);
-        removeFromSet(pN, wMemberId);
     }
-    let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
-    let wUpdateArray = wResult.results.updatedItemIds;
-    let wUpdates = wUpdateArray.toString();
-    let wErrors = wResult.results.errors.length;        
-    console.log(`/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`);
-    if (pN === "2") {
-        gSelectLeftStack.length = 0;
-        $w('#chk2').checked = false;
+    if (wUpdateStack && wUpdateStack.length > 0) {
+        let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
+        let wUpdateArray = wResult.results.updatedItemIds;
+        let wUpdates = wUpdateArray.toString();
+        let wErrors = wResult.results.errors.length;        
+        console.log(`/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`);
+        if (pN === "2") {
+            gSelectLeftStack.length = 0;
+            $w('#chk2').checked = false;
+        } else {
+            gSelectRightStack.length = 0;
+            $w('#chk3').checked = false;
+        }
     } else {
-        gSelectRightStack.length = 0;
-        $w('#chk3').checked = false;
+        console.log(`/MaintainMember ${pSource} Bulk Members Save: Nothing to update`);
     }
 }
-HERE
-export async function btnImpNew_click(pType, event)
+
+export async function btnImpNew_click(pType, event) {
 //  These are entries in Import but not in Lst. These are the new members joined this year. 
-//  pType shows which button was pressed: F = Full member, S = Social member
+//  pType shows which button was pressed: F = Full member, S = Soceial member
 
 //  These are LST entries that are in both LST and Import, but not in Wix. This covers old LST 
 //  members who were in the club, but they never registered. 
@@ -1827,6 +1832,7 @@ export async function btnLstUpdate_click_click(event) {
     }
 }
 */
+
 
 export async function btnWixDelete_click(event) {
 //  This is a Wix member that no longer exists in LST (and hence in Import). It is probably the relic
