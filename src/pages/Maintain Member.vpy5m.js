@@ -951,7 +951,11 @@ function hyphenatePhoneNumber(pPhoneNumber) {
 
 // ================================================= FROM USER MAINTENANCE =================================================
 //
-//TODO: Need to add MTBC checks as well now
+//  This section runs tests against the Import, LST and Wix datasets to ensure they are in sync. It is a 2 stage process:
+//  Stage 1 compares Lst against Import, and ensures Lst is in step with Import. Import is the master dataset.
+//  Stage 2 compares Wix against Lst , and ensures they are in step. Lst is taken as the master dataset.  
+//
+
 import { getActiveWixMembers } from 'backend/backMember.jsw';
 import { getFlattenedWixMember } from 'backend/backMember.jsw';
 import { getWixMembersTestData } from 'backend/backMember.jsw';
@@ -1192,6 +1196,7 @@ function loadRptSkipped(pItem, pRec) {
     pItem('#txtSkippedLstValue').text = pRec.lstValue || "";
     pItem('#chkSkippedSelect').checked = false;
 }
+
 async function loadWixMembersData() {
     //console.log("loadWix`MembersData", gTest);
 
@@ -1531,9 +1536,13 @@ export function getSyncSelectedItem(pN, pTarget) {
     return wSelectedItem;
 }
 */
+//-------------------------------------- Stage 1: Lst v Import
+//
 export async function btnLstAmend_click(event) {
-//  This is where we have corresponding entries in each side, but they differ only in name. For Lst-Import reconciliation, 
-//  either the Lst value or the Import value can be amended. For Lst-Wix reconciliation, then the Lst value is immutable.
+//  This is where we have corresponding entries in each side, but they differ only in name.
+//  It ban be entered by pressing btnLstAMend in Stage 1, or by btnWixUpdate in Stage2;
+//  For Lst-Import reconciliation, either the Lst value or the Import value can be amended.
+//  For Lst-Wix reconciliation, then the Lst value is immutable.
 //  So, action is to update the Wix record with the Lst values.
     console.log("Btn Lst Update click", gStage);
     $w('#inpLstAmendWebFirstName').value = wMember2.firstName;
@@ -1560,6 +1569,7 @@ export async function btnLstAmend_click(event) {
 }
 
 export async function btn2AmendSave_click(event) {
+    // Set up from btnLstAmend
     // Update the Lst value with the Import values
     console.log("Btn Lst Amend Save click", gStage);
     if (gStage === "Lst-Import"){
@@ -1584,6 +1594,7 @@ export async function btn2AmendSave_click(event) {
 }
 
 export async function btn3AmendSave_click(event) {
+    // Set up from btnLstAmend
     // Update the Wix value with the ImportLst values
     console.log("Btn Imp Amend Save click", gStage);
     let wTargetMember = getSyncTargetItem("3",wMember3._id);
@@ -1619,9 +1630,19 @@ export async function btn3AmendSave_click(event) {
 }
 
 export async function btnLstPast_click(event) {
+    // There is an entry in Lst but not in Import. This is the case for members who have left the club or who
+    // have passed away.
     $w('#btnLstPast').disable();
     await updateLstMembers("btnLstPast", "2", "Past");
     $w('#btnLstPast').enable();
+}
+
+
+export async function btnLstTest_click(event) {
+    // There is an entry in Lst but not in Import. This is the case for decvelopment members used in local testing
+    $w('#btnLstTest').disable();
+    await updateLstMembers("btnLstTest", "2", "");
+    $w('#btnLstTest').disable();
 }
 
 async function updateLstMembers(pSource, pN, pStatus) {
@@ -1654,14 +1675,17 @@ async function updateLstMembers(pSource, pN, pStatus) {
         $w('#chk3').checked = false;
     }
 }
+HERE
+export async function btnImpNew_click(pType, event)
+//  These are entries in Import but not in Lst. These are the new members joined this year. 
+//  pType shows which button was pressed: F = Full member, S = Social member
 
-export async function btnLstTest_click(event) {
-    $w('#btnLstTest').disable();
-    await updateLstMembers("btnLstTest", "2", "");
-    $w('#btnLstTest').disable();
-}
-
-export async function btnImpNew_click(pType, event) {
+//  These are LST entries that are in both LST and Import, but not in Wix. This covers old LST 
+//  members who were in the club, but they never registered. 
+//
+//  So, the LST entry will beturned into a Username based LST account, and a Wix record set up for them
+//  by registering them. Will also need to generate a Login Token for that user, and create a new MTBC
+//  record for the user.
     console.log("Btn Imp New click", gStage, pType);
     $w('#lblErrMsg').text = "";
     let wErrMsg = "";
@@ -1775,7 +1799,8 @@ export async function btnLstRegister_click(event) {
     gSelectLeftStack.length = 0;
     $w(`#chk${pN}`).checked = false;
 }
-
+/**
+ * deprectated - replaced by btnLstAmend + btnNAmendSave etc
 export async function btnLstUpdate_click_click(event) {
 //  This is where we have corresponding entries in each side, but they differ only in name. Now, by 
 //  this stage, the LST Names have been reconcilved with Import, therefore, they must be assumed to be
@@ -1801,6 +1826,7 @@ export async function btnLstUpdate_click_click(event) {
         $w('#btn3AmendSave').label = "Update Wix Data";
     }
 }
+*/
 
 export async function btnWixDelete_click(event) {
 //  This is a Wix member that no longer exists in LST (and hence in Import). It is probably the relic
@@ -1813,12 +1839,14 @@ export async function btnWixDelete_click(event) {
     let wToday = new Date();
     for (let wMemberId of gSelectRightStack) {
         let wMember = gWixMembers.find(item => item._id === wMemberId)
-        if (wMember === -1) {
+        if (wMember) {
+            console.log("Wix Delete ", wMember);
+            // DELETE WIX MEMBER
+            wUpdateStack.push(wMember);
+            removeFromSet(pN, wMemberId);            
+        } else {
             console.log("/MaintainMember btnWixDelete Lst Not found", wMemberId);
         }
-        console.log("Wix Delete ", wMember);
-        wUpdateStack.push(wMember);
-        removeFromSet(pN, wMemberId);
     }
     //let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
     //let wUpdateArray = wResult.results.updatedItemIds;
