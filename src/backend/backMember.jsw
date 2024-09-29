@@ -617,8 +617,9 @@ export async function createMember(pMember){
   //  Then, in parrallel:
   //  a)  update Wix Member?
   //  b)  assign roles
-  //  c)  create LST Member 
-  //  d)  send message to member
+  //  c)  create LST Member
+  //  d)  create MTBC member
+  //  e)  send message to member
   let wWixRec = {
     firstName: pMember.firstName,
     lastName: pMember.surname,

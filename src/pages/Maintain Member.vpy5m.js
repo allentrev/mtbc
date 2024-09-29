@@ -1685,12 +1685,6 @@ export async function btnImpNew_click(pType, event) {
 //  These are entries in Import but not in Lst. These are the new members joined this year. 
 //  pType shows which button was pressed: F = Full member, S = Soceial member
 
-//  These are LST entries that are in both LST and Import, but not in Wix. This covers old LST 
-//  members who were in the club, but they never registered. 
-//
-//  So, the LST entry will beturned into a Username based LST account, and a Wix record set up for them
-//  by registering them. Will also need to generate a Login Token for that user, and create a new MTBC
-//  record for the user.
     console.log("Btn Imp New click", gStage, pType);
     $w('#lblErrMsg').text = "";
     let wErrMsg = "";
@@ -1698,21 +1692,23 @@ export async function btnImpNew_click(pType, event) {
     let wItemIds = [...gSelectRightStack];
     for (let wItemId of wItemIds){
         let wImportMember = gImpMembers.find(item => item._id === wItemId);
-        if (wImportMember === -1) {
-            console.log("/MaintainMember btnImpNew Imp Not found", wItemId);
-        }
-        wImportMember.loginEmail = setMTBCUsername();
-        wImportMember.type = wType;
-        let wResult = await createNewMember(wImportMember);
-        if (wResult && wResult.status){
-            removeFromSet("3", wMember3._id);
-            $w('#lblMTBCCount').text = updateMTBCUsernameCount();
-        } else {
-            if (wErrMsg.length === 0){
-                wErrMsg = wResult.error;
+        if (wImportMember) {
+            wImportMember.loginEmail = setMTBCUsername();
+            wImportMember.type = wType;
+            let wResult = await createNewMember(wImportMember);
+            if (wResult && wResult.status){
+                removeFromSet("3", wMember3._id);
+                $w('#lblMTBCCount').text = updateMTBCUsernameCount();
             } else {
-                wErrMsg = wErrMsg + "\n" + wResult.error;
+                // add error result error message to wErrMsg string
+                if (wErrMsg.length === 0){
+                    wErrMsg = wResult.error;
+                } else {
+                    wErrMsg = wErrMsg + "\n" + wResult.error;
+                }
             }
+        } else { 
+            console.log("/MaintainMember btnImpNew Member Not found", wItemId);
         }
     }
     if (wErrMsg.length > 1){
@@ -1757,7 +1753,7 @@ async function createNewMember(pMember){
         wMember.status = STATUS.PENDING;
         wMember._id = undefined;
         wMember.photo = wPhoto;
-        console.log(wMember);
+        //console.log(wMember);
         wResult = await createMember(wMember);
         if (wResult  && wResult.status){
             let wSavedRecord = wResult.savedRecord;
@@ -1783,26 +1779,38 @@ export async function btnLstRegister_click(event) {
 //  So, the LST entry will beturned into a Username based LST account, and a Wix record set up for them
 //  by registering them. Will also need to generate a Login Token for that user, and create a new MTBC
 //  record for the user.
+//  1) Create new mmber (Lst, Wix, MTBC)
+//  2) Delete existing Lst member
+
     const pN = "2";
     let wUpdateStack = [];
     let wToday = new Date();
+    $w('#lblErrMsg').text = "";
+    let wErrMsg = "";
     for (let wMemberId of gSelectLeftStack) {
-        let wMember = gLstMembers.find(item => item._id === wMemberId)
-        console.log("Wix Register ", wMember);
-        if (wMember === -1) {
-            console.log("/MaintainMember btnLstRegister Lst Not found", wMemberId);
+        let wLstMember = gLstMembers.find(item => item._id === wMemberId)
+        if (wLstMember) {
+            wLstMember.loginEmail = setMTBCUsername();
+            wLstMember._id = undefined;
+            let wResult = await createNewMember(wLstMember);
+            if (wResult && wResult.status){
+                removeFromSet("2", wMember2._id);
+                $w('#lblMTBCCount').text = updateMTBCUsernameCount();
+            } else {
+                // add error result error message to wErrMsg string
+                if (wErrMsg.length === 0){
+                    wErrMsg = wResult.error;
+                } else {
+                    wErrMsg = wErrMsg + "\n" + wResult.error;
+                }
+            }
+        } else { 
+            console.log("/MaintainMember btnLstRegister Member Not found", wMemberId);
         }
-
-        wUpdateStack.push(wMember);
-        removeFromSet(pN, wMemberId);
     }
-    //let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
-    //let wUpdateArray = wResult.results.updatedItemIds;
-    //let wUpdates = wUpdateArray.toString();
-    //let wErrors = wResult.results.errors.length;        
-    //console.log(`/MaintainMember btnLstRegister} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`);
-    gSelectLeftStack.length = 0;
-    $w(`#chk${pN}`).checked = false;
+    if (wErrMsg.length > 1){
+        $w('#lblErrMsg').text = wErrMsg;
+    }
 }
 /**
  * deprectated - replaced by btnLstAmend + btnNAmendSave etc
