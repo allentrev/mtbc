@@ -8,6 +8,7 @@ import { saveRecord } from 'backend/backEvents.jsw';
 import { saveImportMemberRecord } from 'backend/backMember.jsw';
 
 import { createMember } from 'backend/backMember.jsw';
+import { deleteLstMember } from 'backend/backMember.jsw';
 import { getAllMembers2 } from 'backend/backMember.jsw';
 import { getAllImportMembers } from 'backend/backMember.jsw';
 import { isUnique } from 'backend/backMember.jsw';
@@ -66,7 +67,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = true;
+let gTest = false;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = (gTest) ? true : authentication.loggedIn();
@@ -970,7 +971,7 @@ let gMsgCount = 0;
 let gWixMembers = [];
 let gLstMembers = [];
 let gImpMembers = [];
-let gStage = "Lst-Wix";
+let gStage = "Lst-Import";
 
 let gMessages = [];
 
@@ -1603,7 +1604,7 @@ export async function btn3AmendSave_click(event) {
         wTargetMember.firstName = $w('#inpLstAmendWebFirstName').value;
         wTargetMember.surname =  $w('#inpLstAmendWebSurname').value;
         let wResult = await saveImportMemberRecord(wTargetMember);
-        console.log("SEND EMAIL TO ANNE");
+        console.log("SEND EMAIL TO ANNE", wTargetMember.firstName + " " + wTargetMember.surname);
         if (wResult  && wResult.status){
             removeFromSet("2", wMember2._id);
             removeFromSet("3", wMember3._id);
@@ -1617,12 +1618,11 @@ export async function btn3AmendSave_click(event) {
         let wFirstName = $w('#inpLstAmendWebFirstName').value.trim();
         let wSurname = $w('#inpLstAmendWebSurname').value.trim();
         wTargetMember.firstName = wFirstName;
-        wTargetMember.lastname =  wSurname;
-        wTargetMember.name = wFirstName + " " + wSurname;
-        wTargetMember.key = wFirstName + " " + wSurname;
-        console.log(wTargetMember);
-        //removeFromSet("2", wMember2._id);
-        //removeFromSet("3", wMember3._id);
+        wTargetMember.lastName =  wSurname;
+        wTargetMember._id = wMember3._id;
+        let wResult = await updateWixMemberNames(wTargetMember);
+        removeFromSet("2", wMember2._id);
+        removeFromSet("3", wMember3._id);
         $w('#boxLstAmend').collapse();
     } else {
         console.log("MaintainMember btn3AmendSave wrong state", gStage);
@@ -1791,10 +1791,12 @@ export async function btnLstRegister_click(event) {
         let wLstMember = gLstMembers.find(item => item._id === wMemberId)
         if (wLstMember) {
             wLstMember.loginEmail = setMTBCUsername();
+            let wOldLstId = wLstMember._id;
             wLstMember._id = undefined;
             let wResult = await createNewMember(wLstMember);
             if (wResult && wResult.status){
                 removeFromSet("2", wMember2._id);
+                await deleteLstMember(wOldLstId);
                 $w('#lblMTBCCount').text = updateMTBCUsernameCount();
             } else {
                 // add error result error message to wErrMsg string
@@ -1812,35 +1814,6 @@ export async function btnLstRegister_click(event) {
         $w('#lblErrMsg').text = wErrMsg;
     }
 }
-/**
- * deprectated - replaced by btnLstAmend + btnNAmendSave etc
-export async function btnLstUpdate_click_click(event) {
-//  This is where we have corresponding entries in each side, but they differ only in name. Now, by 
-//  this stage, the LST Names have been reconcilved with Import, therefore, they must be assumed to be
-//  correct. So, action is to update the Wix record with the Lst values.
-    console.log("Btn Lst Update click", gStage);
-    $w('#inpLstAmendWebFirstName').value = wMember2.firstName;
-    $w('#inpLstAmendWebSurname').value = wMember2.surname;
-    $w('#inpLstAmendMasterFirstName').value = wMember3.firstName;
-    $w('#inpLstAmendMasterSurname').value = wMember3.surname;
-    if (gStage === "Lst-Import"){
-        $w('#btn2AmendSave').enable();
-        $w('#boxLstAmend').expand();
-        $w('#txt2Caption').text = "Web data";
-        $w('#txt3Caption').text = "Master data";
-        $w('#btn2AmendSave').label = "Update Web Data";
-        $w('#btn3AmendSave').label = "Update Import Data";
-    } else {
-        $w('#btn2AmendSave').enable();
-        $w('#boxLstAmend').expand();
-        $w('#txt2Caption').text = "Lst data";
-        $w('#txt3Caption').text = "Wix data";
-        $w('#btn2AmendSave').disable();
-        $w('#btn3AmendSave').label = "Update Wix Data";
-    }
-}
-*/
-
 
 export async function btnWixDelete_click(event) {
 //  This is a Wix member that no longer exists in LST (and hence in Import). It is probably the relic
@@ -1849,24 +1822,15 @@ export async function btnWixDelete_click(event) {
 //
     console.log("btnWixDelete", gStage)
     const pN = "3";
-    let wUpdateStack = [];
-    let wToday = new Date();
     for (let wMemberId of gSelectRightStack) {
         let wMember = gWixMembers.find(item => item._id === wMemberId)
         if (wMember) {
-            console.log("Wix Delete ", wMember);
-            // DELETE WIX MEMBER
-            wUpdateStack.push(wMember);
+            await deleteWixMembers([wMemberId]);
             removeFromSet(pN, wMemberId);            
         } else {
-            console.log("/MaintainMember btnWixDelete Lst Not found", wMemberId);
+            console.log("/MaintainMember btnWixDelete Wix member Not found", wMemberId);
         }
     }
-    //let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
-    //let wUpdateArray = wResult.results.updatedItemIds;
-    //let wUpdates = wUpdateArray.toString();
-    //let wErrors = wResult.results.errors.length;        
-    //console.log(`/MaintainMember btnWixDelete Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`);
     gSelectRightStack.length = 0;
     $w(`#chk${pN}`).checked = false;
 }
@@ -2136,6 +2100,7 @@ export function btnSyncClose_click(event) {
 *	 @param {$w.MouseEvent} event
 */
 import wixData from 'wix-data';
+import { deleteWixMembers } from '../backend/backMember.jsw';
 
 export async function btnAdmin_click(event) {
     //await loadWixMembersData();

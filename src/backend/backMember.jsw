@@ -307,18 +307,6 @@ export async function readMember(pId){
 
 export async function updateWixMember(pRec){
 
-	/**
-   * this was the old way of updating custom fields. Here you could have any number f custom fields
-   * 
-  var keys = ["custom.gender", "custom.contactpref"];
-	var values = [{"name": "gender", "value": `${pRec.contactDetails.gender}`}, {"name": "contactpref", "value": `${pRec.contactDetails.contactpref}`}];
-	var obj = {};
-
-	for (var i = 0; i < keys.length; i++) {
-    	obj[keys[i]] = values[i];	
-	}
-  */
-
   let wCustomFields = {         
           "custom.gender": {
             "name": "gender",
@@ -351,6 +339,26 @@ export async function updateWixMember(pRec){
           return false;
     	})
 }
+
+export async function updateWixMemberNames(pRec){
+
+  let member = {
+		contactDetails: {
+			"firstName": pRec.firstName,
+			"lastName": pRec.lastName,
+		}
+	}
+  return members.updateMember(pRec._id, member)
+    	.then((member) => {
+        console.error("/backend/backMember UpdateWixMemberNames update ", pRec.firstName + " " + pRec.lastName);
+        return true;
+    	})
+    	.catch((error) => {
+      		console.error("/backend/backMember UpdateWixMemberNamesr catch error", error);
+          return false;
+    	})
+}
+
 /**
  * UNFORTUNATELY THIS REQUIRES QA BETA LIBRARY THATS NOT AVAILABLE TO ME AT THIS TIME
  * 
@@ -401,7 +409,8 @@ export async function deleteWixMembers(pIds){
       console.log(`/backend/backMember deleteWWixMembers deleted wixMember ${wId}`);
     }
     return true;
-  } catch (error) {
+  } 
+  catch (error) {
     console.log("/backEnd/bckMember deleteWIxMembers Try-catch error, err");
     console.log(error);
     return false;
@@ -823,6 +832,140 @@ export async function collateMemberDetails(pTest, pMember){
 //------------------------------------- LST MEMBER ---------------------------------------------------------
 //
 
+export function createLstMember(pRec) {
+  const toInsert = {
+          "username":     pRec.username,
+          "loginEmail":   (pRec.loginEmail) ? pRec.loginEmail.toLowerCase() : null,
+          "surname":      pRec.surname,
+          "firstName":    pRec.firstName,
+          "gender":       pRec.gender,
+          "type":         pRec.type,
+          "status":       pRec.status,
+          "dateLeft":     pRec.dateLeft,
+          "allowshare":   pRec.allowshare || "Y",
+          "contactpref":  pRec.contactpref || "E",
+          "contactEmail": (pRec.contactEmail) ? pRec.contactEmail.toLowerCase() : null,
+          "altEmail":     (pRec.altEmail) ? pRec.altEmail.toLowerCase() : null,
+          "homePhone":    pRec.homePhone,
+          "mobilePhone":  pRec.mobilePhone,
+          "addrLine1":     pRec.addrLine1,	  
+          "addrLine2":     pRec.addrLine2,
+          "town":         pRec.town,
+          "postCode":     pRec.postCode,
+          "locker":       pRec.locker || [],
+          "photo":        pRec.photo,  
+          "wixId":        pRec.wixId
+  };
+  
+    return wixData.insert("lstMembers", toInsert)
+        .then( (lstMember) => {
+          console.log(`/backend/backMember createLstMember Created lst user ${pRec.firstName} ${pRec.surname}`)
+          return [true, lstMember];
+        })
+        .catch( (err) => {
+          console.log("/Backend/backMember createLstMember catch err");
+           return [false, err.message];
+        });
+  }
+  
+//------------------------------------------------------------------------------------------------------
+//
+//	Function:	This gets the lstMember record based on the Wix Userid
+//
+//  Inputs:		i1		Object	note
+//	Output:		o2		String	note
+//				false	Boolean	insert failed
+//
+//------------------------------------------------------------------------------------------------------
+export async function findLstMemberByWixId(pUserId) {
+	// this replicates the find-MemberProfile function, but using the read-all lstMembers 
+	// collection instead of the proper members collection
+	//console.log("Inside find-MemberProfile async" + pUserId);
+  	try {
+		const results = await wixData.query("lstMembers")
+    		.eq("wixId", pUserId)
+    		.find();
+		if (results.items.length ===  0) {
+			return [false, null];
+		} else {
+			return [true,results.items[0]];
+		}
+	}
+	catch (error) {
+		console.log("/backend/backMember findLstMemberByWixId TryCatch [" + pUserId + "], ");
+    console.log(error);
+    return [false, error];
+	}
+}
+
+export async function findLstMemberByLoginEmail(pLoginEmail) {
+  try {
+		const results = await wixData.query("lstMembers")
+    		.eq("loginEmail", pLoginEmail.toLowerCase())
+    		.find();
+		if (results.items.length ===  1) {
+			return [true,results.items[0]];
+		} else {
+      //console.log(results);
+			return [false,{}];
+		}
+	}
+	catch (error) {
+		console.log("/backend/backMember findLstMemberByEmail TryCatch for login = " + pLoginEmail);
+    console.log(error);
+		return [false,{}];
+  }
+}
+
+export async function findLstMemberByUsername(pUsername) {
+  try {
+		const results = await wixData.query("lstMembers")
+    		.eq("username", pUsername)
+    		.find();
+		if (results.items.length ===  1) {
+			return [true, results.items[0]];
+		} else {
+			return [false, {}];
+		}
+	}
+	catch (error) {
+		console.log("/backend/backMember findLstMemberByUsername TryCatch for login = " + pUsername);
+    console.log(error);
+		return [false, {}];
+	}
+}
+
+
+//------------------------------------------------------------------------------------------------------
+//
+//	Function:	This gets the lstMember record based on the Wix Userid
+//
+//  Inputs:		i1		Object	note
+//	Output:		o2		String	note
+//				false	Boolean	insert failed
+//
+//------------------------------------------------------------------------------------------------------
+export async function findLstMember(pUserId) {
+	// this replicates the find-MemberProfile function, but using the read-all lstMembers 
+	// collection instead of the proper members collection
+	//console.log("Inside find-MemberProfile async" + pUserId);
+  	try {
+		const results = await wixData.query("lstMembers")
+    		.eq("_id", pUserId)
+    		.find();
+		if (results.items.length ===  0) {
+			return [false, {}];
+		} else {
+			return {"status": true, "member": results.items[0], "error": null};
+		}
+	}
+	catch (error) {
+		console.log("/backend/backMember findLstMember TryCatch ");
+    console.log(error);
+			return {"status": false, "member": {}, "error": error};
+	}
+}
+
 export async function getAllMembers2() {
   try{
     let res = await wixData.query('lstMembers')
@@ -876,6 +1019,143 @@ export async function getAllMembers2() {
   }
 }
 
+export function insertMember(pRec) {
+
+  const toInsert = {
+    "surname": pRec.surname,
+    "firstName": pRec.firstName,
+    "loginEmail": (pRec.email) ? pRec.email.toLowerCase() : null,
+    "type": pRec.pType
+  };
+
+	wixData.insert("lstMembers", toInsert)
+	.then( (member) => {
+		//console.log(member);
+		let wId = member._id;
+		return wId;
+	})
+	.catch( (error) => {
+		console.log("backend/backMember insertMember Catch + error");
+		console.log(error);
+		return false;
+	})
+}
+
+export function updateLstMemberStatus(pId, pStatus) {
+	
+  let wOptions = {
+    "suppressAuth": true,
+    "suppressHooks": true,
+    "consistentRead": true
+  }
+
+//console.log("updateLstMember", pRec.id);
+	return wixData.get("lstMembers", pId)
+  		.then( (item) => {
+  		  item.status = pStatus;
+    	  wixData.update("lstMembers", item, wOptions);
+	      return true;
+		  })
+  		.catch( (err) => {
+    	  console.log("/backend/backMember updateLstMember catch err");
+        console.log(err);
+			  return false;
+  		});
+}
+
+export function updateLstMember(pRec) {
+	//console.log("updateLstMember", pRec.id);
+  try {
+      let wOptions = {
+      "suppressAuth": true,
+      "suppressHooks": true,
+      "consistentRead": true
+    }
+      let wId = pRec.id;
+    if (wId === null || wId === undefined) {
+      wId = pRec._id;
+     }
+    return wixData.get("lstMembers", wId)
+      .then( (item) => {
+        item.firstName = pRec.firstName;
+        item.surname = pRec.surname;
+        item.gender = pRec.gender;
+        item.locker = pRec.locker;
+        item.username = pRec.username;
+        item.photo = pRec.photo;
+        item.addrLine1 = pRec.addrLine1;
+        item.addrLine2 = pRec.addrLine2;
+        item.town = pRec.town;
+        item.postCode = pRec.postCode;
+        item.loginEmil = pRec.loginEmail;
+        item.type = pRec.type;
+        item.status = pRec.status;
+        item.dateLeft = (pRec.dateLeft instanceof Date && !isNaN(pRec.dateLeft)) ? pRec.dateLeft : null;
+        item.homePhone = pRec.homePhone;
+        item.mobilePhone = pRec.mobilePhone;	  
+        item.wixId = pRec.wixId;
+        item.contactEmail = (pRec.contactEmail) ? pRec.contactEmail.toLowerCase() : null;
+        item.altEmail = (pRec.altEmail) ? pRec.altEmail.toLowerCase() : null;
+        item.contactpref = pRec.contactpref;
+        item.allowshare = pRec.allowshare;
+        wixData.update("lstMembers", item, wOptions);
+        return true;
+      })
+      .catch( (err) => {
+        console.log("/backend/backMember updateLstMember catch err");
+        console.log(err);
+        return false;
+      });
+  }
+  catch (err) {
+    console.log("/backend/backMember updateLstMember try-catch err");
+    console.log(err);
+    return false;
+  }
+}
+
+export function deleteLstMember(pId) {
+ 
+  let wOptions = {
+    "suppressAuth": true,
+    "suppressHooks": true,
+    "consistentRead": true
+  }
+
+  return wixData.remove("lstMembers", pId, wOptions)
+  		.then( (item) => {
+  			console.log("/backend/backMember deleteLstMember deleted member", pId);
+			  return true;
+		  })
+  		.catch( (err) => {
+  			console.log("/backend/backMember deleteLstMember catch err");
+        console.log(err);
+	  		return false;
+  		});
+}
+
+
+// Only used in custom processing of member records in Maintain Member
+export function bulkSaveLstMember(pSet) {
+
+  let options = {
+    "consistentRead": true,
+    "suppressAuth": true
+  };
+
+return wixData.bulkSave("lstMembers", pSet, options)
+    .then( (results) => {
+    return results;
+  })
+  .catch( (err) => {
+    console.log("/backend/backMember bulkSaveLstMember Catch  + error");
+    console.log(err);
+    return false;
+  });
+}
+
+//------------------------------------- Import MEMBER ---------------------------------------------------------
+//
 export async function getAllImportMembers() {
   try{
     let res = await wixData.query('lstMemberImport')
@@ -980,161 +1260,8 @@ export async function saveImportMemberRecord(pRec) {
 		return {"status": false, "savedRecord": null,  "error": error};
 	}
 }
-
-//------------------------------------------------------------------------------------------------------
+//------------------------------------- MTBC MEMBER ---------------------------------------------------------
 //
-//	Function:	This gets the lstMember record based on the Wix Userid
-//
-//  Inputs:		i1		Object	note
-//	Output:		o2		String	note
-//				false	Boolean	insert failed
-//
-//------------------------------------------------------------------------------------------------------
-export async function findLstMemberByWixId(pUserId) {
-	// this replicates the find-MemberProfile function, but using the read-all lstMembers 
-	// collection instead of the proper members collection
-	//console.log("Inside find-MemberProfile async" + pUserId);
-  	try {
-		const results = await wixData.query("lstMembers")
-    		.eq("wixId", pUserId)
-    		.find();
-		if (results.items.length ===  0) {
-			return [false, null];
-		} else {
-			return [true,results.items[0]];
-		}
-	}
-	catch (error) {
-		console.log("/backend/backMember findLstMemberByWixId TryCatch [" + pUserId + "], ");
-    console.log(error);
-    return [false, error];
-	}
-}
-
-export async function findLstMemberByLoginEmail(pLoginEmail) {
-  try {
-		const results = await wixData.query("lstMembers")
-    		.eq("loginEmail", pLoginEmail.toLowerCase())
-    		.find();
-		if (results.items.length ===  1) {
-			return [true,results.items[0]];
-		} else {
-      //console.log(results);
-			return [false,{}];
-		}
-	}
-	catch (error) {
-		console.log("/backend/backMember findLstMemberByEmail TryCatch for login = " + pLoginEmail);
-    console.log(error);
-		return [false,{}];
-  }
-}
-
-export async function findLstMemberByUsername(pUsername) {
-  try {
-		const results = await wixData.query("lstMembers")
-    		.eq("username", pUsername)
-    		.find();
-		if (results.items.length ===  1) {
-			return [true, results.items[0]];
-		} else {
-			return [false, {}];
-		}
-	}
-	catch (error) {
-		console.log("/backend/backMember findLstMemberByUsername TryCatch for login = " + pUsername);
-    console.log(error);
-		return [false, {}];
-	}
-}
-
-export function insertMember(pRec) {
-
-  const toInsert = {
-    "surname": pRec.surname,
-    "firstName": pRec.firstName,
-    "loginEmail": (pRec.email) ? pRec.email.toLowerCase() : null,
-    "type": pRec.pType
-  };
-
-	wixData.insert("lstMembers", toInsert)
-	.then( (member) => {
-		//console.log(member);
-		let wId = member._id;
-		return wId;
-	})
-	.catch( (error) => {
-		console.log("backend/backMember insertMember Catch + error");
-		console.log(error);
-		return false;
-	})
-}
-
-export function createLstMember(pRec) {
-const toInsert = {
-        "username":     pRec.username,
-        "loginEmail":   (pRec.loginEmail) ? pRec.loginEmail.toLowerCase() : null,
-        "surname":      pRec.surname,
-        "firstName":    pRec.firstName,
-        "gender":       pRec.gender,
-        "type":         pRec.type,
-        "status":       pRec.status,
-        "dateLeft":     pRec.dateLeft,
-        "allowshare":   pRec.allowshare || "Y",
-        "contactpref":  pRec.contactpref || "E",
-        "contactEmail": (pRec.contactEmail) ? pRec.contactEmail.toLowerCase() : null,
-        "altEmail":     (pRec.altEmail) ? pRec.altEmail.toLowerCase() : null,
-        "homePhone":    pRec.homePhone,
-        "mobilePhone":  pRec.mobilePhone,
-        "addrLine1":     pRec.addrLine1,	  
-        "addrLine2":     pRec.addrLine2,
-        "town":         pRec.town,
-        "postCode":     pRec.postCode,
-        "locker":       pRec.locker || [],
-        "photo":        pRec.photo,  
-        "wixId":        pRec.wixId
-};
-
-	return wixData.insert("lstMembers", toInsert)
-  	  .then( (lstMember) => {
-        console.log(`/backend/backMember createLstMember Created lst user ${pRec.firstName} ${pRec.surname}`)
-		    return [true, lstMember];
-		  })
-  		.catch( (err) => {
-    	  console.log("/Backend/backMember createLstMember catch err");
-		 	  return [false, err.message];
-  		});
-}
-
-//------------------------------------------------------------------------------------------------------
-//
-//	Function:	This gets the lstMember record based on the Wix Userid
-//
-//  Inputs:		i1		Object	note
-//	Output:		o2		String	note
-//				false	Boolean	insert failed
-//
-//------------------------------------------------------------------------------------------------------
-export async function findLstMember(pUserId) {
-	// this replicates the find-MemberProfile function, but using the read-all lstMembers 
-	// collection instead of the proper members collection
-	//console.log("Inside find-MemberProfile async" + pUserId);
-  	try {
-		const results = await wixData.query("lstMembers")
-    		.eq("_id", pUserId)
-    		.find();
-		if (results.items.length ===  0) {
-			return [false, {}];
-		} else {
-			return {"status": true, "member": results.items[0], "error": null};
-		}
-	}
-	catch (error) {
-		console.log("/backend/backMember findLstMember TryCatch ");
-    console.log(error);
-			return {"status": false, "member": {}, "error": error};
-	}
-}
 
 export function createMTBCMember(pRec) {
   
@@ -1282,61 +1409,6 @@ export async function doMTBCAuthenticate(pLstId, pHashedPassword){
   })
 }
 
-export function updateLstMember(pRec) {
-	//console.log("updateLstMember", pRec.id);
-  try {
-      let wOptions = {
-      "suppressAuth": true,
-      "suppressHooks": true,
-      "consistentRead": true
-    }
-      let wId = pRec.id;
-    if (wId === null || wId === undefined) {
-      wId = pRec._id;
-     }
-    return wixData.get("lstMembers", wId)
-      .then( (item) => {
-        item.firstName = pRec.firstName;
-        item.surname = pRec.surname;
-        item.gender = pRec.gender;
-        item.locker = pRec.locker;
-        item.username = pRec.username;
-        item.photo = pRec.photo;
-        item.addrLine1 = pRec.addrLine1;
-        item.addrLine2 = pRec.addrLine2;
-        item.town = pRec.town;
-        item.postCode = pRec.postCode;
-        item.loginEmil = pRec.loginEmail;
-        item.type = pRec.type;
-        item.status = pRec.status;
-        item.dateLeft = (pRec.dateLeft instanceof Date && !isNaN(pRec.dateLeft)) ? pRec.dateLeft : null;
-        item.homePhone = pRec.homePhone;
-        item.mobilePhone = pRec.mobilePhone;	  
-        item.wixId = pRec.wixId;
-        item.contactEmail = (pRec.contactEmail) ? pRec.contactEmail.toLowerCase() : null;
-        item.altEmail = (pRec.altEmail) ? pRec.altEmail.toLowerCase() : null;
-        item.contactpref = pRec.contactpref;
-        item.allowshare = pRec.allowshare;
-        wixData.update("lstMembers", item, wOptions);
-        return true;
-      })
-      .catch( (err) => {
-        console.log("/backend/backMember updateLstMember catch err");
-        console.log(err);
-        return false;
-      });
-  }
-  catch (err) {
-    console.log("/backend/backMember updateLstMember try-catch err");
-    console.log(err);
-    return false;
-  }
-}
-
-export function test4(pValue) {
-  return Number.isFinite(pValue);
-}
-
 export function updateMTBCMember(pRec) {
 
   let wOptions = {
@@ -1358,47 +1430,6 @@ export function updateMTBCMember(pRec) {
         console.log(err);
 			  return false;
   		});
-}
-
-export function updateLstMemberStatus(pId, pStatus) {
-	
-  let wOptions = {
-    "suppressAuth": true,
-    "suppressHooks": true,
-    "consistentRead": true
-  }
-
-//console.log("updateLstMember", pRec.id);
-	return wixData.get("lstMembers", pId)
-  		.then( (item) => {
-  		  item.status = pStatus;
-    	  wixData.update("lstMembers", item, wOptions);
-	      return true;
-		  })
-  		.catch( (err) => {
-    	  console.log("/backend/backMember updateLstMember catch err");
-        console.log(err);
-			  return false;
-  		});
-}
-
-// Only used in custom processing of member records in Maintain Member
-export function bulkSaveLstMember(pSet) {
-
-		let options = {
-			"consistentRead": true,
-			"suppressAuth": true
-		};
-
-	return wixData.bulkSave("lstMembers", pSet, options)
-  		.then( (results) => {
-			return results;
-		})
-		.catch( (err) => {
-			console.log("/backend/backMember bulkSaveLstMember Catch  + error");
-      console.log(err);
-			return false;
-		});
 }
 //------------------------------------- Other ---------------------------------------------------------
 //
