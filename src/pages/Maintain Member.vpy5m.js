@@ -1653,7 +1653,7 @@ export async function btnLstTest_click(event) {
     // There is an entry in Lst but not in Import. This is the case for decvelopment members used in local testing
     $w('#btnLstTest').disable();
     await updateLstMembers("btnLstTest", "2", "");
-    $w('#btnLstTest').disable();
+    $w('#btnLstTest').enable();
 }
 
 async function updateLstMembers(pSource, pN, pStatus) {
@@ -1680,7 +1680,7 @@ async function updateLstMembers(pSource, pN, pStatus) {
         let wUpdateArray = wResult.results.updatedItemIds;
         let wUpdates = wUpdateArray.toString();
         let wErrors = wResult.results.errors.length;        
-        console.log(`/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`);
+        console.log(`/MaintainMember ${pSource} Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`);
         if (pN === "2") {
             gSelectLeftStack.length = 0;
             $w('#chk2').checked = false;
