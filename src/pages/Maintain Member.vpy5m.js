@@ -1689,7 +1689,7 @@ async function updateLstMembers(pSource, pN, pStatus) {
             gSelectRightStack.length = 0;
             $w('#chk3').checked = false;
         }
-        showMsg(1,0,`${pSource} Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`)
+        showMsg(1,0,`${pSource} Bulk Members Save: ${String(wUpdatseArray.length)} updated, ${wErrors} errors`)
     } else {
         console.log(`/MaintainMember ${pSource} Bulk Members Save: Nothing to update`);
         showMsg(1,0,"Nothing to update");
@@ -2378,8 +2378,8 @@ async function processRecord(pRec) {
     console.log(wHome2, wMobile2, wLong);
 }
 
-export function shiowWait(pStage){
-    let wImgName = `#ImgStage${pStage}Wait`;
+export function showWait(pStage){
+    let wImgName = `#imgStage${pStage}Wait`;
     let wImg = $w(wImgName);
     wImg.show();   
 }
@@ -2393,7 +2393,7 @@ export function showMsg(pStage, pNo, pMsg = "") {
                     ""
         ];
         let wMsgName = `#lblStage${pStage}Msg`;
-        let wImgName = `#ImgStage${pStage}Wait`;
+        let wImgName = `#imgStage${pStage}Wait`;
         let wLblMsg = $w(wMsgName);
         let wImg = $w(wImgName);
         if (pNo === 0) {
@@ -2401,11 +2401,10 @@ export function showMsg(pStage, pNo, pMsg = "") {
         } else {
             wLblMsg.text = wMsg[pNo-1];
         }
-        wLblMsg.expand();
         wLblMsg.show();
         wImg.hide();
         setTimeout(() => {
-            wlblMsg.collapse();
+            wLblMsg.hide();
         }, 4000);
         return
     }
