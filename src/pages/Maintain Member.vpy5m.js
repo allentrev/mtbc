@@ -1574,6 +1574,7 @@ export async function btn2AmendSave_click(event) {
     // Set up from btnLstAmend
     // Update the Lst value with the Import values
     console.log("Btn Lst Amend Save click", gStage);
+    showWait(1);
     if (gStage === "Lst-Import"){
         let wMember = getSyncTargetItem("2",wMember2._id);
         wMember.firstName = $w('#inpLstAmendMasterFirstName').value;
@@ -1586,12 +1587,15 @@ export async function btn2AmendSave_click(event) {
             removeFromSet("2", wMember2._id);
             removeFromSet("3", wMember3._id);
             $w('#boxLstAmend').collapse();
+            showMsg(1,0,`LST name ${wMember.firstName} ${wMember.surname} updated`);
         } else {
             console.log("MaintainMember btn2AmendSave saverecord fail");
             console.log(wResult.error);
+            showMsg(1,0,`LST name ${wMember.firstName} ${wMember.surname} update failed`);
         }
     } else {
         console.log("MaintainMember btn2AmendSave wrong state", gStage);
+        showMsg(1,0,`LST name ${wMember.firstName} ${wMember.surname} wrong stage`);
     }
 }
 
@@ -1601,6 +1605,7 @@ export async function btn3AmendSave_click(event) {
     console.log("Btn Imp Amend Save click", gStage);
     let wTargetMember = getSyncTargetItem("3",wMember3._id);
     if (gStage === "Lst-Import"){
+        showWait(1);
         //  Update the IMport record and send Email to Membership secretary to update Master membership spreadsheet
         wTargetMember.firstName = $w('#inpLstAmendWebFirstName').value;
         wTargetMember.surname =  $w('#inpLstAmendWebSurname').value;
@@ -1610,11 +1615,14 @@ export async function btn3AmendSave_click(event) {
             removeFromSet("2", wMember2._id);
             removeFromSet("3", wMember3._id);
             $w('#boxLstAmend').collapse();
+            showMsg(1,0,`Import name ${wTargetMember.firstName} ${wTargetMember.surname} updated`);
         } else {
             console.log("MaintainMember btn3AmendSave saverecord fail");
             console.log(wResult.error);
+            showMsg(1,0,`Import name ${wTargetMember.firstName} ${wTargetMember.surname} update failed`);
         }
     } else if (gStage === "Lst-Wix"){
+        showWait(2);
         //  Update the Wix record
         let wFirstName = $w('#inpLstAmendWebFirstName').value.trim();
         let wSurname = $w('#inpLstAmendWebSurname').value.trim();
@@ -1625,8 +1633,10 @@ export async function btn3AmendSave_click(event) {
         removeFromSet("2", wMember2._id);
         removeFromSet("3", wMember3._id);
         $w('#boxLstAmend').collapse();
+        showMsg(2,0,`Wix name ${wFirstName} ${wSurname} updated`);
     } else {
         console.log("MaintainMember btn3AmendSave wrong state", gStage);
+        showMsg(2,0,`Wix name ${wFirstName} ${wSurname} updated`);
     }
 }
 
@@ -1647,6 +1657,7 @@ export async function btnLstTest_click(event) {
 }
 
 async function updateLstMembers(pSource, pN, pStatus) {
+    showWait(1);
     let wUpdateStack = [];
     let wToday = new Date();
     for (let wMemberId of gSelectLeftStack) {
@@ -1677,8 +1688,10 @@ async function updateLstMembers(pSource, pN, pStatus) {
             gSelectRightStack.length = 0;
             $w('#chk3').checked = false;
         }
+        showMsg(1,0,`${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`)
     } else {
         console.log(`/MaintainMember ${pSource} Bulk Members Save: Nothing to update`);
+        showMsg(1,0,"Nothing to update");
     }
 }
 
@@ -1692,6 +1705,7 @@ export async function btnImpNew_click(pType, event) {
     let wType = (pType === "F") ? "Full" : "Social"
     let wItemIds = [...gSelectRightStack];
     for (let wItemId of wItemIds){
+        showWait(1);
         let wImportMember = gImpMembers.find(item => item._id === wItemId);
         if (wImportMember) {
             wImportMember.loginEmail = setMTBCUsername();
@@ -1700,6 +1714,7 @@ export async function btnImpNew_click(pType, event) {
             if (wResult && wResult.status){
                 removeFromSet("3", wMember3._id);
                 $w('#lblMTBCCount').text = updateMTBCUsernameCount();
+                showMsg(1,0, `New ${pType} member ${wImportMember.firstName} ${wImportMember.surname} created`);
             } else {
                 // add error result error message to wErrMsg string
                 if (wErrMsg.length === 0){
@@ -1707,9 +1722,11 @@ export async function btnImpNew_click(pType, event) {
                 } else {
                     wErrMsg = wErrMsg + "\n" + wResult.error;
                 }
+            showMsg(1,0, `New ${pType} member ${wImportMember.firstName} ${wImportMember.surname} creation errors`);
             }
         } else { 
             console.log("/MaintainMember btnImpNew Member Not found", wItemId);
+            showMsg(1,0, `New ${pType} member ${wImportMember.firstName} ${wImportMember.surname} creation member not found`);
         }
     }
     if (wErrMsg.length > 1){
@@ -1790,6 +1807,7 @@ export async function btnLstRegister_click(event) {
     $w('#lblErrMsg').text = "";
     let wErrMsg = "";
     for (let wMemberId of gSelectLeftStack) {
+        showWait(2);
         let wLstMember = gLstMembers.find(item => item._id === wMemberId)
         if (wLstMember) {
             wLstMember.loginEmail = setMTBCUsername();
@@ -1800,6 +1818,7 @@ export async function btnLstRegister_click(event) {
                 removeFromSet("2", wMember2._id);
                 await deleteLstMember(wOldLstId);
                 $w('#lblMTBCCount').text = updateMTBCUsernameCount();
+                showMsg(2,0, `New Wix member ${wLstMember.firstName} ${wLstMember.surname} created`);
             } else {
                 // add error result error message to wErrMsg string
                 if (wErrMsg.length === 0){
@@ -1807,9 +1826,11 @@ export async function btnLstRegister_click(event) {
                 } else {
                     wErrMsg = wErrMsg + "\n" + wResult.error;
                 }
+                showMsg(2,0, `New Wix member ${wLstMember.firstName} ${wLstMember.surname} creation errors`);
             }
         } else { 
             console.log("/MaintainMember btnLstRegister Member Not found", wMemberId);
+            showMsg(2,0, `New Wix member: not found`);
         }
     }
     if (wErrMsg.length > 1){
@@ -1825,12 +1846,15 @@ export async function btnWixDelete_click(event) {
     console.log("btnWixDelete", gStage)
     const pN = "3";
     for (let wMemberId of gSelectRightStack) {
+        showWait(2);
         let wMember = gWixMembers.find(item => item._id === wMemberId)
         if (wMember) {
             await deleteWixMembers([wMemberId]);
             removeFromSet(pN, wMemberId);            
+            showMsg(2,0, `Wix member ${wMember.firstName} ${wMember.lastName} deletedd`);
         } else {
             console.log("/MaintainMember btnWixDelete Wix member Not found", wMemberId);
+            showMsg(2,0, `Wix member not found`);
         }
     }
     gSelectRightStack.length = 0;
@@ -2353,3 +2377,39 @@ async function processRecord(pRec) {
     console.log(wHome2, wMobile2, wLong);
 }
 
+export function shiowWait(pStage){
+    let wImgName = `#ImgStage${pStage}Wait`;
+    let wImg = $w(wImgName);
+    wImg.show();   
+}
+
+export function showMsg(pStage, pNo, pMsg = "") {
+    try {
+        let wMsg = ["Records deleted",
+                    "There was a problem deleting this competitiong",
+                    "Please correct input errors shown",
+                    "Competition created",
+                    ""
+        ];
+        let wMsgName = `#lblStage${pStage}Msg`;
+        let wImgName = `#ImgStage${pStage}Wait`;
+        let wLblMsg = $w(wMsgName);
+        let wImg = $w(wImgName);
+        if (pNo === 0) {
+            wLblMsg.text = pMsg;
+        } else {
+            wLblMsg.text = wMsg[pNo-1];
+        }
+        wLblMsg.expand();
+        wLblMsg.show();
+        wImg.hide();
+        setTimeout(() => {
+            wlblMsg.collapse();
+        }, 4000);
+        return
+    }
+    catch (err) {
+        console.log("MaintainMember showMsg Try-catch fail, err");
+        console.log(err);
+    }
+}
