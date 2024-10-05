@@ -1676,11 +1676,12 @@ async function updateLstMembers(pSource, pN, pStatus) {
         }
     }
     if (wUpdateStack && wUpdateStack.length > 0) {
+        console.log(wUpdateStack);
         let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
         let wUpdateArray = wResult.results.updatedItemIds;
         let wUpdates = wUpdateArray.toString();
         let wErrors = wResult.results.errors.length;        
-        console.log(`/MaintainMember ${pSource} Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`);
+        console.log(`/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`);
         if (pN === "2") {
             gSelectLeftStack.length = 0;
             $w('#chk2').checked = false;
@@ -1688,7 +1689,7 @@ async function updateLstMembers(pSource, pN, pStatus) {
             gSelectRightStack.length = 0;
             $w('#chk3').checked = false;
         }
-        showMsg(1,0,`${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`)
+        showMsg(1,0,`${pSource} Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`)
     } else {
         console.log(`/MaintainMember ${pSource} Bulk Members Save: Nothing to update`);
         showMsg(1,0,"Nothing to update");
