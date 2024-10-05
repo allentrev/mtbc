@@ -67,7 +67,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = (gTest) ? true : authentication.loggedIn();
@@ -1772,6 +1772,7 @@ async function createNewMember(pMember){
 //---------------------------from LST & Wix compare-------------------------
 //
 export async function btnLstRegister_click(event) {
+    
     console.log("btnLstRegister", gStage);
 //  These are LST entries that are in both LST and Import, but not in Wix. This covers old LST 
 //  members who were in the club, but they never registered. 
