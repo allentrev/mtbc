@@ -1574,7 +1574,7 @@ export async function btn2AmendSave_click(event) {
     // Set up from btnLstAmend
     // Update the Lst value with the Import values
     console.log("Btn Lst Amend Save click", gStage);
-    showWait(1);
+    showStageWait(1);
     if (gStage === "Lst-Import"){
         let wMember = getSyncTargetItem("2",wMember2._id);
         wMember.firstName = $w('#inpLstAmendMasterFirstName').value;
@@ -1605,7 +1605,7 @@ export async function btn3AmendSave_click(event) {
     console.log("Btn Imp Amend Save click", gStage);
     let wTargetMember = getSyncTargetItem("3",wMember3._id);
     if (gStage === "Lst-Import"){
-        showWait(1);
+        showStageWait(1);
         //  Update the IMport record and send Email to Membership secretary to update Master membership spreadsheet
         wTargetMember.firstName = $w('#inpLstAmendWebFirstName').value;
         wTargetMember.surname =  $w('#inpLstAmendWebSurname').value;
@@ -1622,7 +1622,7 @@ export async function btn3AmendSave_click(event) {
             showMsg(1,0,`Import name ${wTargetMember.firstName} ${wTargetMember.surname} update failed`);
         }
     } else if (gStage === "Lst-Wix"){
-        showWait(2);
+        showStageWait(2);
         //  Update the Wix record
         let wFirstName = $w('#inpLstAmendWebFirstName').value.trim();
         let wSurname = $w('#inpLstAmendWebSurname').value.trim();
@@ -1657,7 +1657,7 @@ export async function btnLstTest_click(event) {
 }
 
 async function updateLstMembers(pSource, pN, pStatus) {
-    showWait(1);
+    showStageWait(1);
     let wUpdateStack = [];
     let wToday = new Date();
     for (let wMemberId of gSelectLeftStack) {
@@ -1706,7 +1706,7 @@ export async function btnImpNew_click(pType, event) {
     let wType = (pType === "F") ? "Full" : "Social"
     let wItemIds = [...gSelectRightStack];
     for (let wItemId of wItemIds){
-        showWait(1);
+        showStageWait(1);
         let wImportMember = gImpMembers.find(item => item._id === wItemId);
         if (wImportMember) {
             wImportMember.loginEmail = setMTBCUsername();
@@ -1808,7 +1808,7 @@ export async function btnLstRegister_click(event) {
     $w('#lblErrMsg').text = "";
     let wErrMsg = "";
     for (let wMemberId of gSelectLeftStack) {
-        showWait(2);
+        showStageWait(2);
         let wLstMember = gLstMembers.find(item => item._id === wMemberId)
         if (wLstMember) {
             wLstMember.loginEmail = setMTBCUsername();
@@ -1847,7 +1847,7 @@ export async function btnWixDelete_click(event) {
     console.log("btnWixDelete", gStage)
     const pN = "3";
     for (let wMemberId of gSelectRightStack) {
-        showWait(2);
+        showStageWait(2);
         let wMember = gWixMembers.find(item => item._id === wMemberId)
         if (wMember) {
             await deleteWixMembers([wMemberId]);
@@ -2378,7 +2378,7 @@ async function processRecord(pRec) {
     console.log(wHome2, wMobile2, wLong);
 }
 
-export function showWait(pStage){
+export function showStageWait(pStage){
     let wImgName = `#imgStage${pStage}Wait`;
     let wImg = $w(wImgName);
     wImg.show();   
