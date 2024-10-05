@@ -4,20 +4,20 @@ import wixLocation 				        from 'wix-location';
 
 import _ from 'lodash';
 
-import { saveRecord } from 'backend/backEvents.jsw';
-import { saveImportMemberRecord } from 'backend/backMember.jsw';
+import { saveRecord }               from 'backend/backEvents.jsw';
 
-import { createMember } from 'backend/backMember.jsw';
-import { deleteLstMember } from 'backend/backMember.jsw';
-import { getAllMembers2 } from 'backend/backMember.jsw';
-import { getAllImportMembers } from 'backend/backMember.jsw';
-import { isUnique } from 'backend/backMember.jsw';
+import { saveImportMemberRecord }   from 'backend/backMember.jsw';
+import { createMember }             from 'backend/backMember.jsw';
+import { deleteLstMember }          from 'backend/backMember.jsw';
+import { getAllMembers2 }           from 'backend/backMember.jsw';
+import { getAllImportMembers }      from 'backend/backMember.jsw';
+import { isUnique }                 from 'backend/backMember.jsw';
 
-import { bulkSaveRecords } from 'backend/backEvents.jsw';
-import { STATUS }   from "public/objects/member";
+import { bulkSaveRecords }              from 'backend/backEvents.jsw';
+import { STATUS }                       from "public/objects/member";
 import { retrieveSessionMemberDetails } from 'public/objects/member';
-import { buildMemberCache } from 'public/objects/member';
-import { isRequiredRole } 		from 'public/objects/member';
+import { buildMemberCache }             from 'public/objects/member';
+import { isRequiredRole }               from 'public/objects/member';
 
 //------------------------------------------ Entity Imports ---------------------------------------
 import { setEntity, getEntity } from 'public/objects/entity';
@@ -67,7 +67,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = true;
+let gTest = false;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = (gTest) ? true : authentication.loggedIn();
@@ -76,6 +76,7 @@ const gYear = new Date().getFullYear();
 $w.onReady(async function () {
 
     try {
+        console.log("Hello world");
         let status;
         
         //$w('#lblHdr1').text = `The following table summarises something....${gYear} season`;
@@ -1772,7 +1773,7 @@ async function createNewMember(pMember){
 //---------------------------from LST & Wix compare-------------------------
 //
 export async function btnLstRegister_click(event) {
-    
+
     console.log("btnLstRegister", gStage);
 //  These are LST entries that are in both LST and Import, but not in Wix. This covers old LST 
 //  members who were in the club, but they never registered. 
@@ -2101,7 +2102,7 @@ export function btnSyncClose_click(event) {
 *	 @param {$w.MouseEvent} event
 */
 import wixData from 'wix-data';
-import { deleteWixMembers } from '../backend/backMember.jsw';
+import { deleteWixMembers } from 'backend/backMember.jsw';
 
 export async function btnAdmin_click(event) {
     //await loadWixMembersData();
@@ -2352,20 +2353,3 @@ async function processRecord(pRec) {
     console.log(wHome2, wMobile2, wLong);
 }
 
-
-
-/**
-*	Adds an event handler that runs when the element is clicked.
-	[Read more](https://www.wix.com/corvid/reference/$w.ClickableMixin.html#onClick)
-*	 @param {$w.MouseEvent} event
-*/
-export function container6_click(event) {
-	// This function was added from the Properties & Events panel. To learn more, visit http://wix.to/UcBnC-4
-	// Add your code for this event here: 
-}
-
-/**
-*	Adds an event handler that runs when the element is clicked.
-	[Read more](https://www.wix.com/corvid/reference/$w.ClickableMixin.html#onClick)
-*	 @param {$w.MouseEvent} event
-*/

@@ -12,9 +12,6 @@ import wixData          from 'wix-data';
 
 import { sendCreateMemberConfirmationEmail } from 'backend/email.jsw';
 
-//
-//  New file
-//
 
 /**
  * Enum for Competition object status values
