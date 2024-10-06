@@ -67,7 +67,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = (gTest) ? true : authentication.loggedIn();
@@ -780,18 +780,22 @@ export function updateDashboard() {
                     "wait": wNoWait, "test": wNoTest, "past": wNoPast, "joined": wNoJoined, "left": wNoLeft}
     ];
 
-//  Determine the highest MTBCnn value and display +1
-    let wMTBCRecs = wMembers.filter ( item => item.loginEmail.includes("mtbc"));
-    let wMTBCIds = wMTBCRecs.map ( item => {
-        let x = item.loginEmail.indexOf("@");
-        return parseInt(item.loginEmail.substring(4,x),10);
-    })
-
-    $w('#lblMTBCCount').text = String(Math.max(...wMTBCIds) + 1);
+    $w('#lblMTBCCount').text = getMTBCMaxValue(wMembers);
 
     $w('#lblSinceDate').text = wYearStart.toLocaleDateString(locale, options);
 
     $w('#tblMemberDashboard').rows = wRow;
+}
+export function getMTBCMaxValue(pDataset){
+    //  Determine the highest MTBCnn value and display +1
+    let wMTBCMaxValue = 0;
+    let wMTBCRecs = pDataset.filter ( item => item.loginEmail.includes("mtbc"));
+    let wMTBCIds = wMTBCRecs.map ( item => {
+        let x = item.loginEmail.indexOf("@");
+        return parseInt(item.loginEmail.substring(4,x),10);
+    })
+    wMTBCMaxValue = Math.max(...wMTBCIds) + 1;
+    return String(wMTBCMaxValue);
 }
 
 export function alreadyExists(pLoginEmail) {
@@ -986,21 +990,26 @@ export async function btnSyncStart_click(event) {
     $w('#tblProgress').rows = gMessages;
     switch (gStage) {
         case "Lst-Import":
-            showMessage(gStage);
             showMessage("Loading Lst Members");         //B
             let promiseB1 = loadLstMembersData();
             showMessage("Loading Import Members");      //C
             let promiseC1 = loadImpMembersData();
-            Promise.all([promiseB1,promiseC1]).then(()=>{
-                const onlyB = unique(gLstMembers, gImpMembers);
-                const onlyC = unique(gImpMembers, gLstMembers);
-                if (onlyB.length > 0 || onlyC.length > 0) {
-                    showMessage("Reconcile Lst with Import");
-                    console.log(gLstMembers);
-                    console.log(gImpMembers);
-                    reconcileDatasets(onlyB, onlyC);
+            showMessage("Loading Wix Members");      //C
+            let promiseA2 = loadWixMembersData();
+            Promise.all([promiseA2, promiseB1,promiseC1]).then(()=>{
+                if (reconcileMTBCValues()){
+                    messageDone(0);
+                    const onlyB = unique(gLstMembers, gImpMembers);
+                    const onlyC = unique(gImpMembers, gLstMembers);
+                    if (onlyB.length > 0 || onlyC.length > 0) {
+                        showMessage("Reconcile Lst with Import");
+                        reconcileDatasets(onlyB, onlyC);
+                    } else {
+                        gStage = "Lst-Wix";
+                        messageDone(5);
+                    }
                 } else {
-                    gStage = "Lst-Wix";
+                    showMessage("MTBC Max Value disparity");
                     messageDone(5);
                 }
             })
@@ -1008,8 +1017,6 @@ export async function btnSyncStart_click(event) {
         case "Lst-Wix":
             showMessage("Loading Lst Members");         //B
             let promiseB2 = loadLstMembersData();
-            showMessage("Loading Wix Members");      //C
-            let promiseA2 = loadWixMembersData();
             Promise.all([promiseB2,promiseA2]).then(()=>{
                 messageDone(3);
                 showMessage("Reconcile Lst with Wix");
@@ -1026,6 +1033,29 @@ export async function btnSyncStart_click(event) {
         case "Field-Values":
             synchroniseFieldValues();
             break;
+    }
+}
+function reconcileMTBCValues(){
+    showMessage("Reconcile MTBC values");
+    if (gLstMembers){
+        if (gWixMembers){
+            let wLstMaxValue = getMTBCMaxValue(gLstMembers);
+            let wWixMaxValue = getMTBCMaxValue(gWixMembers);
+            if (wLstMaxValue === wWixMaxValue){
+                showMessage("MTBC values agree");
+                messageDone(3);
+                return true;
+            } else {
+                showMessage(`Lst Max Value = ${wLstMaxValue} Wix Max Value = ${wWixMaxValue}`);
+                return false;
+            } 
+        } else {
+            showMessage("Wix Members Load fail")
+            return false;
+        }
+    } else {
+        showMessage("Lst Members Load fail")
+        return false;
     }
 }
 
@@ -1213,7 +1243,7 @@ async function loadWixMembersData() {
             gWixMembers.push(wTempMember);
         }
         messageDone(3);
-        return;    
+        /**  
         let count = 1;
         $w('#pbrLoading').targetValue = wWixContactsMembers.length-1;
         $w('#pbrLoading').value = 0;
@@ -1231,6 +1261,7 @@ async function loadWixMembersData() {
     $w('#btnSyncStart').enable();
     gWixMembers = wWixMembers;
     console.log(gWixMembers);
+    */
 }
 
 async function loadLstMembersData() {
@@ -1251,8 +1282,9 @@ async function loadImpMembersData() {
 
 function showMessage(pMsg) {
 
-    let wMsg = { "msg": "", "status": "" };
+    let wMsg = { "idx": "", "msg": "", "status": "" };
     wMsg.msg = pMsg;
+    wMsg.idx = String(gMessages.length + 1);
     gMessages.push(wMsg);
     $w('#tblProgress').rows = gMessages;
 
