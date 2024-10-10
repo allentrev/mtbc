@@ -7,7 +7,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 	
 // for testing -----------------------------------------------------------------------------
-let gTest = true;
+let gTest = false;
 
 const isLoggedIn = (gTest) ? true : authentication.loggedIn();
 
