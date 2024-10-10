@@ -7,7 +7,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 	
 // for testing -----------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 
 const isLoggedIn = (gTest) ? true : authentication.loggedIn();
 
@@ -17,9 +17,9 @@ $w.onReady(async function () {
 	
     // for testing ------	------------------------------------------------------------------------
     //let wUser = {"_id": "ab308621-7664-4e93-a7aa-a255a9ee6867", "loggedIn": true, "roles": [{"title": "Full"}]};	//
-    //let wUser = { "_id": "88f9e943-ae7d-4039-9026-ccdf26676a2b", "loggedIn": true, "roles": [{ "title": "Manager" }] }; //Me
+    let wUser = { "_id": "88f9e943-ae7d-4039-9026-ccdf26676a2b", "loggedIn": true, "roles": [{ "title": "Manager" }] }; //Me
     //let wUser = {"_id": "af7b851d-c5e5-49a6-adc9-e91736530794", "loggedIn": true, "roles": [{"title": "Coach"},{"title": "Press"}]}; //Tony Roberts
-    let wUser = {"_id": "612f172a-1591-4aec-a770-af673bbc207b", "loggedIn": true, "roles": [{"title": "Member"},{"title": "Captain"}]}; //Tony Roberts
+    //let wUser = {"_id": "612f172a-1591-4aec-a770-af673bbc207b", "loggedIn": true, "roles": [{"title": "Member"},{"title": "Captain"}]}; //Tony Roberts
     /**
     Mike Watson		bc6a53f1-f9b8-41aa-b4bc-cca8c6946630 
 	Julia Allen		16b77976-37d1-41df-a328-4433d2d40cbc	612f172a-1591-4aec-a770-af673bbc207b

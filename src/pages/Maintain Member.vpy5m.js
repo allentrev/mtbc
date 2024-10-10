@@ -67,7 +67,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = (gTest) ? true : authentication.loggedIn();
@@ -76,7 +76,6 @@ const gYear = new Date().getFullYear();
 $w.onReady(async function () {
 
     try {
-        console.log("Hello world");
         let status;
         
         //$w('#lblHdr1').text = `The following table summarises something....${gYear} season`;
@@ -161,46 +160,41 @@ $w.onReady(async function () {
         $w('#inpMemberEditUsername').onChange((event) => inpMemberEditUsername_change(event));
         $w('#btnMemberEditMoreDisplay').onClick((event) => btnMemberEditMoreDIsplayClick());
 
+        // Custom Section event handlers
+         //
+         $w('#btnMemberAToCustom').onClick((event) => doCustom());
+         $w('#btnCustomOpen').onClick((event) => processCustomOpen());
+         $w('#btnCustomClose').onClick((event) => processCustomClose());
+         $w('#btnCustomProcess').onClick((event) => processCustomGo());
         
         // Sync Section event handlers
         //
-        $w('#chk2').onClick((event) => chkSyncSelect_click("2", event));
-        $w('#chk3').onClick((event) => chkSyncSelect_click("3",event));
-        //$w('#chk4').onClick((event) => chkSyncSelect_click("4", event));
-        //$w('#chk5').onClick((event) => chkSyncSelect_click("5", event));
         $w('#btnSyncStart').onClick((event) => btnSyncStart_click(event));
+        $w('#btnSyncClose').onClick((event) => processCustomClose());
         $w('#btnLstAmend').onClick((event) => btnLstAmend_click(event));
         $w('#btn2AmendSave').onClick((event) => btn2AmendSave_click(event));
+        $w('#btn3AmendSave').onClick((event) => btn3AmendSave_click(event));
+        $w('#btnAmendCancel').onClick((event) => btnAmendCancel_click(event));
         $w('#btnLstPast').onClick((event) => btnLstPast_click(event));
         $w('#btnLstTest').onClick((event) => btnLstTest_click(event));
-        $w('#btn3AmendSave').onClick((event) => btn3AmendSave_click(event));
         $w('#btnImpNewFull').onClick((event) => btnImpNew_click("F", event));
         $w('#btnImpNewSocial').onClick((event) => btnImpNew_click("S", event));
-        $w('#boxRpt2').onClick((event) => boxRpt_click("2", event));
-        $w('#boxRpt3').onClick((event) => boxRpt_click("3", event));
         $w('#btnLstRegister').onClick((event) => btnLstRegister_click(event));
         $w('#btnWixUpdate').onClick((event) => btnLstAmend_click(event));
         $w('#btnWixDelete').onClick((event) => btnWixDelete_click(event));
 
-        // Custom Section event handlers
-         //
-        $w('#btnMemberAToCustom').onClick((event) => doCustom());
-        $w('#btnCustomOpen').onClick((event) => processCustomOpen());
-        $w('#btnCustomClose').onClick((event) => processCustomClose());
-        $w('#btnCustomProcess').onClick((event) => processCustomGo());
-        $w('#btnSyncClose').onClick((event) => processCustomClose());
+        $w('#chk2').onClick((event) => chkSyncSelect_click("2", event));
+        $w('#chk3').onClick((event) => chkSyncSelect_click("3",event));
+        $w('#boxRpt2').onClick((event) => boxRpt_click("2", event));
+        $w('#boxRpt3').onClick((event) => boxRpt_click("3", event));
 
         // Repeaters section
         
         $w('#rptMemberList').onItemReady(($item, itemData, index) => {loadRptMemberList($item, itemData, index)});
         $w('#rptWixUpdates').onItemReady(($item, itemData, index) => {loadRptUpdates($item, itemData)});
         $w('#rptSkipped').onItemReady(($item, itemData, index) => {loadRptSkipped($item, itemData)});
-        //$w('#rpt1').onItemReady(($item, itemData, index) => {loadRptN("1",$item, itemData)});
         $w('#rpt2').onItemReady(($item, itemData, index) => {loadRptN("2",$item, itemData)});
         $w('#rpt3').onItemReady(($item, itemData, index) => {loadRptN("3",$item, itemData)});
-        //$w('#rpt4').onItemReady(($item, itemData, index) => {loadRptN("4",$item, itemData)});
-        //$w('#rpt5').onItemReady(($item, itemData, index) => {loadRptN("5",$item, itemData)});
-        //$w('#rpt6').onItemReady(($item, itemData, index) => {loadRptN("6",$item, itemData)});
 
         //-------------------------- Custom Validation -----------------------------------------		
 
@@ -239,61 +233,10 @@ function loadRptMemberList($item, itemData, index) {
         $item('#lblMemberListFirstName').text = itemData.firstName;
         $item('#lblMemberListSurname').text = itemData.surname;
         $item('#lblMemberListMobilePhone').text = wMobilePhone;
-        //$item('#lblMemberListMemberEmail').text = itemData.contactEmail;
         $item('#lblMemberListLocker').text = itemData.locker.join(",");
         $item('#chkMemberListSelect').checked = false;
     }
 }
-
-/**
- * function displayMemberTableData(pType, pStatus) {
-    //console.log("Entry with type, status", pType, pStatus);
-    if (gMembers && gMembers.length > 0) {
-        let wData = [...gMembers];
-        //console.log("Input gmamebers");
-        //console.log(wData);
-        let wItemsRequested = [];
-        let wItemsRequestedByType = [];
-        if (pType !== "All") {
-            wItemsRequestedByType = wData.filter(item => item.type === pType);
-        } else {
-            wItemsRequestedByType = [...wData];
-        }
-        //console.log("data to display by ...", pType );
-        //console.log(wItemsRequestedByType);
-        if (pStatus !== "All") {
-            //console.log("Not all", pStatus);
-            wItemsRequested = wItemsRequestedByType.filter(item => item.status === pStatus);
-        } else {
-            //console.log("All");
-            wItemsRequested = [...wItemsRequestedByType];
-        }
-        //console.log("after 2nd filter");
-        //console.log(wItemsRequested);
-
-        let wMembers = _.sortBy(wItemsRequested, ['surname', 'firstName']);
-        //console.log("Members after sort");
-        //console.log(wMembers);
-        gMembersToDisplay = [...wMembers];
-        //console.log("Members to display");
-        //console.log(gMembersToDisplay);
-
-        resetPagination();
-
-        $w('#boxMemberChoice').expand();
-        $w('#boxMemberNone').collapse();
-        $w('#boxMemberList').expand();
-        $w('#boxMemberEdit').collapse();
-
-    } else {
-        $w('#boxMemberChoice').expand();
-        $w('#boxMemberEdit').collapse();
-        $w('#boxMemberList').collapse();
-        $w('#boxMemberNone').expand();
-        console.log("/MaintainMember No members to display for ", pType, pStatus);
-    }
-}
-*/
 
 // ------------------------------------------------Load Data ---------------------------------------------------------
 //
@@ -473,7 +416,9 @@ export function doMemberView (pViewType){
 export function btnMemberAToSync_click(event) {
     $w('#secMember').collapse();
     $w('#secSync').expand();
+    $w('#ancSyncStart').scrollTo();
 }
+
 export function btnMemberAConvert_click(event) {
     $w("TextInput").disable();
     $w('#inpMemberEditUsername').enable();
@@ -988,24 +933,30 @@ export async function btnSyncStart_click(event) {
     );
     gMessages.length = 0;
     $w('#tblProgress').rows = gMessages;
+    showMessage("Loading Lst Members");         //B
+    let promiseB1 = loadLstMembersData();
+    showMessage("Loading Wix Members");      //C
+    let promiseA2 = loadWixMembersData();
     switch (gStage) {
         case "Lst-Import":
-            showMessage("Loading Lst Members");         //B
-            let promiseB1 = loadLstMembersData();
             showMessage("Loading Import Members");      //C
             let promiseC1 = loadImpMembersData();
-            showMessage("Loading Wix Members");      //C
-            let promiseA2 = loadWixMembersData();
-            Promise.all([promiseA2, promiseB1,promiseC1]).then(()=>{
+            Promise.all([promiseA2, promiseB1,promiseC1]).then(async ()=>{
                 if (reconcileMTBCValues()){
                     messageDone(0);
                     const onlyB = unique(gLstMembers, gImpMembers);
                     const onlyC = unique(gImpMembers, gLstMembers);
+                    //console.log("gLst, gImp,onlyB, onlyC");
+                    //console.log(gLstMembers);
+                    //console.log(gImpMembers);
+                    //console.log(onlyB);
+                    //console.log(onlyC);
                     if (onlyB.length > 0 || onlyC.length > 0) {
                         showMessage("Reconcile Lst with Import");
                         reconcileDatasets(onlyB, onlyC);
                     } else {
-                        gStage = "Lst-Wix";
+                        $w('#btnSyncStart').label = "Re-load";
+                        gStage = "Field_Values";
                         messageDone(5);
                     }
                 } else {
@@ -1015,9 +966,7 @@ export async function btnSyncStart_click(event) {
             })
             break;
         case "Lst-Wix":
-            showMessage("Loading Lst Members");         //B
-            let promiseB2 = loadLstMembersData();
-            Promise.all([promiseB2,promiseA2]).then(()=>{
+            Promise.all([promiseB1,promiseA2]).then(()=>{
                 messageDone(3);
                 showMessage("Reconcile Lst with Wix");
                 const onlyA = unique(gWixMembers, gLstMembers);
@@ -1025,16 +974,23 @@ export async function btnSyncStart_click(event) {
                 if (onlyA.length > 0 || onlyD.length > 0) {
                     reconcileDatasets(onlyD, onlyA);
                 } else {
-                    gStage = "Field-Values";
+                    gStage = "End";
                     messageDone(4);
                 }
             })
             break;
         case "Field-Values":
-            synchroniseFieldValues();
+            Promise.all([promiseB1,promiseA2]).then(async()=>{
+                messageDone(3);
+                showMessage("SYnchronise Lst field values");
+                await synchroniseFieldValues();
+                gStage = "Lst-Wix";
+                messageDone(4);
+            })
             break;
     }
 }
+
 function reconcileMTBCValues(){
     showMessage("Reconcile MTBC values");
     if (gLstMembers){
@@ -1089,6 +1045,7 @@ function reconcileDatasets(pA, pB){
 }
 
 function synchroniseFieldValues(){
+    console.log("Sync Values");
     return true;
 }
 
@@ -1267,7 +1224,8 @@ async function loadWixMembersData() {
 async function loadLstMembersData() {
 
     let wAll = await getAllMembers2();
-    gLstMembers = wAll.filter (item => item.status !== "Past")
+    gLstMembers = wAll.filter (item => item.username !== "ClubHouse")
+                        .filter( item => item.status !== "Past")
                         .filter( item => item.type !== "Test");
     for (let wMember of gLstMembers ) {
         wMember.key = wMember.fullName;
@@ -1307,7 +1265,6 @@ let wMember2 = {};
 let wMember3 = {};
 
 export function boxRpt_click(pN, event){
-
     let wItem = $w.at(event.context);
     let wId = event.context.itemId;
     let wLast = (pN === "2") ? wLast2Id : wLast3Id;
@@ -1340,12 +1297,18 @@ export function boxRpt_click(pN, event){
                 break;
         }
     }
-
+    
     function clearSelection(pN, pId){
-        $w(`#rpt${pN}`).forItems ([pId] , ($item, itemData, index) =>{
+        $w(`#rpt${pN}`).forItems ([pId] , ($item) =>{
             $item(`#boxRpt${pN}`).style.backgroundColor = COLOUR.FREE;
         })
     }
+    }
+
+export function clearAllSelection(pN){
+    $w(`#rpt${pN}`).forEachItem( ($item) =>{
+        $item(`#boxRpt${pN}`).style.backgroundColor = COLOUR.FREE;
+    })
 }
 
 export function chkSyncSelect_click(pN, pEvent){
@@ -1673,6 +1636,18 @@ export async function btn3AmendSave_click(event) {
     }
 }
 
+export function btnAmendCancel_click(){
+    $w('#inpLstAmendWebFirstName').value = "";
+    $w('#inpLstAmendWebSurname').value = "";
+    $w('#inpLstAmendMasterFirstName').value = "";
+    $w('#inpLstAmendMasterSurname').value = "";
+    wLast2Id = null;
+    wLast3Id = null;
+    clearAllSelection(2);
+    clearAllSelection(3);
+    $w('#boxLstAmend').collapse();
+}
+
 export async function btnLstPast_click(event) {
     // There is an entry in Lst but not in Import. This is the case for members who have left the club or who
     // have passed away.
@@ -1894,8 +1869,8 @@ export async function btnWixDelete_click(event) {
     $w(`#chk${pN}`).checked = false;
 }
 
-//----------------------------------------------
-
+//----DEPRECATED------------------------------------------
+//---------------------------------------------- from btnSyncStart2 ------------------------------
 async function syncWixToLst() {
     //console.log("syncWixtoLst");
 
@@ -1919,7 +1894,7 @@ async function syncWixToLst() {
         $w('#txtWixSyncNoneFound').expand();
     }
 }
-
+// WAS FROM btnSuncStart2
 export async function checkEachWixMember() {
     //console.log("checkEachWixMember");
 
