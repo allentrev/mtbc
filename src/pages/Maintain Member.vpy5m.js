@@ -67,7 +67,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = (gTest) ? true : authentication.loggedIn();
@@ -112,18 +112,21 @@ $w.onReady(async function () {
             $w('#secCustom').collapse();
             $w('#secMember').expand();//
             $w('#secSync').collapse();
+            $w('#secLocker').collapse();
             $w('#inpMemberListNoPerPage').value = "10";
+            $w('#inpLockerListNoPerPage').value = "20";
             $w('#btnMemberAToSync').disable();
             $w('#btnMemberAToCustom').disable();
-            $w('#btnMemberAToB').disable();
         } else {
             $w('#secDesktop').expand();
             $w('#secMobile').collapse();
             $w('#secCustom').collapse();
+            $w('#secLocker').collapse();
             $w('#secSync').collapse();
             $w('#secMember').expand();
             $w('#strMember').scrollTo();
             $w('#inpMemberListNoPerPage').value = "20";
+            $w('#inpLockerListNoPerPage').value = "20";
 
 
             //ensure these are set before loadtabledata
@@ -145,12 +148,13 @@ $w.onReady(async function () {
         $w('#btnMemberASave').onClick((event) => btnMemberASave_click(event));
         $w('#btnMemberACancel').onClick((event) => btnCancel_click(event));
         $w('#btnMemberAToSync').onClick((event) => btnMemberAToSync_click(event));
+        $w('#btnMemberAToLocker').onClick((event) => btnMemberAToLocker_click(event));
         $w('#btnMemberAConvert').onClick((event) => btnMemberAConvert_click(event));
+        $w('#drpMemberChoiceType').onClick((event) => drpChoice_change(event));
+        $w('#drpMemberChoiceStatus').onClick((event) => drpChoice_change(event));
         $w('#chkMemberListSelect').onClick((event) => chkSelect_click(event));
         $w('#chkMemberListSelectAll').onClick((event) => chkSelectAll_click(event));
         $w('#btnMemberListTop').onClick((event) => btnTop_click(event));
-        $w('#drpMemberChoiceType').onClick((event) => drpChoice_change(event));
-        $w('#drpMemberChoiceStatus').onClick((event) => drpChoice_change(event));
         $w('#pgnMemberList').onClick((event) => doPgnListClick(event));
         $w('#inpMemberListNoPerPage').onChange((event) => doInpListNoPerPageChange(event));
         $w('#inpMemberEditMobilePhone').onChange((event) => inpPhone_change(event));
@@ -188,11 +192,25 @@ $w.onReady(async function () {
         $w('#boxRpt2').onClick((event) => boxRpt_click("2", event));
         $w('#boxRpt3').onClick((event) => boxRpt_click("3", event));
 
+        // Locker Section event handlers
+        //
+        $w('#btnLockerASave').onClick((event) => btnLockerASave_click(event));
+        $w('#btnLockerAUpdate').onClick((event) => doBtnUpdateClick(event));
+        $w('#btnLockerACancel').onClick((event) => btnCancel_click(event));
+        $w('#btnLockerAToMember').onClick((event) => processCustomClose());
+        $w('#chkLockerListSelect').onClick((event) => chkSelect_click(event));
+        $w('#chkLockerListSelectAll').onClick((event) => chkSelectAll_click(event));
+        $w('#btnLockerListTop').onClick((event) => btnTop_click(event));
+        $w('#pgnLockerList').onClick((event) => doPgnListClick(event));
+        $w('#inpLockerListNoPerPage').onChange((event) => doInpListNoPerPageChange(event));
+        $w('#btnLockerEditHolderAdd').onClick((event) => doBtnLockerEditHolderAdd());
+        $w('#btnLockerEditHolderClear').onClick((event) => doBtnLockerEditHolderClear());
+
         // Repeaters section
         
         $w('#rptMemberList').onItemReady(($item, itemData, index) => {loadRptMemberList($item, itemData, index)});
-        $w('#rptWixUpdates').onItemReady(($item, itemData, index) => {loadRptUpdates($item, itemData)});
-        $w('#rptSkipped').onItemReady(($item, itemData, index) => {loadRptSkipped($item, itemData)});
+        $w('#rptLockerList').onItemReady(($item, itemData, index) => {loadRptLockerList($item, itemData, index)});
+        $w('#rptLockerListDuplicates').onItemReady(($item, itemData, index) => {loadRptLockerListDuplicates($item, itemData, index)});
         $w('#rpt2').onItemReady(($item, itemData, index) => {loadRptN("2",$item, itemData)});
         $w('#rpt3').onItemReady(($item, itemData, index) => {loadRptN("3",$item, itemData)});
 
@@ -236,6 +254,29 @@ function loadRptMemberList($item, itemData, index) {
         $item('#lblMemberListLocker').text = itemData.locker.join(",");
         $item('#chkMemberListSelect').checked = false;
     }
+}
+
+function loadRptLockerList($item, itemData, index) {
+    //console.log("Locker Item,", index);
+    //console.log(itemData);
+    //let wSelected = isSelected(itemData._id);
+
+    if (index === 0) {
+        $item('#chkLockerListSelect').hide();
+    } else {
+        $item('#lblLockerListLocker').text = String(itemData.lockerNo);
+        $item('#lblLockerListOwner').text = itemData.ownerName || "free";
+        $item('#chkLockerListSelect').checked = false;
+    }
+}
+
+function loadRptLockerListDuplicates($item, itemData, index) {
+    //console.log("DUp Item,", index);
+    //console.log(itemData);
+    //let wSelected = isSelected(itemData._id);
+    
+    $item('#lblLockerListDuplicateIndex').text = String(itemData.lockerNo);
+    $item('#lblLockerListDuplicateOwner').text = itemData.ownerName;
 }
 
 // ------------------------------------------------Load Data ---------------------------------------------------------
@@ -307,6 +348,12 @@ function clearEdit(pTarget) {
             $w('#inpMemberEditLstId').value = "";
             $w('#inpMemberEditWixId').value = "";
             $w('#imgMemberEditPhoto').src = gWomanOutline;
+            break;
+        case "Locker":
+            $w('#txtLockerEditLocker').text = "";
+            $w('#inpLockerEditHolder').value = "";
+            $w('#lblLockerEditHolderId').text = "";
+            $w('#lblLockerEditOldHolderId').text = "";
             break;
         default:
             console.log("/MaintainMember clearEditBox Invalid switch key", pTarget)
@@ -390,6 +437,12 @@ function populateEdit(pTarget) {
         $w('#inpMemberEditWixId').value = wSelected.wixId;
         $w('#imgMemberEditPhoto').src = wSelected.photo || wPhotoSrc;
         break;
+    case "Locker":
+        $w('#txtLockerEditLocker').text = String(wSelected.lockerNo);
+        $w('#inpLockerEditHolder').value = wSelected.ownerName;
+        $w('#lblLockerEditHolderId').text = wSelected.ownerId;
+        $w('#lblLockerEditOldHolderId').text = wSelected.ownerId;
+        break;
     default:
         console.log("/MaintainMember populateEdit Invalid switch key", pTarget)
         break;
@@ -410,13 +463,35 @@ export function doMemberView (pViewType){
     return true;
 }
 
+export function doLockerView (pViewType){
+    // This caters for putting in a filter inside the list box
+    if (pViewType === "P") {
+        $w('#chkLockerListSelectAll').collapse();
+        $w('#btnLockerListTop').collapse();
+        $w('#rptLockerList').collapse();
+    } else {
+        $w('#chkLockerListSelectAll').expand();
+        $w('#btnLockerListTop').expand();
+        $w('#rptLockerList').expand();
+    }
+    return true;
+}
+
 // ================================================= Member Events =================================================
 //
 
 export function btnMemberAToSync_click(event) {
     $w('#secMember').collapse();
+    $w('#secLocker').collapse();
     $w('#secSync').expand();
     $w('#ancSyncStart').scrollTo();
+}
+
+export function btnMemberAToLocker_click(event) {
+    $w('#secMember').collapse();
+    $w('#secSync').collapse();
+    $w('#secLocker').expand();
+    loadLockers();
 }
 
 export function btnMemberAConvert_click(event) {
@@ -2123,9 +2198,10 @@ export async function btnSyncStart2_click(event) {
     await checkEachWixMember();
     //messageDone();
 }
+
 export function btnSyncClose_click(event) {
-    $w('#strMember').expand();
-    $w('#strSync').collapse();
+    $w('#secMember').expand();
+    $w('#secSync').collapse();
 }
 
 /**
@@ -2196,6 +2272,216 @@ function editPhone(pNumber){
     return wNumber2.trim();
 }
 
+// ------------------------------------------------ Locker Handling ----------------------------------------------------------
+//
+export async function doBtnLockerEditHolderAdd() {
+	let member = await wixWindow.openLightbox("lbxSelectMember");
+	if (member) {
+		$w('#inpLockerEditHolder').value = member.fullName;
+		$w('#lblLockerEditHolderId').text = member.id;
+	} else {
+		$w('#inpLockerEditHolder').value = "";
+		$w('#lblLockerEditHolderId').text = "";
+	}
+}
+
+export async function doBtnLockerEditHolderClear() {
+	$w('#inpLockerEditHolder').value = "";
+	$w('#lblLockerEditHolderId').text = "";
+}
+
+export async function loadLockers(){
+    try{
+        showWait("Locker");
+        let wLockers = [];
+        let wAllMembers = getEntity("Member");
+        let wActiveMembers = wAllMembers.filter( item => item.username !== "ClubHouse")
+                                        .filter( item => item.type !== "Test")
+                                        .filter( item => item.status !== "Past");
+        
+            let wKey = 0;
+            for (let wMember of wActiveMembers){
+            let wName = wMember.firstName + " " + wMember.surname;
+            let wId = wMember._id;
+            let wLocker = wMember.locker;
+            if (wLocker){
+                for (let item of wLocker){
+                    if (item > 0){
+                        wKey++;
+                        let wLockerObject= {"_id": String(wKey), "lockerNo": parseInt(item,10), "ownerId": wId, "ownerName": wName};
+                        wLockers.push(wLockerObject);
+                    }
+                }
+            }
+        }
+
+        function findDuplicateIds(array) {
+            const seenIds = new Set();
+            const duplicates = new Set();
+            const duplicateObjects = [];
+
+            array.forEach(obj => {
+                if (seenIds.has(obj.lockerNo)) {
+                    duplicates.add(obj.lockerNo); // If already seen, add to duplicates
+                } else {
+                    seenIds.add(obj.lockerNo); // Mark the id as seen
+                }
+            });
+
+            array.forEach( (obj, index) => {
+                if (duplicates.has(obj.lockerNo)) {
+                    wKey++;
+                    obj._id = String(wKey);
+                    duplicateObjects.push(obj); // Collect duplicate objects
+                }
+            });
+        
+            //return Array.from(duplicates); // Convert Set to Array if needed
+            return duplicateObjects;
+        }
+        
+        
+        const wDuplicateLockers = findDuplicateIds(wLockers);
+        
+        function createDenseArrayFromSparse(sparseArray) {
+            // Determine the maximum id in the sparse array to define the length of the dense array
+            const maxId = Math.max(...sparseArray.map(obj => parseInt(obj.lockerNo,10)), 0);
+        
+            // Create a dense array with default objects
+            const denseArray = Array.from({ length: maxId + 1 }, (_, index) => ({
+                _id: String(index),
+                lockerNo: index,
+                ownerId: null,  // Default value for ownerId
+                ownerName: null  // Default value for ownerName
+            }));
+            // Populate the dense array with values from the sparse array
+            sparseArray.forEach(obj => {
+                denseArray[obj.lockerNo] = { ...obj }; // Overwrite the default object with the actual object
+            });
+        
+            return denseArray;
+        }
+        if (wDuplicateLockers && wDuplicateLockers.length > 0) {
+            $w('#lblLockerListDuplicateHdr').text = "The following lockers are duplicated";
+            $w('#rptLockerListDuplicates').expand();
+            $w('#rptLockerListDuplicates').data = wDuplicateLockers;
+        } else {
+            $w('#lblLockerListDuplicateHdr').text = "The are no duplicates";
+            $w('#rptLockerListDuplicates').collapse();
+        }
+                
+        const wAllLockers = createDenseArrayFromSparse(wLockers);
+
+        if (wAllLockers && wAllLockers.length > 0){ 
+            //let wAllMembers = wResults.members;
+            setEntity("Locker", [...wAllLockers]);
+            resetSection("Locker");
+        } else {
+            console.log("/page/Maintain Member loadLockers no lockers found" );
+            //console.log(wResults.error);
+        }
+        await doLockerView("");
+        resetPagination("Locker");
+        hideWait("Locker");
+        }
+    catch (err) {
+        console.log("/page/Maintain Member loadLockers Try-catch, err");
+        console.log(err);
+        if (!gTest) { wixLocation.to("/syserror") };
+    }
+}
+
+export function btnLockerAToMember_click(event) {
+    $w('#secMember').expand();
+    $w('#secLocker').collapse();
+}
+
+export async function btnLockerASave_click(event) {
+    try{
+        showWait("Locker");
+        $w('#btnLockerASave').disable();
+        //-------------------------------------VALIDATIONS-----------------------------------
+
+        //-------------------------------------Main section----------------------------------
+        const wOldHolderId = $w('#lblLockerEditOldHolderId').text;
+        const wNewHolderId = $w('#lblLockerEditHolderId').text;
+        const wLockerNo = parseInt($w('#txtLockerEditLocker').text, 10);
+        const wLocker = getSelectedItem("Locker");
+        let wResult = {};
+
+        let wOldMember = (wOldHolderId) ? getTargetItem("Member", wOldHolderId) : null;
+        let wNewMember = (wNewHolderId) ? getTargetItem("Member", wNewHolderId) : null;
+        if (wOldHolderId === ""){
+            if (wNewHolderId === "") {
+                // do nothing 
+            } else {
+                //console.log("Case 2 - update new member with this locker no");
+                wResult = await addLockerToMember(wNewMember, wLockerNo, wLocker);
+            }
+        } else {
+            if (wNewHolderId === "") {
+                //console.log("Case 3 - remove this locker no from old member");
+                wResult = await removeLockerFromMember(wOldMember, wLockerNo, wLocker);
+            } else {
+                //console.log("Case 4 - remove this locker no from old member + update new member with this locker no");
+                wResult = await removeLockerFromMember(wOldMember, wLockerNo, wLocker);
+                wResult = await addLockerToMember(wNewMember, wLockerNo, wLocker);
+            }
+        }
+        //-------------------------------------Finish off-------------------------------------
+        resetSection("Locker");
+        $w('#btnLockerASave').enable();
+        hideWait("Locker");
+    }
+	catch (err) {
+		console.log("/page/Maintain Member btnLockerASave_click Try-catch, err");
+		console.log(err);
+		if (!gTest) { wixLocation.to("/syserror") };
+	}
+}
+
+async function addLockerToMember(pMember, pLockerNo, pLocker){
+    //  Update locker record
+    //
+    pLocker.ownerId = pMember._id;
+    pLocker.ownerName = pMember.firstName + " " + pMember.surname;
+    updateGlobalDataStore(pLocker,"Locker");
+    updatePagination("Locker");
+    resetCommands("Locker");
+    //  Update member record
+    //
+    let wLockers = pMember.locker;
+    wLockers.push(pLockerNo);
+    wLockers.sort((a, b) => a - b);
+    let wResult = await saveRecord("lstMembers", pMember);
+    if (wResult  && wResult.status){
+        updateGlobalDataStore(pMember,"Member");
+        updatePagination("Member");
+    }
+    return {};
+}
+
+async function removeLockerFromMember(pMember, pLockerNo, pLocker){
+    //  Update locker record
+    //
+    pLocker.ownerId = null;
+    pLocker.ownerName = null;
+    updateGlobalDataStore(pLocker,"Locker");
+    updatePagination("Locker");
+    resetCommands("Locker");
+    //  Update member record
+    //
+    let wLockers = pMember.locker;
+    const index = wLockers.indexOf(pLockerNo);
+    const x = wLockers.splice(index, 1);
+    let wResult = await saveRecord("lstMembers", pMember);
+    if (wResult  && wResult.status){
+        updateGlobalDataStore(pMember,"Member");
+        updatePagination("Member");
+    }
+    return {};
+}
+
 // ------------------------------------------------ Custom Processing ----------------------------------------------------------
 //
 let gSet = [];
@@ -2204,6 +2490,7 @@ function doCustom() {
     $w('#secDesktop').collapse();
     $w('#secMobile').collapse();
     $w('#secMember').collapse();
+    $w('#secLocker').collapse();
     $w('#secSync').collapse();
     $w('#secCustom').expand();
 }
@@ -2228,6 +2515,7 @@ function processCustomClose() {
     $w('#secDesktop').expand();
     $w('#secMobile').collapse();
     $w('#secMember').expand();
+    $w('#secLocker').collapse();
     $w('#secSync').collapse();
     $w('#secCustom').collapse();
     $w('#secMember').scrollTo();

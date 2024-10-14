@@ -36,6 +36,7 @@ const COMPETITION_TYPE = Object.freeze({
 let gLiveComps = [];
 let gRefComps = [];
 let gMembers = [];
+let gLockers = [];
 let gEvents = [];
 let gOpponents = [];
 let gFixtures = [];
@@ -97,6 +98,9 @@ export function setEntity(pTarget, pRec){
         case "Member":
             gMembers = pRec;
             break;
+        case "Locker":
+            gLockers = pRec;
+            break;
         case "Event":
             gEvents = pRec;
             break;
@@ -150,6 +154,9 @@ export function getEntity(pTarget){
             break;
         case "Member":
             wRec = gMembers;
+            break;
+        case "Locker":
+            wRec = gLockers;
             break;
         case "Event":
             wRec = gEvents;
@@ -750,7 +757,12 @@ export function resetPaginationParameters(pTarget){
 			wDataToDisplay = filterByListChoice("Member");
 			wControls = ['#rptMemberList'];
 			break;
-		case "RefComp":
+        case "Locker":
+            wGlobalData = gLockers;
+            wDataToDisplay = filterByListChoice("Locker");
+            wControls = ['#rptLockerList'];
+            break;
+        case "RefComp":
 			wGlobalData = gRefComps;
 			wDataToDisplay = [...gRefComps];
 			wControls = ['#rptRefCompList','#rptRefCompListPrime'];
@@ -816,7 +828,8 @@ export function getTargetDataset(pTarget){
 		case "Team":
 			wDataset = `lstTeams`;
 			break;
-		case "Member":
+		case "Locker":
+        case "Member":
 			wDataset = `lstMembers`;
 			break;
 		case "RefComp":
@@ -887,6 +900,9 @@ export function getTargetParameters(pTarget){
         case "Member":
 			wSort = ['surname', 'firstName'];
             wFirstLine = gMembersFirstRow;
+            break;
+        case "Locker":
+            wSort = ['id'];
             break;
         case "RefComp":
             wSort = ['mix', 'title'];
@@ -1019,7 +1035,10 @@ export function filterByListChoice(pTarget){
                 wDataToDisplay = gMembers.filter ( item => item.type === wType && item.status === wChoice) ; 
             }
 			break;
-		case "RefComp":
+        case "Locker":
+            wDataToDisplay = [...gLockers];
+            break;
+        case "RefComp":
 			wDataToDisplay = [...gRefComps];
 			break;
 		case "LiveComp":
@@ -1244,6 +1263,9 @@ export function updateGlobalDataStore(pRec, pTarget){
                 wSelectedItem.wixId = pRec.wixId;
                 wSelectedItem.photo = pRec.photo;
                 break;
+            case "Locker":
+                wSelectedItem.ownerName = pRec.ownerName;
+                break;
             case "Opponent":
                 wSelectedItem.league = pRec.league;
                 wSelectedItem.team = pRec.team;
@@ -1340,7 +1362,10 @@ export function updateGlobalDataStore(pRec, pTarget){
 		case "Member":
 			gMembers = [...wSortedData];
 			break;
-		case "RefComp":
+        case "Locker":
+            gLockers = [...wSortedData];
+            break;
+        case "RefComp":
 			gRefComps = [...wSortedData];
 			break;
 		case "LiveComp":
@@ -1418,6 +1443,9 @@ export function deleteGlobalDataStore(pIds, pTarget){
 		case "Member":
 			gMembers = [...wSortedData];
 			break;
+        case "Locker":
+            gLockers = [...wSortedData];
+            break;
 		case "RefComp":
 			gRefComps = [...wSortedData]
 			break;
@@ -1498,6 +1526,7 @@ export function clearEditBox(pTarget) {
         case "League":
         case "Opponent":
         case "Member":
+        case "Locker":
         case "Fixture":
         case "StandingData":
         case "Booking":
@@ -1566,6 +1595,7 @@ export function populateEdit(pTarget){
         case "Opponent":
         case "Fixture":
         case "Member":
+        case "Locker":
         case "Booking":
         case "RefEvent":
         case "StandingData":
@@ -1594,7 +1624,10 @@ export function hideGoToButtons(pTarget) {
         case "Member":
             $w('#btnMemberAToSync').hide();
             $w('#btnMemberAToCustom').hide();
-            $w('#btnMemberAToB').hide();
+            $w('#btnMemberAToLocker').hide();
+            break;
+        case "Locker":
+            $w('#btnLockerAToMember').hide();
             break;
         case "Booking":
             $w('#btnBookingAToSpecial').hide();
@@ -1662,7 +1695,7 @@ export function showGoToButtons(pTarget) {
         case "Member":
             $w('#btnMemberAToSync').show();
             $w('#btnMemberAToCustom').show();
-            $w('#btnMemberAToB').show();
+            $w('#btnMemberAToLocker').show();
             break;
         case "Booking":
             $w('#btnBookingAToSpecial').show();
@@ -1672,6 +1705,9 @@ export function showGoToButtons(pTarget) {
             break;
         case "Officer":
             $w('#btnOfficerAToA').show();
+            break;
+        case "Locker":
+            $w('#btnLockerAToMember').show();
             break;
         case "Team":
             $w('#btnTeamAToLeague').show();
@@ -1747,7 +1783,10 @@ export function getTargetItem (pTarget, pId){
 		case "Member":
 			return gMembers.find( wItem => wItem._id === pId);
 			break;
-		case "StandingData":
+        case "Locker":
+            return gLockers.find( wItem => wItem._id === pId);
+            break;
+        case "StandingData":
 			return gStandingDatas.find( wItem => wItem._id === pId);
 			break;
 		case "Officer":
@@ -1827,6 +1866,10 @@ export function resetSection(pTarget) {
             wNoEntries = gMembers.length;
             //$w('#chkMemberListSelect').checked = false;
             break;
+        case "Locker":
+            wNoEntries = gLockers.length;
+            //$w('#chkLockerListSelect').checked = false;
+            break;
         case "RefComp":
             wNoEntries = gRefComps.length;
             //$w('#chkRefCompListSelect').checked = false;
@@ -1872,7 +1915,7 @@ export function resetSection(pTarget) {
     } else {
 		$w(`#box${pTarget}None`).collapse();
 		$w(`#box${pTarget}List`).expand();
-        if (pTarget !== "RefEvent" &&  pTarget !== "RefComp" &&  pTarget !== "LiveComp" ){
+        if (pTarget !== "RefEvent" &&  pTarget !== "RefComp" &&  pTarget !== "LiveComp" && pTarget !== 'Locker'){
 		    $w(`#box${pTarget}Choice`).expand();
         }
     }
@@ -1959,7 +2002,15 @@ export function resetCommands(pTarget) {
 			$w(`#btnMemberASave`).hide();
 			$w(`#btnMemberACancel`).hide();
 			break;
-		case "StandingData":
+        case "Locker":
+            $w('#boxLockerCommands').expand();
+            $w(`#btnLockerACreate`).hide();
+            $w(`#btnLockerAUpdate`).hide();
+            $w(`#btnLockerADelete`).hide();
+            $w(`#btnLockerASave`).hide();
+            $w(`#btnLockerACancel`).hide();
+            break;
+        case "StandingData":
 			$w(`#btnStandingDataACreate`).show();
 			$w(`#btnStandingDataAUpdate`).hide();
 			$w(`#btnStandingDataADelete`).hide();
@@ -2076,9 +2127,13 @@ export function configureScreen(pTarget) {
 
     switch (wCount) {
 		case 0:
-			$w(wbtnCreate).show();
+			if (pTarget === "Locker"){
+                $w(wbtnCreate).hide();
+            } else {
+                $w(wbtnCreate).show();
+            }
+            $w(wbtnDelete).hide();
 			$w(wbtnUpdate).hide();
-			$w(wbtnDelete).hide();
 			$w(wbtnSave).hide();
 			$w(wbtnCancel).show();
 			$w(wBoxPrime).collapse();
@@ -2087,9 +2142,14 @@ export function configureScreen(pTarget) {
 		case 1:
 			//wSelected = getCheckedItem(pTarget, wPointer);
 			//wSelected = getSelectedItem(pTarget);
-			$w(wbtnCreate).hide();
+			if (pTarget === "Locker"){
+                $w(wbtnCreate).hide();
+                $w(wbtnDelete).hide();
+            } else {
+                $w(wbtnCreate).show();
+                $w(wbtnDelete).show();
+            }
 			$w(wbtnUpdate).show();
-			$w(wbtnDelete).show();
 			$w(wbtnSave).hide();
 			$w(wbtnCancel).show();
             if (pTarget === "RefComp") {
@@ -2109,7 +2169,11 @@ export function configureScreen(pTarget) {
 		default:
 			$w(wbtnCreate).hide();
 			$w(wbtnUpdate).hide();
-			$w(wbtnDelete).show();
+			if (pTarget === "Locker"){
+                $w(wbtnDelete).hide();
+            } else {
+                $w(wbtnDelete).show();
+            }
 			$w(wbtnSave).hide();
 			$w(wbtnCancel).show()
             if (pTarget === "Event" || pTarget === "Officer"){
@@ -2145,6 +2209,12 @@ export function getSelectedItem(pTarget) {
                 break;
             case "Member":
                 wSelectedItem = gMembers.find(item => item._id === wSelectedItemId)
+                if (wSelectedItem === -1) {
+                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
+                }
+                break;
+            case "Locker":
+                wSelectedItem = gLockers.find(item => item._id === wSelectedItemId)
                 if (wSelectedItem === -1) {
                     console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
                 }
