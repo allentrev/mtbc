@@ -130,8 +130,8 @@ function populateEdit(pTarget) {
                 $w('#inpMemberEditLoginEmail').disable();
             }
         }
-        let wMobilePhone = wSelected.mobilePhone === "no mobile #" ? "" : hyphenatePhoneNumber(wSelected.mobilePhone);
-        let wHomePhone = wSelected.homePhone === "no home #" ? "" : hyphenatePhoneNumber(wSelected.homePhone);
+        let wMobilePhone = wSelected.mobilePhone === "no phone #" ? "" : hyphenatePhoneNumber(wSelected.mobilePhone);
+        let wHomePhone = wSelected.homePhone === "no phone #" ? "" : hyphenatePhoneNumber(wSelected.homePhone);
         $w('#inpMemberEditUsername').value = wSelected.username || "";
         $w('#inpMemberEditLoginEmail').value = wSelected.loginEmail || "";
         $w('#inpMemberEditFirstName').value = wSelected.firstName || "";
@@ -189,7 +189,7 @@ export async function btnMemberASave_click(event) {
         }
         let wMobile = $w('#inpMemberEditMobilePhone').value;
         if (wContactPref === "S" || wContactPref === "B") {
-            if (wMobile === "" || wMobile === "no mobile #") {
+            if (wMobile === "" || wMobile === "no phone #") {
                 showError('Member',37);
                 hideWait('Member');
             $w('#inpMemberEditMobilePhone').focus();

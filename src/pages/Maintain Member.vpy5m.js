@@ -247,7 +247,7 @@ function loadRptMemberList($item, itemData, index) {
     if (index === 0) {
         $item('#chkMemberListSelect').hide();
     } else {
-        let wMobilePhone = itemData.mobilePhone === "no mobile #" ? "" : hyphenatePhoneNumber(itemData.mobilePhone);
+        let wMobilePhone = itemData.mobilePhone === "no phone #" ? "" : hyphenatePhoneNumber(itemData.mobilePhone);
         $item('#lblMemberListFirstName').text = itemData.firstName;
         $item('#lblMemberListSurname').text = itemData.surname;
         $item('#lblMemberListMobilePhone').text = wMobilePhone;
@@ -390,8 +390,8 @@ function populateEdit(pTarget) {
             $w('#inpMemberEditUsername').disable();
             $w('#btnMemberAConvert').show();
         }
-        let wMobilePhone = wSelected.mobilePhone === "no mobile #" ? "" : hyphenatePhoneNumber(wSelected.mobilePhone);
-        let wHomePhone = wSelected.homePhone === "no home #" ? "" : hyphenatePhoneNumber(wSelected.homePhone);
+        let wMobilePhone = wSelected.mobilePhone === "no phone #" ? "" : hyphenatePhoneNumber(wSelected.mobilePhone);
+        let wHomePhone = wSelected.homePhone === "no phone #" ? "" : hyphenatePhoneNumber(wSelected.homePhone);
         switch (wSelected.status){
             case "Pending":
                 $w('#drpMemberEditNewStatus').options = wStatusPendingOptions;
@@ -2694,10 +2694,10 @@ async function processRecord(pRec) {
     let wMobile2 = wMobile;
 
     if (wHome === ""|| wHome === null || wHome === undefined ){
-        wHome = "no home #";
+        wHome = "no phone #";
         wHome2 = wHome;
     }
-    if (wHome !== "no home #"){
+    if (wHome !== "no phone #"){
         //remove all spaces
         wHome2= wHome.replace(/\s/g, '');    
         if (wHome2.length === 6) {
@@ -2707,10 +2707,10 @@ async function processRecord(pRec) {
     pRec.homePhone = wHome2;
 
     if (wMobile === ""|| wMobile === null || wMobile === undefined ){
-        wMobile = "no mobile #";
+        wMobile = "no phone #";
         wMobile2 = wMobile;
     }
-    if (wMobile !== "no mobile #"){
+    if (wMobile !== "no phone #"){
         //remove all spaces
         wMobile2= wMobile.replace(/\s/g, '');    
         if (wMobile2.length !== 11) { wLong = "Wrong size"}
