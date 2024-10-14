@@ -2,7 +2,7 @@ import wixWindow from 'wix-window';
 import { authentication }   from 'wix-members';
 import wixLocation 				        from 'wix-location';
 
-import _ from 'lodash';
+import _, { values } from 'lodash';
 
 import { saveRecord }               from 'backend/backEvents.jsw';
 
@@ -1007,6 +1007,7 @@ export async function btnSyncStart_click(event) {
         gImpMembers.some(c => c.key === a.key)
     );
     gMessages.length = 0;
+    showMessage(gStage);
     $w('#tblProgress').rows = gMessages;
     showMessage("Loading Lst Members");         //B
     let promiseB1 = loadLstMembersData();
@@ -1022,8 +1023,8 @@ export async function btnSyncStart_click(event) {
                     const onlyB = unique(gLstMembers, gImpMembers);
                     const onlyC = unique(gImpMembers, gLstMembers);
                     //console.log("gLst, gImp,onlyB, onlyC");
-                    //console.log(gLstMembers);
-                    //console.log(gImpMembers);
+                    console.log(gLstMembers);
+                    console.log(gImpMembers);
                     //console.log(onlyB);
                     //console.log(onlyC);
                     if (onlyB.length > 0 || onlyC.length > 0) {
@@ -1031,7 +1032,7 @@ export async function btnSyncStart_click(event) {
                         reconcileDatasets(onlyB, onlyC);
                     } else {
                         $w('#btnSyncStart').label = "Re-load";
-                        gStage = "Field_Values";
+                        gStage = "Field-Values";
                         messageDone(5);
                     }
                 } else {
@@ -1057,9 +1058,9 @@ export async function btnSyncStart_click(event) {
         case "Field-Values":
             Promise.all([promiseB1,promiseA2]).then(async()=>{
                 messageDone(3);
-                showMessage("SYnchronise Lst field values");
+                showMessage("Synchronise Lst field values");
                 await synchroniseFieldValues();
-                gStage = "Lst-Wix";
+                //gStage = "Lst-Wix";
                 messageDone(4);
             })
             break;
@@ -1074,7 +1075,7 @@ function reconcileMTBCValues(){
             let wWixMaxValue = getMTBCMaxValue(gWixMembers);
             if (wLstMaxValue === wWixMaxValue){
                 showMessage("MTBC values agree");
-                messageDone(3);
+                messageDone(4);
                 return true;
             } else {
                 showMessage(`Lst Max Value = ${wLstMaxValue} Wix Max Value = ${wWixMaxValue}`);
@@ -1120,7 +1121,53 @@ function reconcileDatasets(pA, pB){
 }
 
 function synchroniseFieldValues(){
-    console.log("Sync Values");
+    // Once the Lst entries are confirmed, need to check each entry to ensure main data fields agree.
+    // The assumption is that the Import spreadsheet is the master source. Therefore, any discrepancy, copy the Import
+    // value to the Lst record. (However, there is a possibility that the member may chose to amend their data online
+    // through their Profile Edit. This does generate an update email to the Membership Officer, so it is assumed that 
+    // these changes will be in the spreadsheet). The fields comapred are address fields and telephone fields. Lockers
+    // dealt with seperately in its own section.  
+    //for (let wMember of gLstMembers){
+
+    //
+    let wFieldNames = ["addrLine1", "addrLine2", "town", "postCode", "homePhone", "mobilePhone", "contactEmail"];
+    let wImpFieldNames = ["add1", "add2", "add3", "postcode", "home", "mobile", "email"];
+    //let wLstMember = gLstMembers[1];
+    for (let wLstMember of gLstMembers){
+        let wChanged = false;
+        let wMsg = "";
+        let wImpMember = gImpMembers.find( item => item.key === wLstMember.key);
+        if (wImpMember){
+            for (let i = 0; i < 7; i++) {
+                let wFK = wFieldNames[i];
+                let wImpFK = wImpFieldNames[i];
+                let wLst = wLstMember[wFK];
+                let wImp = wImpMember[wFK];
+                if (wFK.includes("Phone")){
+                    if (wImp && wImp.length === 6){
+                        wLst = wLst.slice(-6);
+                    }    
+                }
+                if (wLst !== wImp) {
+                    if (wImp === "" || wImp === null || wImp === undefined){
+
+                    } else {
+                        wChanged = true;
+                        wMsg = wMsg + `field ${wFK} changed from ${wLst} to ${wImp}\n`;
+                        wLst = wImp;
+                    }
+                }
+            }
+            if (wChanged) {
+                //save record
+                let wOut = `The following changes were made to ${wLstMember.key}'s Lst record:\n` + wMsg;
+                console.log(wOut);
+                wChanged = false;
+            }
+        } else {
+            console.log(`/page/MaintainMember synchroniseFieldValues Cant find member ${wLstMember.key}`);
+        }
+    }
     return true;
 }
 
