@@ -1023,8 +1023,6 @@ export async function btnSyncStart_click(event) {
                     const onlyB = unique(gLstMembers, gImpMembers);
                     const onlyC = unique(gImpMembers, gLstMembers);
                     //console.log("gLst, gImp,onlyB, onlyC");
-                    console.log(gLstMembers);
-                    console.log(gImpMembers);
                     //console.log(onlyB);
                     //console.log(onlyC);
                     if (onlyB.length > 0 || onlyC.length > 0) {
@@ -1033,7 +1031,7 @@ export async function btnSyncStart_click(event) {
                     } else {
                         $w('#btnSyncStart').label = "Re-load";
                         gStage = "Field-Values";
-                        messageDone(5);
+                        messageDone(3);
                     }
                 } else {
                     showMessage("MTBC Max Value disparity");
@@ -1057,11 +1055,10 @@ export async function btnSyncStart_click(event) {
             break;
         case "Field-Values":
             Promise.all([promiseB1,promiseA2]).then(async()=>{
-                messageDone(3);
                 showMessage("Synchronise Lst field values");
                 await synchroniseFieldValues();
-                //gStage = "Lst-Wix";
-                messageDone(4);
+                gStage = "Lst-Wix";
+                messageDone(3);
             })
             break;
     }
@@ -1076,6 +1073,7 @@ function reconcileMTBCValues(){
             if (wLstMaxValue === wWixMaxValue){
                 showMessage("MTBC values agree");
                 messageDone(4);
+                messageDone(5);
                 return true;
             } else {
                 showMessage(`Lst Max Value = ${wLstMaxValue} Wix Max Value = ${wWixMaxValue}`);
@@ -1134,6 +1132,10 @@ function synchroniseFieldValues(){
     let wImpFieldNames = ["add1", "add2", "add3", "postcode", "home", "mobile", "email"];
     //let wLstMember = gLstMembers[1];
     for (let wLstMember of gLstMembers){
+        let wLstIn;
+        let wImpIn;
+        let wLst = "";
+        let wImp = "";
         let wChanged = false;
         let wMsg = "";
         let wImpMember = gImpMembers.find( item => item.key === wLstMember.key);
@@ -1141,26 +1143,52 @@ function synchroniseFieldValues(){
             for (let i = 0; i < 7; i++) {
                 let wFK = wFieldNames[i];
                 let wImpFK = wImpFieldNames[i];
-                let wLst = wLstMember[wFK];
-                let wImp = wImpMember[wFK];
+                wLstIn = wLstMember[wFK];
+                wImpIn = wImpMember[wFK];
+                wLst = (wLstIn && wLstIn.length > 0) ? wLstIn.trim() : null;
+                wImp = (wImpIn && wImpIn.length > 0) ? wImpIn.trim() : null;
                 if (wFK.includes("Phone")){
-                    if (wImp && wImp.length === 6){
+                    if (wImpIn && wImpIn.length === 6){
                         wLst = wLst.slice(-6);
                     }    
-                }
+                    if(!wImp){
+                        wLst = "no phone #";
+                    }
+                    wImp = (wImp) ? wImp.replace(/-/g, "") : null;
+                    wImp = (wImp ==="0") ? "no phone #" : wImp;
+                }   
                 if (wLst !== wImp) {
                     if (wImp === "" || wImp === null || wImp === undefined){
-
+                        wLst = (wFK.includes("Phone")) ? "no phone #" : null;
                     } else {
                         wChanged = true;
-                        wMsg = wMsg + `field ${wFK} changed from ${wLst} to ${wImp}\n`;
+                        if (wLst){
+                            if (wImp){
+                                wMsg = wMsg + `field ${wFK} changed from ${wLst} to ${wImp}\n`;
+                            } else {
+                                wMsg = wMsg + `field ${wFK} changed from ${wLst} to null\n`;
+                            }
+                        } else {
+                            if (wImp){
+                                wMsg = wMsg + `field ${wFK} changed from null to ${wImp}\n`;
+                            } else {
+                                wMsg = wMsg + `field ${wFK} not changed - is null\n`;
+                            }
+                        }
                         wLst = wImp;
+                    }
+                } else {
+                    if (wLst && wLst.length < wLstIn.length) {
+                        if (wFK !== "homePhone") {
+                            wChanged = true;
+                            wMsg = wMsg + `field ${wFK} trimmed from ${String(wLstIn.length)} to ${String(wLst.length)}\n`;
+                        }
                     }
                 }
             }
             if (wChanged) {
                 //save record
-                let wOut = `The following changes were made to ${wLstMember.key}'s Lst record:\n` + wMsg;
+                let wOut = `The following changes were made to ${wLstMember.key}'s Lst record:\n` + wMsg + "\n";
                 console.log(wOut);
                 wChanged = false;
             }
@@ -1321,7 +1349,7 @@ async function loadWixMembersData() {
             wTempMember.key = wTempMember.name;
             gWixMembers.push(wTempMember);
         }
-        messageDone(3);
+        (gStage = "Lst-Import") ? messageDone(2) : messageDone(3);
         /**  
         let count = 1;
         $w('#pbrLoading').targetValue = wWixContactsMembers.length-1;
