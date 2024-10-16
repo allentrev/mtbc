@@ -1956,7 +1956,7 @@ export async function btnLstRegister_click(event) {
 //  So, the LST entry will beturned into a Username based LST account, and a Wix record set up for them
 //  by registering them. Will also need to generate a Login Token for that user, and create a new MTBC
 //  record for the user.
-//  1) Create new mmber (Lst, Wix, MTBC)
+//  1) Create new mmber (Lst, Wix, MTBC) using details from old Lst
 //  2) Delete existing Lst member
 
     const pN = "2";
