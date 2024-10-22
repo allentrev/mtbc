@@ -2395,7 +2395,7 @@ export function showError(pTarget, pErrNo, pErrMsg = "") {
                     "Record cancelled",
                     "Cancellation failed",  //20
                     "Select more rows to show whole table when moving rows",
-                    "Invalid email address format",
+                    "Invalid login email address format",
                     "Member registered and created OK",
                     "Username must be at least 3 characters",
                     "Cannot process automatic mode competition",    // 25
@@ -2414,6 +2414,7 @@ export function showError(pTarget, pErrNo, pErrMsg = "") {
                     "Must supply either a Username or a Login Email",
                     "Name must be supplied",
                     "Please inform member action completed",   //40
+                    "Invalid contact email address format",
                     ""
         ];
         let wControlName = `#txt${pTarget}ErrMsg`;

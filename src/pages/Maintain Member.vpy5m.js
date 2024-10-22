@@ -173,12 +173,14 @@ $w.onReady(async function () {
         
         // Sync Section event handlers
         //
-        $w('#btnSyncStart').onClick((event) => btnSyncStart_click(event));
+        $w('#btnLstImp').onClick((event) => doStage1(event));
+        $w('#btnFieldValue').onClick((event) => doStage2(event));
+        $w('#btnLstVWix').onClick((event) => doStage3(event));
         $w('#btnSyncClose').onClick((event) => processCustomClose());
         $w('#btnLstAmend').onClick((event) => btnLstAmend_click(event));
         $w('#btn2AmendSave').onClick((event) => btn2AmendSave_click(event));
         $w('#btn3AmendSave').onClick((event) => btn3AmendSave_click(event));
-        $w('#btnAmendCancel').onClick((event) => btnAmendCancel_click(event));
+        $w('#btnAmendCancel').onClick((event) => btnAmendCancel_click());
         $w('#btnLstPast').onClick((event) => btnLstPast_click(event));
         $w('#btnLstTest').onClick((event) => btnLstTest_click(event));
         $w('#btnImpNewFull').onClick((event) => btnImpNew_click("F", event));
@@ -549,7 +551,7 @@ export async function btnMemberASave_click(event) {
         }
         if (!$w('#inpMemberEditContactEmail').valid) {
             $w(`#txtMemberErrMsg`).text = $w('#inpMemberEditContactEmail').validationMessage;
-            showError("Member", 22);
+            showError("Member", 41);
             hideWait("Member");
             $w('#inpMemberEditContactEmail').focus();
             return
@@ -846,6 +848,7 @@ export async  function validateLoginEmail (value, reject){
             $w('#inpMemberEditContactEmail').value = wValue;
         }
 }
+
 export function btnMemberEditClearPhoto_click(event) {
     let wGender = $w('#inpMemberEditMix').value || "L";
     let wPhoto = (wGender === "L") ?  gWomanOutline:  gManOutline;
@@ -1000,68 +1003,81 @@ let gStage = "Lst-Import";
 
 let gMessages = [];
 
-export async function btnSyncStart_click(event) {
-    //  A= LSt B = Import  C = Wix
+export async function doStage1(event) {
+    //  A = LSt B = Import  C = Wix
     // Arrays containing elements common to A, B, and C
-    const BandC = gLstMembers.filter(a => 
-        gImpMembers.some(c => c.key === a.key)
-    );
+
     gMessages.length = 0;
     showMessage(gStage);
     $w('#tblProgress').rows = gMessages;
     showMessage("Loading Lst Members");         //B
-    let promiseB1 = loadLstMembersData();
+    let promiseA = loadLstMembersData();
     showMessage("Loading Wix Members");      //C
-    let promiseA2 = loadWixMembersData();
-    switch (gStage) {
-        case "Lst-Import":
-            showMessage("Loading Import Members");      //C
-            let promiseC1 = loadImpMembersData();
-            Promise.all([promiseA2, promiseB1,promiseC1]).then(async ()=>{
-                if (reconcileMTBCValues()){
-                    messageDone(0);
-                    const onlyB = unique(gLstMembers, gImpMembers);
-                    const onlyC = unique(gImpMembers, gLstMembers);
-                    //console.log("gLst, gImp,onlyB, onlyC");
-                    //console.log(onlyB);
-                    //console.log(onlyC);
-                    if (onlyB.length > 0 || onlyC.length > 0) {
-                        showMessage("Reconcile Lst with Import");
-                        reconcileDatasets(onlyB, onlyC);
-                    } else {
-                        $w('#btnSyncStart').label = "Re-load";
-                        gStage = "Field-Values";
-                        messageDone(3);
-                    }
-                } else {
-                    showMessage("MTBC Max Value disparity");
-                    messageDone(5);
-                }
-            })
-            break;
-        case "Lst-Wix":
-            Promise.all([promiseB1,promiseA2]).then(()=>{
+    let promiseC = loadWixMembersData();
+    showMessage("Loading Import Members");      //C
+    let promiseB = loadImpMembersData();
+    Promise.all([promiseA, promiseB,promiseC]).then(async ()=>{
+        if (reconcileMTBCValues()){
+            messageDone(0);
+            const onlyA = unique(gLstMembers, gImpMembers);
+            const onlyB = unique(gImpMembers, gLstMembers);
+            //console.log("gLst, gImp,onlyB, onlyC");
+            //console.log(onlyB);
+            //console.log(onlyC);
+            if (onlyA.length > 0 || onlyB.length > 0) {
+                showMessage("Reconcile Lst with Import");
+                reconcileDatasets(onlyA, onlyB);
+            } else {
+                gStage = "Field-Values";
                 messageDone(3);
-                showMessage("Reconcile Lst with Wix");
-                const onlyA = unique(gWixMembers, gLstMembers);
-                const onlyD = unique(gLstMembers, gWixMembers);
-                if (onlyA.length > 0 || onlyD.length > 0) {
-                    reconcileDatasets(onlyD, onlyA);
-                } else {
-                    gStage = "End";
-                    messageDone(4);
-                }
-            })
-            break;
-        case "Field-Values":
-            Promise.all([promiseB1,promiseA2]).then(async()=>{
-                showMessage("Synchronise Lst field values");
-                await synchroniseFieldValues();
-                gStage = "Lst-Wix";
-                messageDone(3);
-            })
-            break;
-    }
+            }
+        } else {
+            showMessage("MTBC Max Value disparity");
+            messageDone(5);
+        }
+    })
+}
+
+export async function doStage2(event){
+    gMessages.length = 0;
+    showMessage(gStage);
+    $w('#tblProgress').rows = gMessages;
+    showMessage("Loading Lst Members");         //B
+    let promiseA = loadLstMembersData();
+    showMessage("Loading Import Members");      //C
+    let promiseB = loadImpMembersData();
+    Promise.all([promiseA,promiseB]).then(async()=>{
+        showMessage("Synchronise Lst field values");
+        synchroniseFieldValues();
+        gStage = "Lst-Wix";
+        messageDone(3);
+        showMessage("Sync done " + gStage)
+    })
+}
+
+export async function doStage3(event){
+
+    gMessages.length = 0;
+    showMessage(gStage);
+    $w('#tblProgress').rows = gMessages;
+    showMessage("Loading Lst Members");         //B
+    let promiseA = loadLstMembersData();
+    showMessage("Loading Wix Members");      //C
+    let promiseC = loadWixMembersData();
+
+    Promise.all([promiseA,promiseC]).then(()=>{
+        gStage = "Lst-Wix";
+        messageDone(3);
+        showMessage("Reconcile Lst with Wix");
+        const onlyC = unique(gWixMembers, gLstMembers);
+        const onlyD = unique(gLstMembers, gWixMembers);
+        if (onlyC.length > 0 || onlyD.length > 0) {
+            reconcileDatasets(onlyD, onlyC);
+        } else {
+            gStage = "End";
+            messageDone(4);
+        }
+    })
 }
 
 function reconcileMTBCValues(){
@@ -1130,6 +1146,7 @@ function synchroniseFieldValues(){
     //
     let wFieldNames = ["addrLine1", "addrLine2", "town", "postCode", "homePhone", "mobilePhone", "contactEmail"];
     let wImpFieldNames = ["add1", "add2", "add3", "postcode", "home", "mobile", "email"];
+    let wChangeList = [];
     //let wLstMember = gLstMembers[1];
     for (let wLstMember of gLstMembers){
         let wLstIn;
@@ -1185,17 +1202,44 @@ function synchroniseFieldValues(){
                         }
                     }
                 }
-            }
+            } // for i 1 to 7 loop
             if (wChanged) {
                 //save record
-                let wOut = `The following changes were made to ${wLstMember.key}'s Lst record:\n` + wMsg + "\n";
-                console.log(wOut);
-                wChanged = false;
+                //let wResult  await savedRecord("lstMember", wLstMember);
+                let wResult.status = true;
+                if (wResult && wResult.status){
+                    let wOut = `The following changes were made to ${wLstMember.key}'s Lst record:\n` + wMsg + "\n";
+                    console.log(wOut);
+                    wChangeList.push(wOut);
+                    $w('#btnLstAmend').hide();
+                    removeFromSet("2", wMember2._id);
+                    removeFromSet("3", wMember3._id);
+                    $w('#boxLstAmend').collapse();
+                    showMsg(1,0,`Import name ${wTargetMember.firstName} ${wTargetMember.surname} updated`);
+                } else {
+                    console.log("/MaintainMember synchroniseFieldValues sendMsg failed, error");
+                    console.log(wResult.error);
+                }
+                    wChanged = false;
             }
         } else {
-            console.log(`/page/MaintainMember synchroniseFieldValues Cant find member ${wLstMember.key}`);
+            console.log(`/MaintainMember synchroniseFieldValues Cant find member ${wLstMember.key}`);
         }
-    }
+    }   // for of gLstMembers
+    if (wChangeList && wChangeList.length > 0) {
+        let wParams = {    
+            "changeList": wChangeList
+        }
+
+        wResult = await sendMsg("E", "WEB", null, null, false, "MemberAmendFieldValues", wParams);
+         //let wResult.status = true;
+        if (wResult && wResult.status){
+            console.log("/MaintainMember synchroniseFieldValues sendMsg OK");
+        } else {
+            console.log("/MaintainMember synchroniseFieldValues sendMsg failed, error");
+            console.log(wResult.error);
+        }
+    }    
     return true;
 }
 
@@ -1384,6 +1428,7 @@ async function loadLstMembersData() {
 }
 
 async function loadImpMembersData() {
+
     gImpMembers = await getAllImportMembers();
     messageDone(2);
 }
@@ -1435,7 +1480,6 @@ export function boxRpt_click(pN, event){
         wLast3Id = wId;
         wMember3 = {...wMember};
     }
-
     function makeSelection(pN, pItem){
         pItem(`#boxRpt${pN}`).style.backgroundColor = COLOUR.SELECTED;
         switch (gStage) {
@@ -1712,8 +1756,6 @@ export async function btnLstAmend_click(event) {
         $w('#btn2AmendSave').disable();
         $w('#btn3AmendSave').label = "Update Wix Data";
     }
-
-
 }
 
 export async function btn2AmendSave_click(event) {
@@ -1721,8 +1763,8 @@ export async function btn2AmendSave_click(event) {
     // Update the Lst value with the Import values
     console.log("Btn Lst Amend Save click", gStage);
     showStageWait(1);
+    let wMember = getSyncTargetItem("2",wMember2._id);
     if (gStage === "Lst-Import"){
-        let wMember = getSyncTargetItem("2",wMember2._id);
         wMember.firstName = $w('#inpLstAmendMasterFirstName').value;
         wMember.surname =  $w('#inpLstAmendMasterSurname').value;
         let wResult = await saveRecord("lstMembers", wMember);
@@ -1730,6 +1772,7 @@ export async function btn2AmendSave_click(event) {
             let wSavedRecord = wResult.savedRecord;
             updateGlobalDataStore(wSavedRecord,"Member");
             updatePagination("Member");
+            $w('#btnLstAmend').hide();
             removeFromSet("2", wMember2._id);
             removeFromSet("3", wMember3._id);
             $w('#boxLstAmend').collapse();
@@ -1753,15 +1796,31 @@ export async function btn3AmendSave_click(event) {
     if (gStage === "Lst-Import"){
         showStageWait(1);
         //  Update the IMport record and send Email to Membership secretary to update Master membership spreadsheet
+        let wOldName = wTargetMember.firstName + " " + wTargetMember.surname;
         wTargetMember.firstName = $w('#inpLstAmendWebFirstName').value;
         wTargetMember.surname =  $w('#inpLstAmendWebSurname').value;
         let wResult = await saveImportMemberRecord(wTargetMember);
-        console.log("SEND EMAIL TO ANNE", wTargetMember.firstName + " " + wTargetMember.surname);
+        //  Send message to Membership secreatry
+
         if (wResult  && wResult.status){
-            removeFromSet("2", wMember2._id);
-            removeFromSet("3", wMember3._id);
-            $w('#boxLstAmend').collapse();
-            showMsg(1,0,`Import name ${wTargetMember.firstName} ${wTargetMember.surname} updated`);
+            let wParams = {    
+                "oldName": wOldName,
+                "newName": wTargetMember.firstName + " " + wTargetMember.surname
+            }
+    
+            wResult = await sendMsg("E", "WEB", null, null, false, "MemberAmendImportName", wParams);
+            //let wResult.status = true;
+            if (wResult && wResult.status){
+                console.log("/MaintainMember btn3AmendSave sendMsgToJob OK for ", wTargetMember._id);
+                $w('#btnLstAmend').hide();
+                removeFromSet("2", wMember2._id);
+                removeFromSet("3", wMember3._id);
+                $w('#boxLstAmend').collapse();
+                showMsg(1,0,`Import name ${wTargetMember.firstName} ${wTargetMember.surname} updated`);
+            } else {
+                console.log("/MaintainMember btn3AmendSave sendMsgToJob failed, error");
+                console.log(wResult.error);
+            }
         } else {
             console.log("MaintainMember btn3AmendSave saverecord fail");
             console.log(wResult.error);
@@ -1775,14 +1834,15 @@ export async function btn3AmendSave_click(event) {
         wTargetMember.firstName = wFirstName;
         wTargetMember.lastName =  wSurname;
         wTargetMember._id = wMember3._id;
-        let wResult = await updateWixMemberNames(wTargetMember);
+        let wResult = await updateWixMember(wTargetMember);
+        $w('#btnLstAmend').hide();
         removeFromSet("2", wMember2._id);
         removeFromSet("3", wMember3._id);
         $w('#boxLstAmend').collapse();
         showMsg(2,0,`Wix name ${wFirstName} ${wSurname} updated`);
     } else {
         console.log("MaintainMember btn3AmendSave wrong state", gStage);
-        showMsg(2,0,`Wix name ${wFirstName} ${wSurname} updated`);
+        showMsg(2,0,`Wix name ${wTargetMember.firstName} ${wTargetMember.lastName} updated`);
     }
 }
 
@@ -1791,6 +1851,12 @@ export function btnAmendCancel_click(){
     $w('#inpLstAmendWebSurname').value = "";
     $w('#inpLstAmendMasterFirstName').value = "";
     $w('#inpLstAmendMasterSurname').value = "";
+    $w('#btnLstAmend').hide();
+    $w('#btnWixUpdate').hide();
+    $w('#btnWixDelete').hide();
+    $w('#btnLstRegister').hide();
+    
+    
     wLast2Id = null;
     wLast3Id = null;
     clearAllSelection(2);

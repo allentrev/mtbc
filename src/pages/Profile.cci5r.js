@@ -251,7 +251,6 @@ export async function btnMemberASave_click(event) {
                 }
 
                 wResult = await sendMsg("E", "WEB", null, null, false, "Profile_1", wParams);
-                sendMsg
                 //let wResult.status = true;
                 if (wResult && wResult.status){
                     console.log("/membersArea/profile  btnMemberASave_click saveRecord sendMsgToJob OK for ", gMember._id);
