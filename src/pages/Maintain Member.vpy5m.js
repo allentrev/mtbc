@@ -1882,7 +1882,7 @@ export async function btnLstTest_click(event) {
  * 
  * 
  * @param {string} pSource 
- * @param {number} pN 
+ * @param {string} pN 
  * @param {string} pStatus
  *  
  */
@@ -1911,7 +1911,7 @@ async function updateLstMembers(pSource, pN, pStatus) {
         let wUpdates = wUpdateArray.toString();
         let wErrors = wResult.results.errors.length;        
         console.log(`/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`);
-        if (pN === 2 {
+        if (pN === "2") {
             gSelectLeftStack.length = 0;
             $w('#chk2').checked = false;
         } else {
