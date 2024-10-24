@@ -588,7 +588,7 @@ export async function saveRecord(pDataset, pRec) {
 		};
 		//console.log("saverecord, pRec take away selected, chnMkr");
 		//console.log(pRec);
-		const {selected, chainMkr,...pNewRec } = pRec;
+		const {selected, chainMkr, key, ...pNewRec } = pRec;
 
 		let savedRec = await wixData.save(pDataset, pNewRec, options);
   		if	(savedRec) {

@@ -1179,8 +1179,10 @@ async function synchroniseFieldValues(){
                 }   
                 if (wLst !== wImp) {
                     if (wImp === "" || wImp === null || wImp === undefined){
+                        // Import field does not have a value
                         wLst = (wFK.includes("Phone")) ? "no phone #" : null;
                     } else {
+                        // Import field does have a value
                         wChanged = true;
                         if (wLst){
                             if (wImp){
@@ -1200,13 +1202,16 @@ async function synchroniseFieldValues(){
                 } else {
                     if (wLst && wLst.length < wLstIn.length) {
                         if (wFK !== "homePhone") {
+                            // trim took place at top of loop
                             wChanged = true;
                             wMsg = wMsg + `field ${wFK} trimmed from ${String(wLstIn.length)} to ${String(wLst.length)}\n`;
                         }
                     }
                 }
+                wLstMember[wFK] = wLst;
             } // for i 1 to 7 loop
             if (wChanged) {
+                console.log(wLstMember);
                 //save record
                 let wResult = await saveRecord("lstMembers", wLstMember);
                 //let wResult = {"status": true};
