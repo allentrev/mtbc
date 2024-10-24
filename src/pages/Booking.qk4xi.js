@@ -1370,7 +1370,7 @@ export async function btnSave_click(event) {
                     }
                     //console.log("Booking", wParams);
                     //console.log(wParams);
-                    if (!gTest) { let wResult = await sendMsg("U", null, null, wBookerId, false, "BookingConfirmation", wParams)};
+                    if (!gTest) { let wResult = await sendMsg("U", null, wBookerId, false, "BookingConfirmation", wParams)};
                 } else {
                     //	Prepare old email record
                     //toEmail.bookingRef = w_book_ref;

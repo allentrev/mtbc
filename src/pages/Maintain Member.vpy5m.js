@@ -13,6 +13,9 @@ import { getAllMembers2 }           from 'backend/backMember.jsw';
 import { getAllImportMembers }      from 'backend/backMember.jsw';
 import { isUnique }                 from 'backend/backMember.jsw';
 
+import { sendMsg }                      from 'backend/backMsg.web';
+import { sendMsgToJob }                 from 'backend/backMsg.web';
+
 import { bulkSaveRecords }              from 'backend/backEvents.jsw';
 import { STATUS }                       from "public/objects/member";
 import { retrieveSessionMemberDetails } from 'public/objects/member';
@@ -1134,7 +1137,7 @@ function reconcileDatasets(pA, pB){
     }
 }
 
-function synchroniseFieldValues(){
+async function synchroniseFieldValues(){
     // Once the Lst entries are confirmed, need to check each entry to ensure main data fields agree.
     // The assumption is that the Import spreadsheet is the master source. Therefore, any discrepancy, copy the Import
     // value to the Lst record. (However, there is a possibility that the member may chose to amend their data online
@@ -1206,21 +1209,16 @@ function synchroniseFieldValues(){
             if (wChanged) {
                 //save record
                 //let wResult  await savedRecord("lstMember", wLstMember);
-                let wResult.status = true;
+                let wResult = {"status": true};
                 if (wResult && wResult.status){
                     let wOut = `The following changes were made to ${wLstMember.key}'s Lst record:\n` + wMsg + "\n";
                     console.log(wOut);
                     wChangeList.push(wOut);
-                    $w('#btnLstAmend').hide();
-                    removeFromSet("2", wMember2._id);
-                    removeFromSet("3", wMember3._id);
-                    $w('#boxLstAmend').collapse();
-                    showMsg(1,0,`Import name ${wTargetMember.firstName} ${wTargetMember.surname} updated`);
                 } else {
                     console.log("/MaintainMember synchroniseFieldValues sendMsg failed, error");
                     console.log(wResult.error);
                 }
-                    wChanged = false;
+                wChanged = false;
             }
         } else {
             console.log(`/MaintainMember synchroniseFieldValues Cant find member ${wLstMember.key}`);
@@ -1231,7 +1229,7 @@ function synchroniseFieldValues(){
             "changeList": wChangeList
         }
 
-        wResult = await sendMsg("E", "WEB", null, null, false, "MemberAmendFieldValues", wParams);
+        let wResult = await sendMsgToJob("E", ["WEB"], null, false, "MemberAmendFieldValues", wParams);
          //let wResult.status = true;
         if (wResult && wResult.status){
             console.log("/MaintainMember synchroniseFieldValues sendMsg OK");
@@ -1808,7 +1806,7 @@ export async function btn3AmendSave_click(event) {
                 "newName": wTargetMember.firstName + " " + wTargetMember.surname
             }
     
-            wResult = await sendMsg("E", "WEB", null, null, false, "MemberAmendImportName", wParams);
+            wResult = await sendMsgToJob("E", ['WEB'], null, false, "MemberAmendImportName", wParams);
             //let wResult.status = true;
             if (wResult && wResult.status){
                 console.log("/MaintainMember btn3AmendSave sendMsgToJob OK for ", wTargetMember._id);
@@ -1880,6 +1878,14 @@ export async function btnLstTest_click(event) {
     $w('#btnLstTest').enable();
 }
 
+/**
+ * 
+ * 
+ * @param {string} pSource 
+ * @param {number} pN 
+ * @param {string} pStatus
+ *  
+ */
 async function updateLstMembers(pSource, pN, pStatus) {
     showStageWait(1);
     let wUpdateStack = [];

@@ -8,6 +8,7 @@ import { findLstMember } 		        from 'backend/backMember.jsw';
 import { showError } from 'public/objects/entity';
 import { saveRecord } from 'backend/backEvents.jsw';
 import { formPhoneString } from 'backend/backMember.jsw';
+import { sendMsgToJob } from '../backend/backMsg.web';
 
 const capitalize = s => s && s[0].toUpperCase() + s.slice(1);
 
@@ -250,7 +251,7 @@ export async function btnMemberASave_click(event) {
                             "changeList": wChangeList
                 }
 
-                wResult = await sendMsg("E", "WEB", null, null, false, "Profile_1", wParams);
+                wResult = await sendMsgToJob("E", "WEB", null, false, "Profile_1", wParams);
                 //let wResult.status = true;
                 if (wResult && wResult.status){
                     console.log("/membersArea/profile  btnMemberASave_click saveRecord sendMsgToJob OK for ", gMember._id);
