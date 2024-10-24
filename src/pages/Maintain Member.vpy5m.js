@@ -1208,8 +1208,8 @@ async function synchroniseFieldValues(){
             } // for i 1 to 7 loop
             if (wChanged) {
                 //save record
-                //let wResult  await savedRecord("lstMember", wLstMember);
-                let wResult = {"status": true};
+                let wResult = await saveRecord("lstMembers", wLstMember);
+                //let wResult = {"status": true};
                 if (wResult && wResult.status){
                     let wOut = `The following changes were made to ${wLstMember.key}'s Lst record:\n` + wMsg + "\n";
                     console.log(wOut);
@@ -1911,7 +1911,7 @@ async function updateLstMembers(pSource, pN, pStatus) {
         let wUpdates = wUpdateArray.toString();
         let wErrors = wResult.results.errors.length;        
         console.log(`/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`);
-        if (pN === "2") {
+        if (pN === 2 {
             gSelectLeftStack.length = 0;
             $w('#chk2').checked = false;
         } else {
