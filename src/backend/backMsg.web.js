@@ -510,6 +510,7 @@ export async function transmitEmail(pToList, pSubject, pMsg) {
 	sgMail.setApiKey(apiKey);
 	const msg = {
     to: pToList.toString(),
+    cc: 'maidenheadtownbc@gmail.com',
     from: 'maidenheadtownbc@gmail.com', // Change to your verified sender
     subject: pSubject,
 		content: [

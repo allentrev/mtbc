@@ -66,11 +66,12 @@ let gMode = MODE.CLEAR;
 let gSelectLeftStack = [];
 let gSelectRightStack = [];
 
+
 let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = (gTest) ? true : authentication.loggedIn();
@@ -1601,11 +1602,15 @@ export function pullFromSelectStack(pRec, pId, pN) {
         let x = gSelectLeftStack.findIndex( item => item === pId);
         if (x > -1) {
             gSelectLeftStack.splice(x,1);
+        } else {
+            console.log("MaintainMember pullFromSelectStack cant find member, id, pN ", pId, pN);
         }
     } else {
         let x = gSelectRightStack.findIndex( item => item === pId);
         if (x > -1) {
             gSelectRightStack.splice(x,1);
+        } else {
+            console.log("MaintainMember pullFromSelectStack cant find member, id, pN ", pId, pN);
         }
     }
 }
@@ -1618,36 +1623,41 @@ function removeFromSet(pN, pId){
     let wOnlyRight = [];
     if (pN === "2") {
         wOnlyLeft = wRpt.data;
-        let x = wOnlyLeft.findIndex( item => item._id === pId);
+        let x = wOnlyLeft.findIndex( item => item.id === pId);
         if (x > -1) {
             wOnlyLeft.splice(x,1);
-        }
-        if (wOnlyLeft.length === 0){
-           wRpt.collapse();
-           wTxtNone.expand();
+            if (wOnlyLeft.length === 0){
+                wRpt.collapse();
+                wTxtNone.expand();
+             } else {
+                wRpt.expand();
+                wTxtNone.collapse();
+                wRpt.data = wOnlyLeft;
+            }
         } else {
-           wRpt.expand();
-           wTxtNone.collapse();
-           wRpt.data = wOnlyLeft;
+            console.log("MaintainMember removeFromSet cant find member, id, pN ", pId, pN);
         }
     } else {  
         wOnlyRight = wRpt.data;
-        let x = wOnlyRight.findIndex( item => item._id === pId);
+        let x = wOnlyRight.findIndex( item => item.id === pId);
         if (x > -1) {
             wOnlyRight.splice(x,1);
-        }
-        if (wOnlyRight.length === 0){
-           wRpt.collapse();
-           wTxtNone.expand();
+            if (wOnlyRight.length === 0){
+                wRpt.collapse();
+                wTxtNone.expand();
+            } else {
+                wRpt.expand();
+                wTxtNone.collapse();
+                wRpt.data = wOnlyRight;
+            }
         } else {
-           wRpt.expand();
-           wTxtNone.collapse();
-           wRpt.data = wOnlyRight;
+            console.log("MaintainMember removeFromSet cant find member, id, pN ", pId, pN);
         }
     }
+
     if (wOnlyLeft.length === 0 && wOnlyRight.length === 0) {
            $w('#txtRefresh').expand();
-           messageDone();
+           messageDone(3);
     } else {
            $w('#txtRefresh').collapse();
     }
@@ -1669,11 +1679,15 @@ export function pushToSelectStack(pRec, pId, pN) {
         let x = gSelectLeftStack.findIndex( item => item === pId);
         if (x === -1){
             gSelectLeftStack.push(pId);
+        } else {
+            console.log("MaintainMember pushToSelectStack member already exists in stack, id, pN ", pId, pN);
         }
     } else {
         let x = gSelectRightStack.findIndex( item => item === pId);
         if (x === -1){
             gSelectRightStack.push(pId);
+        } else {
+            console.log("MaintainMember pushToSelectStack member already exists in stack, id, pN ", pId, pN);
         }
     }
 }
@@ -2050,7 +2064,7 @@ export async function btnLstRegister_click(event) {
             wLstMember._id = undefined;
             let wResult = await createNewMember(wLstMember);
             if (wResult && wResult.status){
-                removeFromSet("2", wMember2._id);
+                removeFromSet("2", wMemberId);
                 await deleteLstMember(wOldLstId);
                 $w('#lblMTBCCount').text = updateMTBCUsernameCount();
                 showMsg(2,0, `New Wix member ${wLstMember.firstName} ${wLstMember.surname} created`);
