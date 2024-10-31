@@ -453,7 +453,7 @@ function createEmail(pTarget, pControl, pParams){
       wParameters.isAudit = pParams.isAudit;
       wParameters.loginEmail = pParams.loginEmail;
       wParameters.username = pParams.username;
-      wParameters.method = "E";
+      wParameters.method = pParams.wLoginMethod;
       wEmail = MemberRegistrationConfirmation_Email(wParameters); //{sunject, body}
       wError = null;
       break;
@@ -577,8 +577,171 @@ function createSMS(pTarget, pControl, pParams){
   return {"status": wStatus, "sms": wSMS, "error": wError }
 }
 
-//----------------------------------------------------------------------------------------------------------------------------
+//--------------------------------- Messages -----------------------------------------------------------------------------------------
+function Profile1_Email(pParameters) {
+  const wSubject = "MTBC:Profile Update Notification";
+  const wToName = pParameters.toName;
+  const wMember = pParameters.member;
+  const wChangeList = pParameters.changeList;
+  const wBody = `
+  <p>Dear ${wToName},</p>
+	This is to inform you that ${wMember} has modified their personal profile. <br><br>
+	The following changes were made:<br><br>
+  ${wChangeList}<br>
+  Please reconcile any changes with the membership spreadsheet.
+  `
+  const wEmail = {"subject": wSubject,"body": wBody};
 
+  return wEmail;
+}
+
+function Profile1_SMS(pMember) {
+  const wSubject = "Profile Update Notification";
+  const wBody = `${pMember} has modified their personal profile.Please reconcile any changes with the membership spreadsheet.`
+  const wSMS = {"subject": wSubject,"body": wBody};
+  return wSMS;
+}
+
+function MemberAmendImportName_Email(pParameters) {
+  const wSubject = "MTBC: Maintain Member: Name Update";
+  const wToName = pParameters.toName;
+  const wOldName = pParameters.oldName;
+  const wNewName = pParameters.newName;
+  const wBody = `
+  <p>Dear ${wToName},</p>
+	The following member's name needs to be updated in the Membership spreadsheet:<br>
+  From ${wOldName} to ${wNewName}<br>
+  `
+  const wEmail = {"subject": wSubject,"body": wBody};
+
+  return wEmail;
+}
+
+function MemberAmendImportName_SMS(pMember) {
+  const wSubject = "Name Update";
+  const wBody = `Change name from ${pMember} to ${pMember}`
+  const wSMS = {"subject": wSubject,"body": wBody};
+  return wSMS;
+}
+
+function MemberAmendFieldValues_Email(pParameters) {
+  const wSubject = "MTBC: Maintain Member: Field Value Update";
+  const wToName = pParameters.toName;
+  const wChangeList = pParameters.changeList;
+  let wLines = "";
+  for (let wEntry of wChangeList){
+    wLines = wLines + wEntry + "<br>";
+  }
+  let wInsert = wLines.replace(/\n/g, '<br>');
+
+  const wBody = `
+  <p>Dear ${wToName},</p>
+	The following changes were made while synchronising Lst with Imported values;<br><br>
+  ${wInsert}
+  `
+  const wEmail = {"subject": wSubject,"body": wBody};
+
+  return wEmail;
+}
+
+function MemberAmendFieldValues_SMS() {
+  const wSubject = "Field Value Update";
+  const wBody = `Please see log for changes`
+  const wSMS = {"subject": wSubject,"body": wBody};
+  return wSMS;
+}
+
+function MemberRegistrationConfirmation_Email(pParameters) {
+  console.log("MeberRegistrationConfirmation_Email, Params", pParameters );
+  const wSubject = "MTBC: Registration Confirmation";
+  const pIsAudit = pParameters.isAudit;
+  let wLogInMethod = "Login Email Address";
+  let wLogInItem = pParameters.loginEmail;
+  let wFirstLine = (pIsAudit)? "As part of the annual membership audit, it has been necessary to replace your existing web account with a new one.\n"
+                              : "";
+  if (pParameters.method === "U") {
+		wLogInMethod = "Username";
+		wLogInItem = pParameters.username;
+	}
+  const wBody = `
+  <P>Dear ${pParameters.firstName},</p>
+	${wFirstLine}
+	This is to confirm that you have been registered with the club's web site.<br>
+	To log in to the site please use your ${wLogInMethod} of "${wLogInItem}".<br>
+	The first time you try to log in, you will be asked to reset the temporary password that has been assigned to you.<br>
+	Simply follow the instructions that will be displayed on your screen.<br>
+	Once you have changed your password, you will be a fully registered member and you should then be able to sign onto the site as per normal<br>
+	When you are fully registered, you may also change your Username using Log In and selecting "Change Username" instead of "Log In".<br><br>
+`
+  const wEmail = {"subject": wSubject,"body": wBody};
+
+  return wEmail;
+}
+
+function MemberRegistrationConfirmation_SMS(pParameters) {
+  const wSubject = "Registration Confirmation\n";
+  const wBody = `Username is ${pParameters.username}\n
+  Please login to complete registration\n
+  `
+  const wSMS = {"subject": wSubject,"body": wBody};
+  return wSMS;
+}
+
+function OffLineRegistrationConfirmation_Email(pParameters) {
+  console.log("OfflineRegistrationConfirmation_Email, Params", pParameters);
+  const wSubject = "MTBC: Offline Registration Confirmation";
+
+  const wBody = `
+  <P>Dear ${pParameters.firstName},</p>
+	The new member ${pParameters.targetName} has been registered but cannot receive any confirmation.<br>
+	Can you please arrange for them to be informed that they need to use their username of "${pParameters.username}".<br>
+	Remind them that the first time they try to log in, they will be asked to reset the temporary password that has been assigned to them.<br>
+	They then simply need to follow the instructions that will be displayed on their screen.<br> 
+	Once the password has been set, they will be a fully registered member and should then be able to sign onto the site as per normal<br><br>
+	`
+  const wEmail = { subject: wSubject, body: wBody };
+
+  return wEmail;
+}
+
+function BookingConfirmation_Email(pParameters) {
+  //console.log("BookingConfirmationEmail", pParameters);
+  const wSubject = "Booking Confirmation";
+  const wBody = `
+  <P>Dear ${pParameters.firstName},</p>
+	This is to confirm that you booked a rink at the club. The details of the booking made are:<br><br>
+	Booked on Date: ${pParameters.dateBooked},<br>
+	Booking reference: ${pParameters.bookingRef}<br><br>
+	Date required: ${pParameters.dateRequired}<br>
+	Time slot: ${pParameters.slot}<br>
+	Nominal rink: ${pParameters.rink}<br>
+	Number of players: ${pParameters.playersMessage}<br><br>
+  Usage: ${pParameters.usage}<br><br>
+	Player A: ${pParameters.playerA}<br>
+	Player B: ${pParameters.playerB}<br><br>
+	If you have not booked this event, then please contact the club immediately.<br>
+	You may go to the website to delete or edit this booking up to the date of the booking.<br><br><br>
+	The committee reserves the right to cancel this booking and to re-allocate this rink for another use, should a priority need arise.<br><br>
+	Thank you for using the booking system
+  `
+  const wEmail = {"subject": wSubject,"body": wBody};
+  return wEmail;
+}
+
+function BookingConfirmation_SMS(pParameters) {
+  //console.log("BookingConfirmation_SMS", pParameters);
+  const wSubject = "Booking Confirmation";
+  const wBody = `
+	Date: ${pParameters.dateRequired}\n
+	Slot: ${pParameters.slot}\n
+	Rink: ${pParameters.rink}\n
+	If you have not booked this event, then please contact the club immediately.\n
+  `
+  const wSMS = {"subject": wSubject,"body": wBody};
+  return wSMS;
+}
+
+//====================================================================================================================================
 export async function transmitEmail(pToList, pSubject, pMsg) {
 
     console.log(
@@ -648,179 +811,3 @@ export async function transmitSMS( pTo, pMsg) {
   }
 }
 
-
-//--------------------------------- Messages -----------------------------------------------------------------------------------------
-function Profile1_Email(pParameters) {
-  const wSubject = "Profile Update Notification";
-  const wToName = pParameters.toName;
-  const wMember = pParameters.member;
-  const wChangeList = pParameters.changeList;
-  const wBody = `
-  <p>Dear ${wToName},</p>
-	This is to inform you that ${wMember} has modified their personal profile. <br><br>
-	The following changes were made:<br><br>
-  ${wChangeList}<br>
-  Please reconcile any changes with the membership spreadsheet.
-  `
-  const wEmail = {"subject": wSubject,"body": wBody};
-
-  return wEmail;
-}
-
-function Profile1_SMS(pMember) {
-  const wSubject = "Profile Update Notification";
-  const wBody = `${pMember} has modified their personal profile.Please reconcile any changes with the membership spreadsheet.`
-  const wSMS = {"subject": wSubject,"body": wBody};
-  return wSMS;
-}
-
-function MemberAmendImportName_Email(pParameters) {
-  const wSubject = "Maintain Member: Name Update";
-  const wToName = pParameters.toName;
-  const wOldName = pParameters.oldName;
-  const wNewName = pParameters.newName;
-  const wBody = `
-  <p>Dear ${wToName},</p>
-	The following member's name needs to be updated in the Membership spreadsheet:<br>
-  From ${wOldName} to ${wNewName}<br>
-  `
-  const wEmail = {"subject": wSubject,"body": wBody};
-
-  return wEmail;
-}
-
-function MemberAmendImportName_SMS(pMember) {
-  const wSubject = "Name Update";
-  const wBody = `Change name from ${pMember} to ${pMember}`
-  const wSMS = {"subject": wSubject,"body": wBody};
-  return wSMS;
-}
-
-function MemberAmendFieldValues_Email(pParameters) {
-  const wSubject = "Maintain Member: Field Value Update";
-  const wToName = pParameters.toName;
-  const wChangeList = pParameters.changeList;
-  let wLines = "";
-  for (let wEntry of wChangeList){
-    wLines = wLines + wEntry + "<br>";
-  }
-  let wInsert = wLines.replace(/\n/g, '<br>');
-
-  const wBody = `
-  <p>Dear ${wToName},</p>
-	The following changes were made while synchronising Lst with Imported values;<br><br>
-  ${wInsert}
-  `
-  const wEmail = {"subject": wSubject,"body": wBody};
-
-  return wEmail;
-}
-
-function MemberAmendFieldValues_SMS() {
-  const wSubject = "Field Value Update";
-  const wBody = `Please see log for changes`
-  const wSMS = {"subject": wSubject,"body": wBody};
-  return wSMS;
-}
-
-function MemberRegistrationConfirmation_Email(pParameters) {
-  console.log("MeberRegistrationConfirmation_Email, Params", pParameters );
-  const wSubject = "Registration Confirmation";
-  const pIsAudit = pParameters.isAudit;
-  let wLogInMethod = "Login Email Address";
-  let wLogInItem = pParameters.loginEmail;
-  let wFirstLine = (pIsAudit)? "As part of the annual membership audit, it has been necessary to replace your existing web account with a new one.\n"
-                              : "";
-  if (pParameters.method === "U") {
-		wLogInMethod = "Username";
-		wLogInItem = pParameters.username;
-	}
-  const wBody = `
-  <P>Dear ${pParameters.firstName},</p>
-	${wFirstLine}
-	This is to confirm that you have been registered with the club's web site.<br>
-	To log in to the site please use your ${wLogInMethod} of "${wLogInItem}".<br>
-	The first time you try to log in, you will be asked to reset the temporary password that has been assigned to you.<br>
-	Simply follow the instructions that will be displayed on your screen.<br>
-	Once you have changed your password, you will be a fully registered member and you should then be able to sign onto the site as per normal<br>
-	When you are fully registered, you may also change your Username using Log In and selecting "Change Username" instead of "Log In".<br><br>
-`
-  const wEmail = {"subject": wSubject,"body": wBody};
-
-  return wEmail;
-}
-
-function MemberRegistrationConfirmation_SMS(pParameters) {
-  const wSubject = "Registration Confirmation\n";
-  const wBody = `Username is ${pParameters.username}\n
-  Please login to complete registration\n
-  `
-  const wSMS = {"subject": wSubject,"body": wBody};
-  return wSMS;
-}
-
-function OffLineRegistrationConfirmation_Email(pParameters) {
-  console.log("OfflineRegistrationConfirmation_Email, Params", pParameters);
-  const wSubject = "Offline Registration Confirmation";
-
-  const wBody = `
-  <P>Dear ${pParameters.firstName},</p>
-	The new member ${pParameters.targetName} has been registered but cannot receive any confirmation.<br>
-	Can you please arrange for them to be informed that they need to use their username of "${pParameters.username}".<br>
-	Remind them that the first time they try to log in, they will be asked to reset the temporary password that has been assigned to them.<br>
-	They then simply need to follow the instructions that will be displayed on their screen.<br> 
-	Once the password has been set, they will be a fully registered member and should then be able to sign onto the site as per normal<br><br>
-	`
-  const wEmail = { subject: wSubject, body: wBody };
-
-  return wEmail;
-}
-
-function BookingConfirmation_Email(pParameters) {
-  //console.log("BookingConfirmationEmail", pParameters);
-  const wSubject = "Booking Confirmation";
-  const wBody = `
-  <P>Dear ${pParameters.firstName},</p>
-	This is to confirm that you booked a rink at the club. The details of the booking made are:<br><br>
-	Booked on Date: ${pParameters.dateBooked},<br>
-	Booking reference: ${pParameters.bookingRef}<br><br>
-	Date required: ${pParameters.dateRequired}<br>
-	Time slot: ${pParameters.slot}<br>
-	Nominal rink: ${pParameters.rink}<br>
-	Number of players: ${pParameters.playersMessage}<br><br>
-  Usage: ${pParameters.usage}<br><br>
-	Player A: ${pParameters.playerA}<br>
-	Player B: ${pParameters.playerB}<br><br>
-	If you have not booked this event, then please contact the club immediately.<br>
-	You may go to the website to delete or edit this booking up to the date of the booking.<br><br><br>
-	The committee reserves the right to cancel this booking and to re-allocate this rink for another use, should a priority need arise.<br><br>
-	Thank you for using the booking system
-  `
-  const wEmail = {"subject": wSubject,"body": wBody};
-  return wEmail;
-}
-
-function BookingConfirmation_SMS(pParameters) {
-  //console.log("BookingConfirmation_SMS", pParameters);
-  const wSubject = "Booking Confirmation";
-  const wBody = `
-	Date: ${pParameters.dateRequired}\n
-	Slot: ${pParameters.slot}\n
-	Rink: ${pParameters.rink}\n
-	If you have not booked this event, then please contact the club immediately.\n
-  `
-  const wSMS = {"subject": wSubject,"body": wBody};
-  return wSMS;
-}
-
-
-function Message_Email(pParameters) {
-  console.log("MessageEmail", pParameters);
-  const wSubject = `${pParameters.title}`;
-  const wBody = `
-  <p>Dear All,</p>
-	${pParameters.text}
-  `
-  const wEmail = {"subject": wSubject,"body": wBody};
-  return wEmail;
-}

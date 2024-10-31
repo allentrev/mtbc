@@ -1379,14 +1379,7 @@ async function synchroniseFieldValues() {
     let wParams = {
       changeList: wChangeList,
     };
-    let wResult = await sendMsgToJob(
-      "E",
-      ["WEB"],
-      null,
-      false,
-      "MemberAmendFieldValues",
-      wParams
-    );
+    let wResult = await sendMsgToJob("E", ["WEB"], null, false, "MemberAmendFieldValues", wParams);
 
     //let wResult.status = true;
     if (wResult && wResult.status) {
@@ -1974,14 +1967,7 @@ export async function btn3AmendSave_click() {
         newName: wTargetMember.firstName + " " + wTargetMember.surname,
       };
 
-      wResult = await sendMsgToJob(
-        "E",
-        ["WEB"],
-        null,
-        false,
-        "MemberAmendImportName",
-        wParams
-      );
+      wResult = await sendMsgToJob("E", ["WEB"], null, false, "MemberAmendImportName", wParams);
       //let wResult.status = true;
       if (wResult && wResult.status) {
         console.log(
