@@ -453,7 +453,7 @@ function createEmail(pTarget, pControl, pParams){
       wParameters.isAudit = pParams.isAudit;
       wParameters.loginEmail = pParams.loginEmail;
       wParameters.username = pParams.username;
-      wParameters.method = pParams.wLoginMethod;
+      wParameters.method = pParams.loginMethod;
       wEmail = MemberRegistrationConfirmation_Email(wParameters); //{sunject, body}
       wError = null;
       break;
