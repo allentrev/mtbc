@@ -77,15 +77,13 @@ $w.onReady(async function () {
 	$w('#rgpMix').value = wGender;
 	
 	//$w('#boxLabels').collapse();
+	collapseDropdowns();
 	if (gCompetitions) {
-		collapseDropdowns();
 		$w('#boxLeagueTable').collapse();
 		$w('#boxL2Table').collapse();
 		$w('#boxKO').collapse();
 		$w('#boxNothing').collapse
-	} else { 
-		collapseDropdowns();
-}
+	}
 	/** 
 	console.log("wCompRec");
 	console.log(wCompRec);

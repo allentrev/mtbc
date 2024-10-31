@@ -7,14 +7,13 @@
 //  Usage:  x page
 //------------------------------------------------------------------------------------------------------
 import wixData from 'wix-data';
+import wixWindow from "wix-window";
+
 import { authentication }	from 'wix-members-frontend';
 import { currentMember }	from 'wix-members-frontend';
 import {session} 				from 'wix-storage-frontend';
-import { warmupData }   from 'wix-window';
-import wixWindow        from 'wix-window';
 
 import { getAllMembers2 }		from 'backend/backMember.jsw';
-import { showMemberDetails }	from 'backend/backMember.jsw';
 import { collateMemberDetails }	from 'backend/backMember.jsw';
 
 
@@ -124,8 +123,6 @@ export function findLstMembersProfile(pUserId) {
 			}
 		})
 		.catch( (error) => {
-			let errorMsg = error.message;
-			let code = error.code;
 			Promise.reject(error)
 		});
 	}
@@ -401,7 +398,7 @@ export async function doHash(pPlainPassword){
     let wHashedPassword = await digestMessage(pPlainPassword);
     return wHashedPassword;
 }
-
+/** DEPRECATED> THESE WERE USED IN THE FEW CASES BEFORE HASH WA INTRODUCED
 async function confuseString(str) {
     let n = Math.floor(str.length / 3);
     let wString = str.split("").reverse().join("");
@@ -418,6 +415,7 @@ async function deConfuseString(str) {
 	let back_part_2 = back_part.split("").reverse().join("");
     return front_part_2 + back_part_2;
 }
+*/
 
 async function digestMessage(message) {
   const msgUint8 = new TextEncoder().encode(message); // encode as (utf-8) Uint8Array

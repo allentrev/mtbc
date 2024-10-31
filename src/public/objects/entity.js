@@ -1,20 +1,18 @@
+/* eslint-disable no-undef */
 /**
  * These are generic routines that are shared across all entities.
  * 
  */
 import _ 						from 'lodash';
-import { MAINTAINED }			from 'public/objects/clubComp';
-import { COMPETITOR_TYPE }		from 'public/objects/clubComp';
+import { MAINTAINED }			from './clubComp';
+import { COMPETITOR_TYPE }		from './clubComp';
 import { getEventBookings }     from 'backend/backEvents.jsw';
 import { bulkDeleteRecords }    from 'backend/backEvents.jsw';
 import { saveRecord }                   from 'backend/backEvents.jsw';
-import { bulkSaveRecords }              from 'backend/backEvents.jsw';
-//import { DateToOrdinal }                from 'backend/backEvents.jsw';
-import { formatDateString }                from 'public/fixtures';
 import { validateTeamLeagueDropdowns }         from 'backend/backTeam.jsw';
 import { deleteWixMembers } from 'backend/backMember.jsw';
 import { findMTBCMember } from 'backend/backMember.jsw';
-import { getMember }                from 'public/objects/member';
+import { getMember }                from './member';
 
 export const MODE = Object.freeze({
 	CREATE:	"C",
@@ -26,11 +24,12 @@ export const MODE = Object.freeze({
     CONVERT: "Z",
     CANCELLATION:   "X"
 });
-
+/**
 const COMPETITION_TYPE = Object.freeze({
 	COMPETITION:	"C",
 	REFERENCE:		"R"
 });
+*/
 
 // GLOBAL STORE ARRAYS
 let gLiveComps = [];
@@ -66,7 +65,7 @@ let gMembersFirstRow = {
     "locker": "Locker"
 };
 
-export let gMode = MODE.CLEAR;
+export let gMode = "";
 
 export function setEntity(pTarget, pRec){
     //console.log("setEntity", pTarget);
@@ -181,9 +180,17 @@ export function getEntity(pTarget){
     return wRec;
 }
 
+/**
+ * 
+ * @param {string} pMode 
+ */
 export function setMode(pMode) {
     gMode = pMode;
 }
+/**
+ * 
+ * @returns {string} gMode  
+ */
 export function getMode() {
     return gMode;
 }
@@ -197,9 +204,9 @@ export function getSelectStackId(){
 }
 
 export function getSelectStackLength(){
-    let wLength = gSelectStack.length;
-    return parseInt(wLength,10);
+    return gSelectStack.length;
 }
+
 export function getSelectStack(){
     return gSelectStack;
 }
@@ -416,6 +423,7 @@ export function doPgnListClick(event) {
 
 export function doPgnClick(pTarget) {
 
+	// eslint-disable-next-line no-unused-vars
 	let [wGlobalData, wDataToDisplay, wFirstLine, wControls, wSort, wOrder] = resetPaginationParameters(pTarget);
     let wItemsPerPage = parseInt($w(`#inp${pTarget}ListNoPerPage`).value,10);
     let start_position = (($w(`#pgn${pTarget}List`).currentPage - 1) * wItemsPerPage);
@@ -438,6 +446,7 @@ export function chkSelectAll_click(event) {
 
 export function doChkSelectAll(pTarget){
 
+	// eslint-disable-next-line no-unused-vars
 	let [wGlobalData, wDataToDisplay, wFirstLine, wControls, wSort, wOrder] = resetPaginationParameters(pTarget);	//
     let wchkTargetAll = `#chk${pTarget}ListSelectAll`;
     let wchkTarget = `#chk${pTarget}ListSelect`;
@@ -551,7 +560,7 @@ export async function doEntityASaveClick(pTarget) {
                 wStartDateTime.setHours(10,0,0);
             }
             wEntity.startDate = wStartDateTime;
-            wEntity.requiredYear = parseInt(wStartDateTime.getFullYear(),10)
+            wEntity.requiredYear = wStartDateTime.getFullYear()
             wEntity.requiredJDate = DateToOrdinal(wStartDateTime);
         }
         wEntity.startTime = wTime.substring(0,5);
@@ -570,7 +579,6 @@ export async function doEntityASaveClick(pTarget) {
         let wDataset = (pTarget === "CanEvent") ? "lstCandidateEvent" : "lstEvents";
         console.log(wEntity);
         wResult = await saveRecord(wDataset, wEntity);
-        let wCanEvents = [];
         //let res = false;
         if (wResult.status) {
             let wSavedRecord = wResult.savedRecord;
@@ -622,14 +630,15 @@ function setEntitySelected(pData, pState){
 
 export function chkSelect_click(event) {
 
+    // @ts-ignore
     let wControl = $w.at(event.context);
     let wId = event.context.itemId;
     let wTarget = getTarget(event, "List");
 	let wItem = getTargetItem(wTarget, wId);
     if (wControl(`#chk${wTarget}ListSelect`).checked) {
-        pushToSelectStack(wItem, wId, wTarget);
+        pushToSelectStack(wItem, wId);
     } else { 
-        pullFromSelectStack(wItem, wId, wTarget);
+        pullFromSelectStack(wItem, wId);
     }
     $w(`#lbl${wTarget}ListCounter`).text = String(gSelectStack.length);
 
@@ -649,6 +658,7 @@ export function chkSelect_click(event) {
  */
 export function resetPagination(pTarget){
 
+	// eslint-disable-next-line no-unused-vars
 	let [wGlobalData, wDataToDisplay, wFirstLine, wControls, wSort, wOrder] = resetPaginationParameters(pTarget);
     let wControlName = `#inp${pTarget}ListNoPerPage`;
 
@@ -679,6 +689,7 @@ export function resetPagination(pTarget){
  * @returns {void}
  */
 export function updatePagination(pTarget){
+	// eslint-disable-next-line no-unused-vars
 	let [wGlobalData, wDataToDisplay, wFirstLine, wControls, wSort, wOrder] = resetPaginationParameters(pTarget);	//
     let wItemsPerPage = parseInt($w(`#inp${pTarget}ListNoPerPage`).value,10);					//
     let total_pages = 1;
@@ -952,6 +963,8 @@ export function filterByListChoice(pTarget){
     let wByWho = "";
     let wByDate = ""; 
     let choices = ["All", "CE", "CG","HG"];
+    
+    let wTeamName = "";
 
 	switch (pTarget) {
 		case "League":
@@ -1066,7 +1079,6 @@ export function filterByListChoice(pTarget){
             break;
 		case "Fixture":
 	        wChoice = $w('#drpFixtureChoice').value;
-            let wTeamName = "";
             if (!$w('#boxFixtureChoiceTeam').collapsed) {
                 wTeamName = $w('#drpFixtureChoiceTeam').value;
             }
@@ -1134,9 +1146,12 @@ export function filterByListChoice(pTarget){
  * @returns {any[]} - An array representing the global data store for the specified target.
  */
 
+/** ACCORDING TO VS COE THIS IS NEVER CALLED SO...
 export function retrieveGlobalDataStore(pTarget){
 	return gRefEvents;
 }
+*/
+
 /**
  * Updates the global data store for a specified target with the provided record.
  *
@@ -1147,6 +1162,7 @@ export function retrieveGlobalDataStore(pTarget){
  * @returns {boolean} - Returns true if the update or insert operation is successful.
  */
 export function updateGlobalDataStore(pRec, pTarget){
+	// eslint-disable-next-line no-unused-vars
 	let [wGlobalData, wDataToDisplay, wFirstLine, wControls, wSort, wOrder] = resetPaginationParameters(pTarget);
     let wSortedData =[];
 
@@ -1339,6 +1355,7 @@ export function updateGlobalDataStore(pRec, pTarget){
 
 	$w(`#lbl${pTarget}ListTotal`).text = String(wDataToDisplay.length);
     if (wOrder) {
+        // @ts-ignore
         wSortedData = _.orderBy(wGlobalData, wSort, wOrder);
     } else {
         wSortedData = _.orderBy(wGlobalData, wSort);
@@ -1406,6 +1423,7 @@ export function updateGlobalDataStore(pRec, pTarget){
  */
 export function deleteGlobalDataStore(pIds, pTarget){
 
+	// eslint-disable-next-line no-unused-vars
 	let [wGlobalData, wDataToDisplay, wFirstLine, wControls, wSort, wOrder] = resetPaginationParameters(pTarget);
     let wSortedData;
 	for (let wItemId of pIds) {
@@ -1417,6 +1435,7 @@ export function deleteGlobalDataStore(pIds, pTarget){
 
 	$w(`#lbl${pTarget}ListTotal`).text = String(wDataToDisplay.length); 
 	if (wOrder) {
+        // @ts-ignore
         wSortedData = _.orderBy(wGlobalData, wSort, wOrder);
     } else {
         wSortedData = _.orderBy(wGlobalData, wSort);
@@ -1590,7 +1609,6 @@ export function populateEdit(pTarget){
             }
             break;
         case "League":
-        case "LiveComp":
         case "Team":
         case "Opponent":
         case "Fixture":
@@ -1747,7 +1765,6 @@ export function showGoToButtons(pTarget) {
             $w('#btnCanEventAToFixture').show();
             $w('#btnCanEventAToRefEvent').show();
             break;
-            break;
         default:
             console.log("/public/objects/entity showGoToButtons Invalid switch key", pTarget)
             break;
@@ -1763,6 +1780,7 @@ export function showGoToButtons(pTarget) {
  * @returns {string} - The extracted target identifier.
  */
 export function getTarget(pEvent, pType) {
+    // @ts-ignore
     let wControl = pEvent.target.id;
 	//console.log("GT", wControl);
     let x = wControl.indexOf(pType);
@@ -1772,58 +1790,58 @@ export function getTarget(pEvent, pType) {
 
 
 export function getTargetItem (pTarget, pId){
-	
+	let wElement;
     switch (pTarget) {
 		case "Notice":
-			return gNotices.find( wItem => wItem._id === pId);
+			wElement = gNotices.find( wItem => wItem._id === pId);
 			break;
 		case "Booking":
-			return gBookings.find( wItem => wItem._id === pId);
+			wElement = gBookings.find((wItem) => wItem._id === pId);
 			break;
 		case "Member":
-			return gMembers.find( wItem => wItem._id === pId);
+			wElement = gMembers.find((wItem) => wItem._id === pId);
 			break;
         case "Locker":
-            return gLockers.find( wItem => wItem._id === pId);
+            wElement = gLockers.find((wItem) => wItem._id === pId);
             break;
         case "StandingData":
-			return gStandingDatas.find( wItem => wItem._id === pId);
+			wElement = gStandingDatas.find((wItem) => wItem._id === pId);
 			break;
 		case "Officer":
-			return gOfficers.find( wItem => wItem._id === pId);
+			wElement = gOfficers.find((wItem) => wItem._id === pId);
 			break;
 		case "League":
-			return gLeagues.find( wItem => wItem._id === pId);
+			wElement = gLeagues.find((wItem) => wItem._id === pId);
 			break;
 		case "Team":
-			return gTeams.find( wItem => wItem._id === pId);
+			wElement = gTeams.find((wItem) => wItem._id === pId);
 			break;
 		case "RefComp":
-			return gRefComps.find( wItem => wItem._id === pId);
+			wElement = gRefComps.find((wItem) => wItem._id === pId);
 			break;
 		case "LiveComp":
-			return gLiveComps.find( wItem => wItem._id === pId);
+			wElement = gLiveComps.find((wItem) => wItem._id === pId);
 			break;
 		case "Event":
-			return gEvents.find( wItem => wItem._id === pId);
+			wElement = gEvents.find((wItem) => wItem._id === pId);
 			break;
 		case "Opponent":
-			return gOpponents.find( wItem => wItem._id === pId);
+			wElement = gOpponents.find((wItem) => wItem._id === pId);
 			break;
 		case "Fixture":
-			return gFixtures.find( wItem => wItem._id === pId);
+			wElement = gFixtures.find((wItem) => wItem._id === pId);
 			break;
 		case "RefEvent":
-			return gRefEvents.find( wItem => wItem._id === pId);
+			wElement = gRefEvents.find((wItem) => wItem._id === pId);
 			break;
 		case "CanEvent":
-			return gCanEvents.find( wItem => wItem._id === pId);
+			wElement = gCanEvents.find((wItem) => wItem._id === pId);
 			break;
 		default:
             console.log("public/objects/entity getTargetItem 1 invalid switch target", pTarget);
-            return;
 			break;
 	}
+    return wElement;
 }
 
 /**
@@ -1943,7 +1961,7 @@ export function resetSection(pTarget) {
  * 
  * @returns {void}
  */
-export function pullFromSelectStack(pRec, pId, pTarget) {
+export function pullFromSelectStack(pRec, pId) {
 	
     //console.log("Pull from Select Stack");
 	//	Updates the gEntities record
@@ -1961,7 +1979,7 @@ export function pullFromSelectStack(pRec, pId, pTarget) {
  * 
  * @returns {void}
  */
-export function pushToSelectStack(pRec, pId, pTarget) {
+export function pushToSelectStack(pRec, pId) {
 	//console.log("Push to Select Stack");
 	//	Updates the gEntities record
 	pRec.selected = true;
@@ -2310,7 +2328,7 @@ function toString(pArray) {
 	}
 	return wOutput;
 }
-
+/**
 //TODO Is this needed?
 export function showError2(pTarget, pSecs, pMsg, pMessage = null) {
     console.log("showError2");
@@ -2343,7 +2361,12 @@ export function showError2(pTarget, pSecs, pMsg, pMessage = null) {
     }, pTime);
     return;
 }
+*/
 
+/**
+ * 
+ * @param {string} pTarget 
+ */
 export function showWait(pTarget) {
     try {
         $w(`#img${pTarget}Wait`).show();
@@ -2357,7 +2380,10 @@ export function showWait(pTarget) {
         console.log(err);
     }
 }
-
+/**
+ * 
+ * @param {string} pTarget 
+ */
 export function hideWait(pTarget) {
     try {
         $w(`#img${pTarget}Wait`).hide();
@@ -2371,6 +2397,13 @@ export function hideWait(pTarget) {
         console.log(err);
     }
 }
+
+/**
+ * 
+ * @param {string} pTarget 
+ * @param {number} pErrNo 
+ * @param {string} pErrMsg 
+ */
 
 export function showError(pTarget, pErrNo, pErrMsg = "") {
     try {
@@ -2429,20 +2462,23 @@ export function showError(pTarget, pErrNo, pErrMsg = "") {
         setTimeout(() => {
             wField.collapse();
         }, 4000);
-        return
     }
     catch (err) {
         console.log("/public/objects/entity showError Try-catch fail, err");
         console.log(err);
     }
 }
+/**
+ * 
+ * @param {Date} pDate 
+ * @returns 
+ */
 export function DateToOrdinal(pDate){
 	try {
 		const dayCount = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 		if (typeof pDate === "string"){ return -1}
 		const dte = new Date(pDate);
 		//initialize date variable
-		const yy = dte.getFullYear()
 		let julianDate = 0;
 		//add days for previous months
 		for (let i = 0; i < dte.getMonth(); i++) {
@@ -2455,7 +2491,7 @@ export function DateToOrdinal(pDate){
 			julianDate++;
 		}
 
-		return parseInt(julianDate,10);
+		return julianDate;
 	}
 	catch (err) {
 		console.log("/backend/backEvents DateToOrdinal Try-catch, err");

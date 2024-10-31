@@ -214,7 +214,8 @@ export function sendCreateMemberConfirmationEmail(pRec) {
 	const subject = `Registration Confirmation`;
 
 	/** as part of audit, this is temp replaced 
-	const body = `Dear ${wName},\n
+	const body = `
+	Dear ${wName},\n
 	This is to confirm that you have been registered with the club's web site.\n
 	To log in to the site please use your ${wLogInMethod} of "${wLogInItem}".\n
 	The first time you try to log in, you will be asked to reset the temporary password that has been assigned to you.\n
@@ -226,7 +227,8 @@ export function sendCreateMemberConfirmationEmail(pRec) {
 	Maidenhead Town Bowls Club
   	`
 	*/
-	const body = `Dear ${wName},\n
+	const body = `
+	Dear ${wName},\n
 	  As part of the annual membership audit, it has been necessary to replace your existing web account with a new one.\n\n
 	  This is to confirm that you have been registered with the club's web site.\n
 	  To log in to the site please use your ${wLogInMethod} of "${wLogInItem}".\n

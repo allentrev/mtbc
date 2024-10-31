@@ -5,8 +5,8 @@ import { getSecret }			from 'wix-secrets-backend';
 import twilio from 'twilio';
 import  sgMail 					from '@sendgrid/mail';
 
-import { findOfficer }			from 'backend/backOfficers.jsw';
-import { findLstMember }			from 'backend/backMember.jsw';
+import { findOfficer }    from 'backend/backOfficers.jsw';
+import { findLstMember }  from 'backend/backMember.jsw';
 
 export const testEmail2 = webMethod(
   Permissions.Anyone,
@@ -29,7 +29,9 @@ export const testEmail2 = webMethod(
     console.log("msg");
     console.log(msg);
     return sgMail
+    // @ts-ignore
     .send(msg, true)
+    // eslint-disable-next-line no-unused-vars
     .then((res) => {
 		  console.log("/backend/backMsg TESTEmail send OK" );
      })
@@ -39,7 +41,7 @@ export const testEmail2 = webMethod(
       return {"status": false, "error": error}
     })
   }//async
-)//webmethod
+)//webmethodvvv
 
 /**
  * @typedef {Object} wControl
@@ -70,6 +72,15 @@ export const testEmail2 = webMethod(
 export const sendMsgToJob = webMethod(
   Permissions.Anyone,
   async (pType, pJobKeys, pFromName, pUrgent, pTarget, pParams) => {
+    console.log(
+      "sendMsgToJob, pType, JobKeys, From, Urgent, Target, Params",
+      pType,
+      pJobKeys,
+      pFromName,
+      pUrgent,
+      pTarget,
+      pParams
+    );
     let wParams = {...pParams};
     let wResult={"status": false, "error": "Done nothing"};
     let wToList = [];
@@ -123,6 +134,14 @@ export const sendMsg = webMethod(
   Permissions.Anyone,
   async (pType, pToList, pFromName, pUrgent, pTarget, pParams) => {
 
+    console.log("sendMsg, pType, ToList, From, Urgent, Target, Params",
+      pType,
+      pToList,
+      pFromName,
+      pUrgent,
+      pTarget,
+      pParams
+    );
     let wParams = {...pParams};
     //console.log("sendMsg", wParams);
     let wControl = {
@@ -148,11 +167,12 @@ export const sendMsg = webMethod(
       wResult = await findLstMember(wMemberId);
       if (wResult && wResult.status){
         
-        let wContactPref = wResult.member.contactpref;
+        //let wContactPref = wResult.member.contactpref;
         let wContactEmail = wResult.member.contactEmail;
         let wMobilePhone = wResult.member.mobilePhone;
         let wToName = wResult.member.firstName + " " + wResult.member.surname;
 
+        let [wMsgType, wContactPref] = validateMsgTypeAndContactPref(pType, wResult.member);
         wControl.id = wResult.member._id;
         wControl.contactpref = wContactPref;
         wControl.contactEmail = wContactEmail;
@@ -164,7 +184,7 @@ export const sendMsg = webMethod(
         let wToEmailEntry = `${wToName}<${wContactEmail}>`;
         let wToSMSEntry = {"name": wToName, "mobile": wMobilePhone};
         let wToWhatsAppEntry = {"name": wToName, "mobile": wMobilePhone};
-        switch (pType) {
+        switch (wMsgType) {
           case "E":
             wToEmailList.push(wToEmailEntry);
             break;
@@ -255,6 +275,19 @@ export const sendMsg = webMethod(
   } // async function
 )
 
+function validateMsgTypeAndContactPref(pType, pMember){
+  let wMsgType = "U";
+  let wContactPref = "N";
+  const wContactEmail = pMember.contactEmail;
+  const wMobilePhone = pMember.mobilePhone;
+  const isValidEmail = (wContactEmail === "" || wContactEmail === null || wContactEmail === undefined) ? false : true;
+  const isValidMobile = (wMobilePhone === "" || wMobilePhone === null || wMobilePhone === undefined ) ? false : true;
+  if (isValidEmail || isValidMobile){
+    wContactPref = pMember.contactpref;
+    wMsgType =pType;
+  }
+  return [wMsgType, wContactPref];
+}
 //----------------------------------------------------------------------------------------------------------------------------
 /**
  * Sends an email to a list of recipients based on the provided control parameters.
@@ -263,7 +296,7 @@ export const sendMsg = webMethod(
  * @function sendEmail
  * @param {string} pTarget - The target identifier for the email.
  * @param {Object} pControl - Control parameters for sending the email.
- * @param {Array.<string>} pControl.toList - The list of email recipients.
+ * @param {String[]} pControl.toList - The list of email recipients.
  * @param {Object} pParams - Additional parameters for the email.
  * 
  * @returns {Promise<Object>} - A promise that resolves to an object containing:
@@ -273,6 +306,12 @@ export const sendMsg = webMethod(
  */
 async function sendEmail (pTarget, pControl, pParams) {
 
+    console.log(
+      "sendEmail, pTarget, Control, Params",
+      pTarget,
+      pControl,
+      pParams
+    );
   const wTo = pControl.toList;
   let wResult = {};
 
@@ -302,7 +341,7 @@ async function sendEmail (pTarget, pControl, pParams) {
  * @function sendSMS
  * @param {string} pTarget - The target identifier for the SMS.
  * @param {Object} pControl - Control parameters for sending the SMS.
- * @param {Array.<string>} pControl.toList - The list of SMS recipients.
+ * @param {Object[]} pControl.toList - The list of SMS recipients.
  * @param {Object} pParams - Additional parameters for the SMS.
  * 
  * @returns {Promise<Object>} - A promise that resolves to an object containing:
@@ -312,7 +351,8 @@ async function sendEmail (pTarget, pControl, pParams) {
  */
 async function sendSMS (pTarget, pControl, pParams) {
 
-  const wTo = pControl.toList;
+  const wToList = pControl.toList;  // in the form {name, phone number}
+  const wTo = wToList.map( item => item.mobile);
   let wResult = {};
   //if (wTo.startsWith("+")) {}
   //wTo = "+6593210160";
@@ -343,7 +383,7 @@ async function sendSMS (pTarget, pControl, pParams) {
  * @function sendWhatsApp
  * @param {string} pTarget - The target identifier for the WhatsApp.
  * @param {Object} pControl - Control parameters for sending the WhatsApp.
- * @param {Array.<string>} pControl.toList - The list of WhatsApp recipients.
+ * @param {Object[]} pControl.toList - The list of WhatsApp recipients.
  * @param {Object} pParams - Additional parameters for the WhatsApp.
  * 
  * @returns {Promise<Object>} - A promise that resolves to an object containing:
@@ -353,14 +393,18 @@ async function sendSMS (pTarget, pControl, pParams) {
  */
 async function sendWhatsApp (pTarget, pControl, pParams) {
 
-  const wTo = pControl.toList;
+  const wToList = pControl.toList;  // in the form {name, phone number}
+  // eslint-disable-next-line no-unused-vars
+  const wTo = wToList.map( item => item.mobile);
   let wResult = {};
 
   //if (wTo.startsWith("+")) {}
   //wTo = "+6593210160";
   wResult = createSMS(pTarget, pControl, pParams);
   if (wResult && wResult.status){
+    // eslint-disable-next-line no-unused-vars
     const wSubject = wResult.sms.subject;
+    // eslint-disable-next-line no-unused-vars
     const wMessage = wResult.sms.body;
     //wResult = await transmitWhatsApp(wTo, wSubject + "\n" + wMessage);  
     if (wResult && wResult.status){
@@ -379,9 +423,15 @@ async function sendWhatsApp (pTarget, pControl, pParams) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------------
-
 function createEmail(pTarget, pControl, pParams){
   
+    console.log(
+      "createEmail, pTarget, Control, Params",
+      pTarget,
+      pControl,
+      pParams
+    );
+
   let wError = null;
   let wEmail = {};
   let wParameters = {}
@@ -394,7 +444,25 @@ function createEmail(pTarget, pControl, pParams){
       wParameters.toName = pControl.toName;
       wParameters.member = pParams.memberFullName;
       wParameters.changeList = pParams.changeList;
-      wEmail = Profile1_Email(wParameters);   //{sunject, body}
+      wEmail = Profile1_Email(wParameters); //{sunject, body}
+      wError = null;
+      break;
+    case "MemberRegistrationConfirmation":
+      wStatus = true;
+      wParameters.firstName = pParams.firstName;
+      wParameters.isAudit = pParams.isAudit;
+      wParameters.loginEmail = pParams.loginEmail;
+      wParameters.username = pParams.username;
+      wParameters.method = "E";
+      wEmail = MemberRegistrationConfirmation_Email(wParameters); //{sunject, body}
+      wError = null;
+      break;
+    case "OffLineRegistrationConfirmation":
+      wStatus = true;
+      wParameters.firstName = pControl.toName;
+      wParameters.targetName = pParams.targetName;
+      wParameters.username = pParams.username;
+      wEmail = OffLineRegistrationConfirmation_Email(wParameters); //{sunject, body}
       wError = null;
       break;
     case "BookingConfirmation":
@@ -410,14 +478,14 @@ function createEmail(pTarget, pControl, pParams){
       wParameters.usage = pParams.usage;
       wParameters.playerA = pParams.playerA;
       wParameters.playerB = pParams.playerB;
-      wEmail = BookingConfirmation_Email(wParameters);   //{sunject, body}
+      wEmail = BookingConfirmation_Email(wParameters); //{sunject, body}
       wError = null;
       break;
     case "MemberAmendFieldValues":
       wStatus = true;
       wParameters.toName = pControl.toName;
       wParameters.changeList = pParams.changeList;
-      wEmail = MemberAmendFieldValues_Email(wParameters);   //{sunject, body}
+      wEmail = MemberAmendFieldValues_Email(wParameters); //{sunject, body}
       wError = null;
       break;
     case "MemberAmendImportName":
@@ -425,21 +493,24 @@ function createEmail(pTarget, pControl, pParams){
       wParameters.toName = pControl.toName;
       wParameters.oldName = pParams.oldName;
       wParameters.newName = pParams.newName;
-      wEmail = MemberAmendImportName_Email(wParameters);   //{sunject, body}
+      wEmail = MemberAmendImportName_Email(wParameters); //{sunject, body}
       wError = null;
       break;
     case "Message":
       wStatus = true;
       wParameters.title = pParams.title;
       wParameters.text = pParams.text;
-      wEmail = Message_Email(wParameters);   //{sunject, body}
+      wEmail = Message_Email(wParameters); //{sunject, body}
       wError = null;
-      break;  
+      break;
     default:
-      console.warn(`/backend/backMsg  createEmail invalid Email Target`, pTarget);
+      console.warn(
+        `/backend/backMsg  createEmail invalid Email Target`,
+        pTarget
+      );
       wStatus = false;
       wError = "Invalid email target";
-     break;
+      break;
   }
   const wSubject = (pControl.urgent) ? "URGENT: " + wEmail.subject : wEmail.subject;
  
@@ -477,6 +548,11 @@ function createSMS(pTarget, pControl, pParams){
       wSMS = Profile1_SMS(pParams.memberFullName);   //{sunject, body}
       wError = null;
       break;
+    case "MemberRegistrationConfirmation":
+      wStatus = true;
+      wSMS = MemberRegistrationConfirmation_SMS(pParams.username);   //{sunject, body}
+      wError = null;
+      break;
     case "BookingConfirmation":
       wStatus = true;
       wSMS = BookingConfirmation_SMS(pParams);   //{sunject, body}
@@ -484,7 +560,7 @@ function createSMS(pTarget, pControl, pParams){
       break;
     case "MemberAmendFieldValues":
       wStatus = true;
-      wSMS = MemberAmendFieldValues_SMS(pParams);   //{sunject, body}
+      wSMS = MemberAmendFieldValues_SMS();   //{sunject, body}
       wError = null;
       break;
     case "MemberAmendImportName":
@@ -505,6 +581,13 @@ function createSMS(pTarget, pControl, pParams){
 
 export async function transmitEmail(pToList, pSubject, pMsg) {
 
+    console.log(
+      "transmitEmail, pToList, Subject, Msg",
+      pToList,
+      pSubject,
+      pMsg
+    );
+
 	const apiKey = await getSecret("sendGrid3");
 
 	sgMail.setApiKey(apiKey);
@@ -520,18 +603,20 @@ export async function transmitEmail(pToList, pSubject, pMsg) {
 	  		}
   	],
 	}
-
-	return sgMail
-  	.send(msg)
-  	.then(() => {
-      return {"status": true, "error": null}
-  	})
-  	.catch((error) => {
-		  console.error("/backend/backMsg transmitEmail catch error, err, msg" );
-    	console.error(error || "Error undefined");
-      console.log(msg);
-      return {"status": false, "error": error || "Error undefined"}
-    })
+	return (
+    sgMail
+      // @ts-ignore
+      .send(msg)
+      .then(() => {
+        return { status: true, error: null };
+      })
+      .catch((error) => {
+        console.error("/backend/backMsg transmitEmail catch error, err, msg");
+        console.error(error || "Error undefined");
+        console.log(msg);
+        return { status: false, error: error || "Error undefined" };
+      })
+  );
 }
 
 export async function transmitSMS( pTo, pMsg) {
@@ -540,7 +625,7 @@ export async function transmitSMS( pTo, pMsg) {
   //let fromPhone = "MTBC";
 	const accountSID = await getSecret('accountSID');
 	const authToken = await getSecret('authToken');
-  if (!pTo.startsWith("+")) {
+  if (pTo && !pTo.startsWith("+")) {
     let wNo = pTo.slice(1);
     wTo = "+44"+ wNo;
   }
@@ -562,6 +647,7 @@ export async function transmitSMS( pTo, pMsg) {
       return {"status": false, "error": error}
   }
 }
+
 
 //--------------------------------- Messages -----------------------------------------------------------------------------------------
 function Profile1_Email(pParameters) {
@@ -630,11 +716,64 @@ function MemberAmendFieldValues_Email(pParameters) {
   return wEmail;
 }
 
-function MemberAmendFieldValues_SMS(pMember) {
+function MemberAmendFieldValues_SMS() {
   const wSubject = "Field Value Update";
   const wBody = `Please see log for changes`
   const wSMS = {"subject": wSubject,"body": wBody};
   return wSMS;
+}
+
+function MemberRegistrationConfirmation_Email(pParameters) {
+  console.log("MeberRegistrationConfirmation_Email, Params", pParameters );
+  const wSubject = "Registration Confirmation";
+  const pIsAudit = pParameters.isAudit;
+  let wLogInMethod = "Login Email Address";
+  let wLogInItem = pParameters.loginEmail;
+  let wFirstLine = (pIsAudit)? "As part of the annual membership audit, it has been necessary to replace your existing web account with a new one.\n"
+                              : "";
+  if (pParameters.method === "U") {
+		wLogInMethod = "Username";
+		wLogInItem = pParameters.username;
+	}
+  const wBody = `
+  <P>Dear ${pParameters.firstName},</p>
+	${wFirstLine}
+	This is to confirm that you have been registered with the club's web site.<br>
+	To log in to the site please use your ${wLogInMethod} of "${wLogInItem}".<br>
+	The first time you try to log in, you will be asked to reset the temporary password that has been assigned to you.<br>
+	Simply follow the instructions that will be displayed on your screen.<br>
+	Once you have changed your password, you will be a fully registered member and you should then be able to sign onto the site as per normal<br>
+	When you are fully registered, you may also change your Username using Log In and selecting "Change Username" instead of "Log In".<br><br>
+`
+  const wEmail = {"subject": wSubject,"body": wBody};
+
+  return wEmail;
+}
+
+function MemberRegistrationConfirmation_SMS(pParameters) {
+  const wSubject = "Registration Confirmation\n";
+  const wBody = `Username is ${pParameters.username}\n
+  Please login to complete registration\n
+  `
+  const wSMS = {"subject": wSubject,"body": wBody};
+  return wSMS;
+}
+
+function OffLineRegistrationConfirmation_Email(pParameters) {
+  console.log("OfflineRegistrationConfirmation_Email, Params", pParameters);
+  const wSubject = "Offline Registration Confirmation";
+
+  const wBody = `
+  <P>Dear ${pParameters.firstName},</p>
+	The new member ${pParameters.targetName} has been registered but cannot receive any confirmation.<br>
+	Can you please arrange for them to be informed that they need to use their username of "${pParameters.username}".<br>
+	Remind them that the first time they try to log in, they will be asked to reset the temporary password that has been assigned to them.<br>
+	They then simply need to follow the instructions that will be displayed on their screen.<br> 
+	Once the password has been set, they will be a fully registered member and should then be able to sign onto the site as per normal<br><br>
+	`
+  const wEmail = { subject: wSubject, body: wBody };
+
+  return wEmail;
 }
 
 function BookingConfirmation_Email(pParameters) {

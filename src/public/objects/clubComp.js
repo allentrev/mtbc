@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 //------------------------------------------------------------------------------------------------------
 //
 //	CLUBCOMP OBJECT
@@ -11,9 +12,9 @@
 //------------------------------------------------------------------------------------------------------
 import wixData from 'wix-data';
 
-import { BOOKING }					from 'public/objects/booking';
+import { BOOKING }					from './booking';
 
-import { getCompBookings }			from 'public/objects/booking';
+import { getCompBookings }			from './booking';
 
 
 /**
@@ -347,41 +348,41 @@ export function changeComp(pYear, pRef) {
 				 getCompStages(pYear, pRef),
 				 loadCompCompetitors(pYear, pRef)
 	]).then( (results) => {
-		gComp = results[0];
-		gBookings = results[1];
-		//console.log("gBookings set up");
-		//console.log(gBookings);
-		gStages = results[2];
-		let wAllRecords = results[3];
-		if (gComp && gBookings && gStages && wAllRecords) {
-			if (wAllRecords) {
-				gCompetitors = wAllRecords.filter(item => {
-					if (item.competitorId > 0) {
-						return item;
-					}
-				});
-				gPool = wAllRecords.filter(item => {
-					if (item.competitorId === 0) {
-						return item;
-					}
-				});
-			} else {
-				gCompetitors= [];
-				gPool = [];
-			}
-			return true;
-		} else {
-			return false;
-		}
-						/**
+    gComp = results[0];
+    gBookings = results[1];
+    //console.log("gBookings set up");
+    //console.log(gBookings);
+    gStages = results[2];
+    let wAllRecords = results[3];
+    if (gComp && gBookings && gStages && wAllRecords) {
+      if (wAllRecords) {
+        gCompetitors = wAllRecords.filter((item) => {
+          if (item.competitorId > 0) {
+            return item;
+          }
+        });
+        gPool = wAllRecords.filter((item) => {
+          if (item.competitorId === 0) {
+            return item;
+          }
+        });
+      } else {
+        gCompetitors = [];
+        gPool = [];
+      }
+      return true;
+    } else {
+      return false;
+    }
+    /**
 		console.log("Change comp");
 		console.log(gComp);
 		console.log(gStages);
 		console.log(gCompetitors);
 		console.log(gBookings);
-		// */
 		return true;
-	})
+		// */
+  })
 	.catch( (err) => {
 		console.log("/public/objects/clubComp  changeComp Catch Error");
 		console.log(err);
@@ -542,7 +543,6 @@ export function loadRounds(intStage, intDiv, intNoRounds) {
 	let wOptions = fillRoundOptions(intNoRounds);
 	$w('#drpRound').options = wOptions;
 	$w('#drpRound').selectedIndex = 0;
-	let wRound = parseInt(wOptions[0].value,10);
 	let wMatchesInRoundArray = selectRound(intStage, intDiv, 1);
 	if (wMatchesInRoundArray) {
 		return wMatchesInRoundArray;
@@ -561,9 +561,11 @@ export function selectRound(intStage, intDiv, intRound){
 		wMatchesInRoundArray = getRoundBookings(gBookings, intStage, intDiv, intRound)
 	}
 	if (wMatchesInRoundArray) {
+		// eslint-disable-next-line no-undef
 		$w('#lblRoundState').text = "Found " + String(wMatchesInRoundArray.length) + " match(es)";
 		return wMatchesInRoundArray;
 	} else {
+		// eslint-disable-next-line no-undef
 		$w('#lblRoundState').text = "No matches found ";
 		return false;
 	}
@@ -618,7 +620,7 @@ export async function bulkUpdateCompetitors(pData) {
 export function bulkSaveClubCompStages(pData) {
 
 	return wixData.bulkSave("lstClubCompStages", pData)
-  		.then( (results) => {
+  		.then( () => {
 			return true;
 		})
 		.catch( (err) => {
@@ -775,7 +777,7 @@ export function getAllTeams(pComps) {
 export function bulkSaveClubCompCompetitors(pData) {
 
 	return wixData.bulkSave("lstClubCompCompetitors", pData)
-  		.then( (results) => {
+  		.then( () => {
 			return true;
 		})
 		.catch( (err) => {
@@ -845,7 +847,6 @@ export async function getCompetitions(pYear) {
         })
         .catch( (error) => {
             let errorMsg = error.message;
-            let code = error.code;
             console.log("/public/objects/clubComp getCompetitions catch " + errorMsg);
 			return false;
         } );
@@ -881,7 +882,6 @@ export async function getManualCompetitions(pYear, pGender) {
         })
         .catch( (error) => {
             let errorMsg = error.message;
-            let code = error.code;
             console.log("/public/objects/clubComp getManualCompetitions catch " + errorMsg);
 			return false;
         } );
@@ -938,7 +938,6 @@ export function loadCompetitionArray() {
         })
         .catch( (error) => {
             let errorMsg = error.message;
-            let code = error.code;
             console.log("/public/objects/clubComp loadCompetitionArray catch " + errorMsg);
 			return [];
         } );
@@ -974,7 +973,6 @@ export function loadOpenTeamCompetitions() {
         })
         .catch( (error) => {
             let errorMsg = error.message;
-            let code = error.code;
             console.log("/public/objects/clubComp loadOpenTeamCompetitions catch " + errorMsg);
 			return [];
         } );
@@ -1001,7 +999,6 @@ export async function getOpenCompetitions2() {
         })
         .catch( (error) => {
             let errorMsg = error.message;
-            let code = error.code;
             console.log("/public/objects/clubComp getOpenCompetitions catch " + errorMsg);
 			return false;
         } );
@@ -1037,7 +1034,6 @@ export async function getCompetitionStages2(pCompRef) {
         })
         .catch( (error) => {
             let errorMsg = error.message;
-            let code = error.code;
             console.log("/public/objects/clubComp getCompetitionStages catch " + errorMsg);
 			return false;
         } );
@@ -1060,7 +1056,6 @@ export function getCompStages(pYear, pCompRef) {
 		})
         .catch( (error) => {
             let errorMsg = error.message;
-            let code = error.code;
             console.log("/public/objects/clubComp getCompetitionStages catch " + errorMsg);
 			return false;
         });
@@ -1099,7 +1094,6 @@ export async function getCompetitionUniqueDivisions2(pCompRef, pStage) {
         })
         .catch( (error) => {
             let errorMsg = error.message;
-            let code = error.code;
             console.log("/public/objects/clubComp getCompetitionUniqueDivisions catch " + errorMsg);
 			return false;
         } );
@@ -1239,7 +1233,6 @@ export async function loadCompetitors2(pCompRef, pStage, pDiv) {
 	let wData = await getCompetitionDivisionCompetitors2(pCompRef, pStage, pDiv);
 	//console.log(wData);
 	if (wData && wData.length > 0){
-		let wItem = wData[0];
 		return wData;
 	}
 	return false;
@@ -1293,6 +1286,7 @@ export function loadDivPool(pStage, pDiv) {
 //------------------------------------------------------------------------------------------------------
 export async function insertClubComp(pRec) {
   	try {
+		// eslint-disable-next-line no-unused-vars
 		const {selected, ladies, mens, mixed, ...pNewRec } = pRec;
 		let results = await wixData.insert("lstClubComp", pNewRec)
   		if	(results) {
@@ -1310,7 +1304,7 @@ export async function insertClubComp(pRec) {
 
 export async function updateClubComp(pId, pRec) {
 
-    return wixData.get("lstClubComp", pId)
+	return wixData.get("lstClubComp", pId)
   		.then( (item) => {
 			item.status = pRec.status;
 			item.winnerNames = pRec.winnerNames;
@@ -1329,7 +1323,7 @@ export async function updateClubComp(pId, pRec) {
 
 export async function updateClubCompStatus(pId, pStatus) {
 
-    return wixData.get("lstClubComp", pId)
+	return wixData.get("lstClubComp", pId)
   		.then( (item) => {
 			item.status = pStatus;
     	wixData.update("lstClubComp", item);
@@ -1344,7 +1338,7 @@ export async function updateClubCompStatus(pId, pStatus) {
 
 export function updateCompetitionDivisionStatus(pId, pStatus) {
 
-    return wixData.get("lstClubCompStages", pId)
+	return wixData.get("lstClubCompStages", pId)
   		.then( (item) => {
 			item.status = pStatus;
     		wixData.update("lstClubCompStages", item);

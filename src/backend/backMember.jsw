@@ -7,6 +7,7 @@ import { members as membersV2 }        from 'wix-members.v2';
 
 import { sendForgotPassword } from 'backend/email.jsw';
 import { sendForgotUsername } from 'backend/email.jsw';
+import { sendMsg, sendMsgToJob } from 'backend/backMsg.web';
 
 import wixData          from 'wix-data';
 
@@ -624,7 +625,7 @@ export async function sendForgotUsernameEmail(pFirstName, pSurname){
   }
 }
 
-export async function createMember(pMember){
+export async function createMember(pIsAudit, pMember){
   //  Register Wix Member
   //  Then, in parrallel:
   //  a)  update Wix Member?
@@ -656,7 +657,7 @@ let wLstRec = {
   "status":       pMember.status,
   "dateLeft":     pMember.dateLeft,
   "allowshare":   pMember.allowshare || "Y",
-  "contactpref":  pMember.contactpref || "E",
+  "contactpref":  pMember.contactpref || "N",
   "contactEmail": (pMember.contactEmail) ? pMember.contactEmail.toLowerCase() : null,
   "altEmail":     (pMember.altEmail) ? pMember.altEmail.toLowerCase() : null,
   "homePhone":    pMember.homePhone,
@@ -670,7 +671,8 @@ let wLstRec = {
   "wixId":        undefined
 };
 
-   const toEmail = {
+   /**
+    const toEmail = {
         "method":       "",
         "username":     pMember.username,
         "loginEmail":   (pMember.loginEmail) ? pMember.loginEmail.toLowerCase() : null,
@@ -678,6 +680,7 @@ let wLstRec = {
         "firstName":    pMember.firstName,
         "surname":      pMember.surname
     };
+    */
 
   //const fullRoleId = "958169f6-b834-44fc-ae55-b7c8bc007a6a";
   const managerRoleId = "4556e8af-4700-4405-8a11-11aca6f11864";
@@ -711,6 +714,7 @@ let wLstRec = {
       //------------------ Create LST Member ---------------------------
           wLstRec.wixId = wWixId;
           wLstRec.status = "Pending";
+
           let [lstStatus, wLstMember] = await createLstMember(wLstRec);
           if (lstStatus){
             let wLstId = wLstMember._id;
@@ -732,13 +736,32 @@ let wLstRec = {
                 console.log("/backend/backMember createMember Using WIX loginEmail method");
             }
       //------------------ Send Email confirmation -------------------------------
+            let wLoginMethod = "E";
             if (pMember.username.length === 0) {
-              toEmail.method = "E";
+              wLoginMethod = "E";
             } else {
-              toEmail.method = "U";
+              wLoginMethod = "U";
             }
-            let [emailStatus, emailResponse] = await sendCreateMemberConfirmationEmail(toEmail);
-            if (emailStatus) {
+
+            let wResult = {};
+            let wParams = {
+              firstName: pMember.firstName,
+              targetName: pMember.firstName + " " + pMember.surname,
+              isAudit: pIsAudit,
+              loginEmail: pMember.loginEmail ? pMember.loginEmail.toLowerCase() : null,
+              username: pMember.username,
+              loginMethod: wLoginMethod,
+            };
+            if (wLstMember.contactpref === "N") {
+              console.log("Send to WEB");
+              wResult = await sendMsgToJob("E", ["WEB"], null, false, "OffLineRegistrationConfirmation", wParams);
+            } else {
+              console.log("Send to person");
+              wResult = await sendMsg("U", [wLstId], null, false, "MemberRegistrationConfirmation", wParams);
+            }
+            //let [emailStatus, emailResponse] = await sendCreateMemberConfirmationEmail(toEmail);
+            //if (emailStatus) {
+            if (wResult && wResult.status) {
               console.log(`/backend/backMember createMember Email sent response for ${wName}`)
               return {"status": true, "savedRecord": wLstMember, "error":  "Member created successfully"};
             }  /** sendEnail */ else { 
@@ -797,11 +820,15 @@ export async function isUnique(pUsername){
  * @param {boolean} pTest   Indicates whether this is a test run or a production call 
  * @param {object}  pMember The current Wix member object (CurrentMember) who is signed in
  *
- * @return (Promise<[boolean, object, array]> || Promise <[boolean, object, []]> || Promise<[boolean, null,[]]>}
- *
- // */
+ * @returns {Promise<Array>} - A promise that resolves to an array containing:
+ *                             - A boolean indicating success status (true if member details were retrieved).
+ *                             - An object containing the member's details (`lstId`, `wixId`, `name`, `firstName`, `gender`).
+ *                             - An array of role names for the member.
+ *                             If the member is not found or `pMember` is undefined, the function returns `[false, null, []]`.
+ **
+ */
 
-export async function collateMemberDetails(pTest, pMember){
+ export async function collateMemberDetails(pTest, pMember){
 
   if (!pMember) { console.warn("backend/backMember collateMemberDetails pMember undefined"); return [false, null,[]]};
 	let [status, wMember] = await findLstMemberByWixId(pMember._id);
