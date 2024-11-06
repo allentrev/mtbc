@@ -67,7 +67,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 const gYear = new Date().getFullYear();
 // for testing ------	------------------------------------------------------------------------
 
@@ -108,7 +108,7 @@ $w.onReady(async function () {
 				wixLocation.to("/");
 			}, 2000);
 }
-
+        
         if (wixWindow.formFactor === "Mobile") {
             $w('#strDesktop').collapse();
             $w('#strMobile').expand();
@@ -487,6 +487,7 @@ function configureBoxes (pTargetType){
             break;
     }
 }
+// TODO sort it
 
 export async function populateNoticeEdit() {
     

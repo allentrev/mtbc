@@ -194,9 +194,10 @@ export async function processEventBookings(pEventId, pEventBookings){
 	let wNewBookings = [];
     let wLastBookingId = "";
     let wResult;
+	// @TODO: add this
     for (let wBooking of wBookings){
         wBooking.eventId= pEventId; // all Bookings, including children, have this set
-            //TODO We could put a check in here to skip if the rink/slot is already taken
+            // @TODO We could put a check in here to skip if the rink/slot is already taken
         if (wBooking.chainMkr === "C"){
             wBooking.usage = "Continuation"; 
             wBooking.parentId = wLastBookingId;

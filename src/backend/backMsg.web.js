@@ -496,13 +496,6 @@ function createEmail(pTarget, pControl, pParams){
       wEmail = MemberAmendImportName_Email(wParameters); //{sunject, body}
       wError = null;
       break;
-    case "Message":
-      wStatus = true;
-      wParameters.title = pParams.title;
-      wParameters.text = pParams.text;
-      wEmail = Message_Email(wParameters); //{sunject, body}
-      wError = null;
-      break;
     default:
       console.warn(
         `/backend/backMsg  createEmail invalid Email Target`,

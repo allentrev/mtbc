@@ -3,10 +3,9 @@ import wixWindow from "wix-window";
 import { authentication } from "wix-members";
 import wixLocation from "wix-location";
 
-////import _ from "lodash";
-
 import { saveRecord } from "backend/backEvents.jsw";
 
+import { deleteWixMembers } from "backend/backMember.jsw";
 import { saveImportMemberRecord } from "backend/backMember.jsw";
 import { createMember } from "backend/backMember.jsw";
 import { deleteLstMember } from "backend/backMember.jsw";
@@ -14,16 +13,15 @@ import { getAllMembers2 } from "backend/backMember.jsw";
 import { getAllImportMembers } from "backend/backMember.jsw";
 import { isUnique } from "backend/backMember.jsw";
 
-////import { sendMsg } from "backend/backMsg.web";
 import { sendMsgToJob } from "backend/backMsg.web.js";
 
 import { bulkSaveRecords } from "backend/backEvents.jsw";
 import { STATUS } from "public/objects/member";
 import { retrieveSessionMemberDetails } from "public/objects/member";
 import { buildMemberCache } from "public/objects/member";
-////import { isRequiredRole } from "public/objects/member";
 
-//------------------------------------------ Entity Imports ---------------------------------------
+//======= Entity Imports --------------------------------------------------------------------------------
+//
 import { setEntity, getEntity } from "public/objects/entity";
 import { MODE } from "public/objects/entity";
 import { drpChoice_change, btnCreate_click, btnUpdate_click, btnDelete_click, btnCancel_click } from "public/objects/entity";
@@ -36,9 +34,6 @@ import { getTarget, getTargetItem, configureScreen } from "public/objects/entity
 import { showWait, hideWait, getMode, setMode } from "public/objects/entity";
 import { getSelectedItem } from "public/objects/entity";
 
-///let gMembers = [];
-///let gMembersToDisplay = [];
-
 let gWixUpdates = [];
 let gSkipped = [];
 
@@ -49,10 +44,8 @@ const COLOUR = Object.freeze({
   BOOKED: "#F2BF5E",
 });
 
-let gManOutline =
-  "wix:image://v1/88f9e9_cf010bd242a247d897c0d82796abf866~mv2.jpg/man_outline.jpg#originWidth=570&originHeight=561";
-let gWomanOutline =
-  "wix:image://v1/88f9e9_7c906da184a746b1add8536f47c445c6~mv2.jpg/woman_outline.jpg#originWidth=549&originHeight=531";
+let gManOutline = "wix:image://v1/88f9e9_cf010bd242a247d897c0d82796abf866~mv2.jpg/man_outline.jpg#originWidth=570&originHeight=561";
+let gWomanOutline = "wix:image://v1/88f9e9_7c906da184a746b1add8536f47c445c6~mv2.jpg/woman_outline.jpg#originWidth=549&originHeight=531";
 
 const USERNAME_LENGTH = 3;
 
@@ -221,8 +214,8 @@ $w.onReady(async function () {
     $w("#btnLockerEditHolderClear").onClick(() => doBtnLockerEditHolderClear());
 
 
-    // Repeaters section
-
+    //====== Repeaters section ------------------------------------------------------------------
+    
     $w("#rptMemberList").onItemReady(($item, itemData, index) => { 
       loadRptMemberList($item, itemData, index);
     });
@@ -239,7 +232,7 @@ $w.onReady(async function () {
       loadRptN("3", $item, itemData);
     });
 
-    //-------------------------- Custom Validation -----------------------------------------
+    //======== Custom Validation ---------------------------------------------------------------
 
     $w("#inpMemberEditLoginEmail").onCustomValidation(validateLoginEmail);
 
@@ -259,8 +252,7 @@ $w.onReady(async function () {
     }
   }
 });
-
-// ------------------------------------------------Load Repeaters ----------------------------------------------------------
+//====== Load Repeaters ---------------------------------------------------------------------
 //
 function loadRptMemberList($item, itemData, index) {
   //console.log("Item,", index);
@@ -309,7 +301,7 @@ function loadRptLockerListDuplicates($item, itemData) {
   $item("#lblLockerListDuplicateOwner").text = itemData.ownerName;
 }
 
-// ------------------------------------------------Load Data ---------------------------------------------------------
+//====== Load Data ---------------------------------------------------------------------------------------
 //
 
 export async function loadMembers() {
@@ -337,7 +329,7 @@ export async function loadMembers() {
   }
 }
 
-// ================================================= Entity Events ================================================
+//======= Entity Events ================================================
 //
 export async function doBtnCreateClick(event) {
   let wTarget = getTarget(event, "A");
@@ -350,7 +342,7 @@ export async function doBtnUpdateClick(event) {
   await populateEdit(wTarget);
 }
 
-// ----------------------------------------------Entity Event Supporting Functions -------------------------------------------------
+//====== Entity Event Supporting Functions -------------------------------------------------
 //
 
 function clearEdit(pTarget) {
@@ -518,7 +510,7 @@ export function doLockerView(pViewType) {
   return true;
 }
 
-// ================================================= Member Events =================================================
+//====== Member Events ======================================================================
 //
 
 export function btnMemberAToSync_click() {
@@ -826,7 +818,7 @@ export function strMember_viewportEnter() {
   //displayMemberTableData($w('#drpMemberChoiceType').value, $w('#drpMemberChoiceStatus').value);
 }
 
-// ================================================= Members Supporting Functions =================================================
+//====== Members Supporting Functions ============================================================
 //
 
 export function showDashboard() {
@@ -1106,7 +1098,7 @@ function hyphenatePhoneNumber(pPhoneNumber) {
   return wDisplayNumber;
 }
 
-// ================================================= FROM USER MAINTENANCE =================================================
+//====== USER MAINTENANCE =============================================================================
 //
 //  This section runs tests against the Import, LST and Wix datasets to ensure they are in sync. It is a 2 stage process:
 //  Stage 1 compares Lst against Import, and ensures Lst is in step with Import. Import is the master dataset.
@@ -1114,15 +1106,10 @@ function hyphenatePhoneNumber(pPhoneNumber) {
 //
 
 import { getActiveWixMembers } from "backend/backMember.jsw";
-////import { getFlattenedWixMember } from "backend/backMember.jsw";
-////import { getWixMembersTestData } from "backend/backMember.jsw";
 import { updateWixMember } from "backend/backMember.jsw";
 import { updateLstMember } from "backend/backMember.jsw";
-////import { bulkSaveLstMember } from "backend/backMember.jsw";
 import { convertNull } from "backend/backMember.jsw";
 import { formPhoneString } from "backend/backMember.jsw";
-
-////let gMsgCount = 0;
 
 let gWixMembers = [];
 let gLstMembers = [];
@@ -1411,6 +1398,7 @@ const unique = (array, ...excludeArrays) => {
   );
 };
 /**
+ * ------------------------------Array function examples --------------------------------
     // Arrays containing elements from A and B, not C
     const AandBnotC = gWixMembers.filter(a => 
         gLstMembers.some(b => b.key === a.key) && 
@@ -1487,7 +1475,7 @@ const unique = (array, ...excludeArrays) => {
     }
     */
 
-//============================================================
+//====== continue ===============================================
 function loadRptN(pN, pItem, pRec) {
   let wControl1 = `#txt${pN}Player`;
   let wControl2 = `#chk${pN}`;
@@ -1511,25 +1499,6 @@ async function loadWixMembersData() {
     gWixMembers.push(wTempMember);
   }
   (gStage === "Lst-Import") ? messageDone(2) : messageDone(3);
-  /**  
-        let count = 1;
-        $w('#pbrLoading').targetValue = wWixContactsMembers.length-1;
-        $w('#pbrLoading').value = 0;
-        for (let wTmpMember of wWixContactsMembers) {
-            $w('#pbrLoading').value = count;
-            let wFullWixMember = await getFlattenedWixMember(wTmpMember._id);
-            wFullWixMember.key = wFullWixMember.firstName + " " + wFullWixMember.lastName;
-            if (wFullWixMember) {
-                wWixMembers.push(wFullWixMember);
-            }count++;
-            //if (count > 20) {break}
-        $w('#lblCount').text = String(count) + ` of ${wWixContactsMembers.length}`;
-        }
-    //}
-    $w('#btnSyncStart').enable();
-    gWixMembers = wWixMembers;
-    console.log(gWixMembers);
-    */
 }
 
 async function loadLstMembersData() {
@@ -1566,7 +1535,6 @@ function messageDone(pN) {
     $w("#tblProgress").rows = gMessages;
   }
 }
-//------------------------------------------
 
 let wLast2Id = null;
 let wLast3Id = null;
@@ -1845,38 +1813,7 @@ export function getSyncTargetItem(pTarget, pId) {
     }
   }
 }
-/**
-export function getSyncSelectedItem(pN, pTarget) {
-    let wSelectedItem = {};
-    let wSelectedStack = [];
-    if (pN === "2") {    
-        wSelectedStack = [...gSelectLeftStack];
-    } else {
-        wSelectedStack = [...gSelectRightStack];
-    }
-    if (wSelectedStack.length === 1) {
-        let wSelectedItemId = wSelectedStack[0];
-        switch (pTarget) {
-            case "2":
-                wSelectedItem = gLstMembers.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Lst Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "3":
-                //wSelectedItem = $w(`#rptMemberList`).data[pPointer];
-                //wSelectedItem = $w(`#rptMemberList`).data.find(item => item._id === pPointer)
-                wSelectedItem = gImpMembers.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Imp Not found", pTarget, wSelectedItemId);
-                }
-                break;
-        }
-    }
-    return wSelectedItem;
-}
-*/
-//-------------------------------------- Stage 1: Lst v Import
+//====== Stage 1: Lst v Import ===========================================================================
 //
 // @ts-ignore
 export async function btnLstAmend_click() {
@@ -2237,7 +2174,7 @@ async function createNewMember(pIsAudit, pMember) {
   }
   return wResult;
 }
-//---------------------------from LST & Wix compare-------------------------
+//====== from LST & Wix compare --------------------------------------------------------------------------
 //
 export async function btnLstRegister_click() {
   console.log("btnLstRegister", gStage);
@@ -2315,481 +2252,7 @@ export async function btnWixDelete_click() {
   $w(`#chk${pN}`).checked = false;
 }
 
-//----DEPRECATED------------------------------------------
-//---------------------------------------------- from btnSyncStart2 ------------------------------
-async function syncWixToLst() {
-  //console.log("syncWixtoLst");
-
-  function isNotALstMember(pId) {
-    let wMember = gLstMembers.filter((item) => item.wixId === pId);
-    if (wMember) {
-      return false;
-    }
-    return true;
-  }
-
-  // @ts-ignore
-  $w("#boxWixSync").expand();
-  let wWixMembers = gWixMembers.filter((item) => isNotALstMember(item._id));
-  if (wWixMembers.length > 0) {
-    // @ts-ignore
-    $w("#rptWixSync").data = wWixMembers;
-    // @ts-ignore
-    $w("#rptWixSync").expand();
-    // @ts-ignore
-    $w("#txtWixSyncNoneFound").collapse();
-  } else {
-    // @ts-ignore
-    $w("#rptWixSync").data = [];
-    // @ts-ignore
-    $w("#rptWixSync").collapse();
-    // @ts-ignore
-    $w("#txtWixSyncNoneFound").expand();
-  }
-}
-// WAS FROM btnSuncStart2
-export async function checkEachWixMember() {
-  //console.log("checkEachWixMember");
-
-  let count = 1;
-  $w("#pbrLoading").targetValue = gWixMembers.length - 2;
-  $w("#pbrLoading").value = 0;
-  //console.log("g Arrays: Wix & Lst");
-  //console.log(gWixMembers);
-  //console.log(gLstMembers);
-  for (let wWixMember of gWixMembers) {
-    $w("#pbrLoading").value = count;
-    $w("#lblCount").text =
-      String(count) + " " + wWixMember.firstName + " " + wWixMember.lastName;
-
-    ////console.log("");
-    ////console.log(wWixMember._id, "+++++++++++++++Wix Member+++++++++++++++++++++++++++++++++=", count);
-    //console.log(wWixMember);
-    // eslint-disable-next-line no-unused-vars
-    let res = await compareMember(count, wWixMember);
-    //console.log("Updated Member");
-    //console.log(wUpdatedWixMember);
-    //console.log(wUpdatedLstMember);
-    ////console.log(wWixMember._id, "+++++++++++++++Wix Member End+++++++++++++++++++++++++++++=", res);
-    //console.log("");
-    //if (count > 6) {break;}
-    count++;
-    ////if (count > 10) { break }
-  }
-}
-
-export async function compareMember(pCount, pWixMember) {
-  try {
-    let wWixMember = pWixMember;
-    let wLstIdx = gLstMembers.findIndex((obj) => obj.wixId === wWixMember._id);
-    if (wLstIdx === -1) {
-      console.log(
-        "/page/MaintainMember Couldnt find ",
-        pWixMember._id,
-        " in gLstMembers"
-      );
-      return false;
-    }
-    let wLstMember = gLstMembers[wLstIdx];
-    //console.log("Before");
-    //console.log(wWixMember);
-    //console.log(wLstMember);
-    let wWixUpdate = false;
-    let wLstUpdate = false;
-    let wSkip = false;
-    [wSkip, wWixUpdate, wLstUpdate] = await compareField(
-      0,
-      wWixMember,
-      wLstMember,
-      "contactEmail",
-      wWixUpdate,
-      wLstUpdate
-    );
-    if (!wSkip) {
-      [wSkip, wWixUpdate, wLstUpdate] = await compareField(
-        1,
-        wWixMember,
-        wLstMember,
-        "altEmail",
-        wWixUpdate,
-        wLstUpdate
-      );
-    }
-    if (!wSkip) {
-      [wSkip, wWixUpdate, wLstUpdate] = await compareField(
-        2,
-        wWixMember,
-        wLstMember,
-        "gender",
-        wWixUpdate,
-        wLstUpdate
-      );
-    }
-    if (!wSkip) {
-      [wSkip, wWixUpdate, wLstUpdate] = await compareField(
-        3,
-        wWixMember,
-        wLstMember,
-        "contactpref",
-        wWixUpdate,
-        wLstUpdate
-      );
-    }
-    if (!wSkip) {
-      [wSkip, wWixUpdate, wLstUpdate] = await compareField(
-        4,
-        wWixMember,
-        wLstMember,
-        "homePhone",
-        wWixUpdate,
-        wLstUpdate
-      );
-    }
-    if (!wSkip) {
-      [wSkip, wWixUpdate, wLstUpdate] = await compareField(
-        5,
-        wWixMember,
-        wLstMember,
-        "mobilePhone",
-        wWixUpdate,
-        wLstUpdate
-      );
-    }
-    if (!wSkip) {
-      [wSkip, wWixUpdate, wLstUpdate] = await compareField(
-        6,
-        wWixMember,
-        wLstMember,
-        "surname",
-        wWixUpdate,
-        wLstUpdate
-      );
-    }
-    if (!wSkip) {
-      [wSkip, wWixUpdate, wLstUpdate] = await compareField(
-        7,
-        wWixMember,
-        wLstMember,
-        "firstName",
-        wWixUpdate,
-        wLstUpdate
-      );
-    }
-    //console.log("After");
-    //console.log(wWixMember);
-    //console.log(wLstMember);
-    let wReturnStatus = true;
-    let wStatus = "N";
-    let res = true;
-    let wFullName = wLstMember.firstName + " " + wLstMember.surname;
-    if (!wSkip) {
-      if (wWixUpdate) {
-        if (!gTest) {
-          //console.log("UpdateWix");
-          //console.log(wWixMember);
-          res = await updateWixMember(wWixMember);
-        }
-        if (res) {
-          console.log(
-            "/page/MaintainMember compareMember ",
-            pCount,
-            " : Wix Member ",
-            wWixMember._id,
-            wFullName,
-            " updated ok"
-          );
-          wStatus = "D";
-        } else {
-          wReturnStatus = false;
-          wStatus = "F";
-          console.log(
-            "/page/MaintainMember compareMember ",
-            pCount,
-            " : Wix Member ",
-            wWixMember._id,
-            wFullName,
-            " update failed"
-          );
-        }
-        await updateRepeaterStatus(wWixMember._id, wStatus);
-      }
-      if (wLstUpdate) {
-        let res = await updateLstMember(wLstMember);
-        if (res) {
-          console.log(
-            "/page/MaintainMember compareMember ",
-            pCount,
-            " : Lst Member ",
-            wLstMember._id,
-            wFullName,
-            " updated ok"
-          );
-        } else {
-          console.log(
-            "/page/MaintainMember compareMember ",
-            pCount,
-            " : Lst Member ",
-            wLstMember._id,
-            wFullName,
-            " update failed"
-          );
-          wReturnStatus = false;
-        }
-      }
-      if (!wWixUpdate && !wLstUpdate) {
-        console.log(
-          "/page/MaintainMember compareMember ",
-          pCount,
-          " : No difference in Wix & Lst member " + wFullName
-        );
-      }
-    } else {
-      console.log(
-        "/page/MaintainMember compareMember ",
-        pCount,
-        " : Comparison skipped for member",
-        wLstMember.wixId,
-        wLstMember._id,
-        wFullName
-      );
-    }
-    // @ts-ignore
-    $w("#rptWixUpdates").data = gWixUpdates;
-    // @ts-ignore
-    $w("#rptSkipped").data = gSkipped;
-
-    return wReturnStatus;
-  } catch (error) {
-    console.log(
-      "/page/Maintain Members/ compareMember TryCatch " + error,
-      pWixMember._id
-    );
-    return false;
-  }
-}
-
-async function updateRepeaterStatus(pId, pStatus) {
-  let wData = gWixUpdates.filter(
-    (item) => item._id.substring(0, item._id.length - 2) === pId
-  );
-  wData.forEach((item) => (item.status = pStatus));
-}
-
-export async function compareField(
-  pOffSet,
-  pWixMember,
-  pLstMember,
-  pLstFieldName,
-  pWixUpdate,
-  pLstUpdate
-) {
-  let wWixFlag = false;
-  let wLstFlag = false;
-
-  let wWixUpdateTmp = false;
-  let wLstUpdateTmp = false;
-  let wSkip = false;
-  let wWixFieldName = "";
-
-  switch (pLstFieldName) {
-    case "surname":
-      wWixFieldName = "lastName";
-      break;
-    default:
-      wWixFieldName = pLstFieldName;
-      break;
-  }
-  let wAIn = String(pWixMember[wWixFieldName]);
-  let wBIn = String(pLstMember[pLstFieldName]);
-  //console.log(wAIn, wBIn, typeof wAIn, typeof wBIn);
-  let wA = await convertNull(wAIn);
-  let wB = await convertNull(wBIn);
-  if (wA === null || wA === "null") {
-    if (wB === null || wB === "null") {
-      //console.log("case 0" , pLstFieldName, wA, wB);
-      //console.log("Case 0, null, null");
-    } else {
-      addRecToList("U", pOffSet, wWixFieldName, pWixMember, pLstMember);
-      wA = wB;
-      wWixUpdateTmp = true;
-      pWixMember[wWixFieldName] = wB;
-      //console.log("Case 1", pLstFieldName, wA, wB);
-      //console.log("Case 1, null, y");
-    }
-  } else {
-    if (wB === null || wB === "null") {
-      wB = wA;
-      wLstUpdateTmp = true;
-      pLstMember[pLstFieldName] = wA;
-      //console.log("Case 2", pLstFieldName, wA, wB);
-      //console.log("Case 2, x, null");
-    } else {
-      if (wA === wB) {
-        //console.log(pField, wA, wB);
-        //console.log("Case 3A", pLstFieldName, wA, wB);
-      } else {
-        let wFullname = pLstMember.firstName + " " + pLstMember.surname;
-        let wAction = await selectAction(wFullname, pLstFieldName, wA, wB);
-        switch (wAction) {
-          case "W": // keep the Wix value
-            wSkip = false;
-            wB = wA;
-            pLstMember[pLstFieldName] = wA;
-            wLstUpdateTmp = true;
-            break;
-          case "M": // keep the MTBC value
-            addRecToList("U", pOffSet, wWixFieldName, pWixMember, pLstMember);
-            wSkip = false;
-            wA = wB;
-            pWixMember[wWixFieldName] = wB;
-            wWixUpdateTmp = true;
-            break;
-          case "S": // Skip the field, no changes made
-            wSkip = true;
-            wLstUpdateTmp = false;
-            wWixUpdateTmp = false;
-            addRecToList("S", pOffSet, wWixFieldName, pWixMember, pLstMember);
-            break;
-        }
-        //console.log("Case 3B", pLstFieldName, wA, wB);
-        //console.log("Case 3B, x, y, x ne y");
-      }
-    }
-  }
-  wWixFlag = wWixUpdateTmp ? true : pWixUpdate;
-  wLstFlag = wLstUpdateTmp ? true : pLstUpdate;
-  //console.log("-------------------------------------------", pLstFieldName, wWixFlag, wLstFlag);
-  return [wSkip, wWixFlag, wLstFlag];
-}
-
-function addRecToList(pList, pOffSet, pFieldName, pWixMember, pLstMember) {
-  //console.log("addrectolist", pList, pFieldName, pWixMember[pFieldName], pLstMember[pFieldName]);
-  let wRec = {
-    _id: pWixMember._id + String(pOffSet).padStart(2, "0"),
-    name: pWixMember.firstName + " " + pWixMember.lastName,
-    fieldName: pFieldName,
-    wixValue: pWixMember[pFieldName],
-    lstValue: pLstMember[pFieldName],
-    status: "N",
-  };
-
-  if (pList === "S") {
-    gSkipped.push(wRec);
-  } else {
-    gWixUpdates.push(wRec);
-  }
-}
-
-async function selectAction(pLstFullName, pLstFieldName, pWixValue, pLstValue) {
-  let lbxContext = {
-    fullName: pLstFullName,
-    fieldName: pLstFieldName,
-    wixValue: pWixValue,
-    lstValue: pLstValue,
-  };
-
-  let res = await wixWindow.openLightbox("lbxSelectAction", lbxContext);
-  return res; //either M, W, or S(kip)
-}
-
-
-export async function btnSyncStart2_click() {
-  showMessage("Checking all Wix members are in web site database");
-  await syncWixToLst();
-  //messageDone();
-  showMessage("Checking each Wix members' details");
-  await checkEachWixMember();
-  //messageDone();
-}
-
-export function btnSyncClose_click() {
-  $w("#secMember").expand();
-  $w("#secSync").collapse();
-}
-
-/**
-*	Adds an event handler that runs when the element is clicked.
-	[Read more](https://www.wix.com/corvid/reference/$w.ClickableMixin.html#onClick)
-*	 @param {$w.MouseEvent} event
-*/
-import wixData from "wix-data";
-import { deleteWixMembers } from "backend/backMember.jsw";
-
-export async function btnAdmin_click() {
-  //await loadWixMembersData();
-  //console.log(gWixMembers);
-
-  let res1 = await wixData
-    .query("lstMembers")
-    .ascending("surname")
-    .ascending("firstName")
-    .limit(500)
-    .find();
-  gLstMembers = [...res1.items];
-  //console.log("gLstMembers");
-  //console.log(gLstMembers);
-  let res = await wixData
-    .query("test")
-    .ascending("surname")
-    .ascending("firstName")
-    .limit(500)
-    .find();
-  let gImport = res.items;
-
-  let wActiveMembers = [...gLstMembers];
-  let wUpdatedSet = [];
-
-  for (let wImportItem of gImport) {
-    let wMember = wActiveMembers.find(
-      (item) =>
-        item.surname.trim() === wImportItem.surname.trim() &&
-        item.firstName.trim() === wImportItem.firstName.trim()
-    );
-    let wType = "";
-    if (wMember) {
-      if (wImportItem.new.toUpperCase() === "WAIT") {
-        if (wImportItem.old.toUpperCase() === "FULL") {
-          wType = "FullWait";
-        }
-        if (wImportItem.old.toUpperCase() === "SOC") {
-          wType = "SocialWait";
-        }
-      } else if (wImportItem.new === "LEFT") {
-        wType = "Past";
-      } else {
-        wType = capitalize(wImportItem.new);
-      }
-      wMember.type = wType;
-      wMember.addrLine1 = wImportItem.addrLine1 || "";
-      wMember.addrLine2 = wImportItem.addrLine2 || "";
-      wMember.town = wImportItem.town || "";
-      wMember.postCode = wImportItem.postCode || "";
-      wMember.homePhone = wImportItem.homePhone || "";
-      wMember.mobilePhone = wImportItem.mobilePhone || "";
-      wMember.contactEmail = wImportItem.contactEmail;
-      wMember.locker = wImportItem.locker || [];
-      let wIn = { ...wMember };
-      wUpdatedSet.push(wIn);
-    } else {
-      console.log(
-        "/page/MaintainMember btnAdmin Cant find ",
-        wImportItem.firstName,
-        wImportItem.surname
-      );
-    }
-  }
-  // eslint-disable-next-line no-unused-vars
-  let wResult2 = await bulkSaveRecords("lstMembers", wUpdatedSet);
-}
-
-// eslint-disable-next-line no-unused-vars
-function editPhone(pNumber) {
-  let wNumber1 = pNumber.replaceAll(" ", "");
-  let wNumber2 = wNumber1.replaceAll("-", "");
-  return wNumber2.trim();
-}
-
-// ------------------------------------------------ Locker Handling ----------------------------------------------------------
+//====== Locker Handling ----------------------------------------------------------
 //
 export async function doBtnLockerEditHolderAdd() {
   let member = await wixWindow.openLightbox("lbxSelectMember");
@@ -3017,7 +2480,7 @@ async function removeLockerFromMember(pMember, pLockerNo, pLocker) {
   return {};
 }
 
-// ------------------------------------------------ Custom Processing ----------------------------------------------------------
+//====== Custom Processing --------------------------------------------------------------------------
 //
 let gSet = [];
 
