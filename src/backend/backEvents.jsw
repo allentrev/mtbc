@@ -634,7 +634,7 @@ export function bulkSaveRecords(pDataset, pRecs) {
 	}
 }
 
-export function deletRecord(pDataset, pRecId) {
+export function deleteRecord(pDataset, pRecId) {
 		let options = {
 			"consistentRead": true,
 			"suppressAuth": true
@@ -644,7 +644,7 @@ export function deletRecord(pDataset, pRecId) {
 			return true;
 		})
   		.catch( (err) => {
-			console.log(`/backend/backEvents deleteRecord TryCatch in dataset ${pDataset} ` + err);
+			console.log(`/backend/backEvents deleteRecord Catch in dataset ${pDataset} ` + err);
 			return false;
   		} );
 }

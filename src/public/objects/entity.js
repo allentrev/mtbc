@@ -47,6 +47,7 @@ let gBookings = [];
 let gStandingDatas = [];
 let gNotices = [];
 let gLeagues
+let gLabels = [];
 
 let gSelectStack = [];
 
@@ -70,55 +71,60 @@ export let gMode = "";
 export function setEntity(pTarget, pRec){
     //console.log("setEntity", pTarget);
     switch (pTarget) {
-        case "Notice":
-            gNotices = pRec;
-            break;
-        case "StandingData":
-            gStandingDatas = pRec;
-            break;
-        case "League":
-            gLeagues = pRec;
-            break;
-        case "Booking":
-            gBookings = pRec;
-            break;
-        case "Officer":
-            gOfficers = pRec;
-            break;
-        case "Team":
-            gTeams = pRec;
-            break;
-        case "RefComp":
-            gRefComps = pRec;
-            break;
-        case "LiveComp":
-            gLiveComps = pRec;
-            break;
-        case "Member":
-            gMembers = pRec;
-            break;
-        case "Locker":
-            gLockers = pRec;
-            break;
-        case "Event":
-            gEvents = pRec;
-            break;
-        case "Opponent":
-            gOpponents = pRec;
-            break;
-        case "Fixture":
-            gFixtures = pRec;
-            break;
-        case "RefEvent":
-            gRefEvents = pRec;
-            break;
-        case "CanEvent":
-            gCanEvents = pRec;
-            break;
-        default:
-            console.log("/public/objects/entity setEntity, invalide target, target");
-            console.log(pTarget);
-            break;
+      case "Notice":
+        gNotices = pRec;
+        break;
+      case "Label":
+        gLabels = pRec;
+        break;
+      case "StandingData":
+        gStandingDatas = pRec;
+        break;
+      case "League":
+        gLeagues = pRec;
+        break;
+      case "Booking":
+        gBookings = pRec;
+        break;
+      case "Officer":
+        gOfficers = pRec;
+        break;
+      case "Team":
+        gTeams = pRec;
+        break;
+      case "RefComp":
+        gRefComps = pRec;
+        break;
+      case "LiveComp":
+        gLiveComps = pRec;
+        break;
+      case "Member":
+        gMembers = pRec;
+        break;
+      case "Locker":
+        gLockers = pRec;
+        break;
+      case "Event":
+        gEvents = pRec;
+        break;
+      case "Opponent":
+        gOpponents = pRec;
+        break;
+      case "Fixture":
+        gFixtures = pRec;
+        break;
+      case "RefEvent":
+        gRefEvents = pRec;
+        break;
+      case "CanEvent":
+        gCanEvents = pRec;
+        break;
+      default:
+        console.log(
+          "/public/objects/entity setEntity, invalide target, target"
+        );
+        console.log(pTarget);
+        break;
     }
     //console.log("Set entity ", pTarget, " No recs = ", pRec.length);
     //console.log(gOpponents);
@@ -127,55 +133,60 @@ export function setEntity(pTarget, pRec){
 export function getEntity(pTarget){
     let wRec = [];
     switch (pTarget) {
-        case "Notice":
-            wRec = gNotices;
-            break;
-        case "StandingData":
-            wRec = gStandingDatas;
-            break;
-        case "League":
-            wRec = gLeagues;
-            break;
-        case "Booking":
-            wRec = gBookings;
-            break;
-        case "Officer":
-            wRec = gOfficers;
-            break;
-        case "Team":
-            wRec = gTeams;
-            break;
-        case "RefComp":
-            wRec = gRefComps;
-            break;
-        case "LiveComp":
-            wRec = gLiveComps;
-            break;
-        case "Member":
-            wRec = gMembers;
-            break;
-        case "Locker":
-            wRec = gLockers;
-            break;
-        case "Event":
-            wRec = gEvents;
-            break;
-        case "Opponent":
-            wRec = gOpponents;
-            break;
-        case "Fixture":
-            wRec = gFixtures;
-            break;
-        case "RefEvent":
-            wRec = gRefEvents;
-            break;
-        case "CanEvent":
-            wRec = gCanEvents;
-            break;
-        default:
-            console.log("/public/objects/entity setEntity, invalide target, target");
-            console.log(pTarget);
-            break;
+      case "Notice":
+        wRec = gNotices;
+        break;
+      case "Label":
+        wRec = gLabels;
+        break;
+      case "StandingData":
+        wRec = gStandingDatas;
+        break;
+      case "League":
+        wRec = gLeagues;
+        break;
+      case "Booking":
+        wRec = gBookings;
+        break;
+      case "Officer":
+        wRec = gOfficers;
+        break;
+      case "Team":
+        wRec = gTeams;
+        break;
+      case "RefComp":
+        wRec = gRefComps;
+        break;
+      case "LiveComp":
+        wRec = gLiveComps;
+        break;
+      case "Member":
+        wRec = gMembers;
+        break;
+      case "Locker":
+        wRec = gLockers;
+        break;
+      case "Event":
+        wRec = gEvents;
+        break;
+      case "Opponent":
+        wRec = gOpponents;
+        break;
+      case "Fixture":
+        wRec = gFixtures;
+        break;
+      case "RefEvent":
+        wRec = gRefEvents;
+        break;
+      case "CanEvent":
+        wRec = gCanEvents;
+        break;
+      default:
+        console.log(
+          "/public/objects/entity setEntity, invalide target, target"
+        );
+        console.log(pTarget);
+        break;
     }
     return wRec;
 }
@@ -729,91 +740,100 @@ export function resetPaginationParameters(pTarget){
     let [wFirstLine, wSort, wOrder] = getTargetParameters(pTarget);
 	let wControls = [];
 	switch (pTarget) {
-		case "Notice":
-			wGlobalData = gNotices;
-			wDataToDisplay = filterByListChoice("Notice");
-			//wDataToDisplay =  [...gStandingDatas];
-			wControls = ['#rptNoticeList'];
-			break;
-		case "StandingData":
-			wGlobalData = gStandingDatas;
-			wDataToDisplay = filterByListChoice("StandingData");
-			//wDataToDisplay =  [...gStandingDatas];
-			wControls = ['#rptStandingDataList'];
-			break;
-		case "League":
-			wGlobalData = gLeagues;
-			wDataToDisplay = filterByListChoice("League");
-			//wDataToDisplay =  [...gLeagues];
-			wControls = ['#rptLeagueList'];
-			break;
-		case "Booking":
-			wGlobalData = gBookings;
-			wDataToDisplay = filterByListChoice("Booking");
-			//wDataToDisplay =  [...gBookings];
-			wControls = ['#rptBookingList'];
-			break;
-		case "Officer":
-			wGlobalData = gOfficers;
-			wDataToDisplay = filterByListChoice("Officer");
-			wControls = ['#rptOfficerList'];
-			break;
-		case "Team":
-			wGlobalData = gTeams;
-			wDataToDisplay = filterByListChoice("Team");
-			wControls = ['#rptTeamList'];
-			break;
-		case "Member":
-			wGlobalData = gMembers;
-			wDataToDisplay = filterByListChoice("Member");
-			wControls = ['#rptMemberList'];
-			break;
-        case "Locker":
-            wGlobalData = gLockers;
-            wDataToDisplay = filterByListChoice("Locker");
-            wControls = ['#rptLockerList'];
-            break;
-        case "RefComp":
-			wGlobalData = gRefComps;
-			wDataToDisplay = [...gRefComps];
-			wControls = ['#rptRefCompList','#rptRefCompListPrime'];
-			break;
-		case "LiveComp":
-			wGlobalData = gLiveComps;
-			wDataToDisplay = [...gLiveComps];
-			wControls = ['#rptLiveCompList'];
-			break;
-		case "Event":
-			wGlobalData = gEvents;
-            wDataToDisplay = filterByListChoice("Event");
-			wControls = ['#rptEventList'];
-			break;
-		case "Opponent":
-            wGlobalData = gOpponents;
-			wDataToDisplay = filterByListChoice("Opponent");
-			wControls = ['#rptOpponentList'];
-			break;
-		case "Fixture":
-			wGlobalData = gFixtures;
-			wDataToDisplay = filterByListChoice("Fixture");
-			wControls = ['#rptFixtureList'];
-			break;
-		case "RefEvent":
-			wGlobalData = gRefEvents;
-			wDataToDisplay = [...gRefEvents];
-			wControls = ['#rptRefEventList'];
-			break;
-		case "CanEvent":
-			wGlobalData = gCanEvents;
-            wDataToDisplay = filterByListChoice("CanEvent");
-			wControls = ['#rptCanEventList'];
-			break;
-		default:
-            console.log("public/objects/entity resetPaginationParameter 1 invalid switch target [" + pTarget + "]");
-			wGlobalData = [];
-            wDataToDisplay = [];
-			break;
-		}
+    case "Notice":
+      wGlobalData = gNotices;
+      wDataToDisplay = filterByListChoice("Notice");
+      //wDataToDisplay =  [...gStandingDatas];
+      wControls = ["#rptNoticeList"];
+      break;
+    case "Label":
+      wGlobalData = gLabels;
+      wDataToDisplay =  [...gLabels];
+      wControls = ["#rptLabelList"];
+      break;
+    case "StandingData":
+      wGlobalData = gStandingDatas;
+      wDataToDisplay = filterByListChoice("StandingData");
+      //wDataToDisplay =  [...gStandingDatas];
+      wControls = ["#rptStandingDataList"];
+      break;
+    case "League":
+      wGlobalData = gLeagues;
+      wDataToDisplay = filterByListChoice("League");
+      //wDataToDisplay =  [...gLeagues];
+      wControls = ["#rptLeagueList"];
+      break;
+    case "Booking":
+      wGlobalData = gBookings;
+      wDataToDisplay = filterByListChoice("Booking");
+      //wDataToDisplay =  [...gBookings];
+      wControls = ["#rptBookingList"];
+      break;
+    case "Officer":
+      wGlobalData = gOfficers;
+      wDataToDisplay = filterByListChoice("Officer");
+      wControls = ["#rptOfficerList"];
+      break;
+    case "Team":
+      wGlobalData = gTeams;
+      wDataToDisplay = filterByListChoice("Team");
+      wControls = ["#rptTeamList"];
+      break;
+    case "Member":
+      wGlobalData = gMembers;
+      wDataToDisplay = filterByListChoice("Member");
+      wControls = ["#rptMemberList"];
+      break;
+    case "Locker":
+      wGlobalData = gLockers;
+      wDataToDisplay = filterByListChoice("Locker");
+      wControls = ["#rptLockerList"];
+      break;
+    case "RefComp":
+      wGlobalData = gRefComps;
+      wDataToDisplay = [...gRefComps];
+      wControls = ["#rptRefCompList", "#rptRefCompListPrime"];
+      break;
+    case "LiveComp":
+      wGlobalData = gLiveComps;
+      wDataToDisplay = [...gLiveComps];
+      wControls = ["#rptLiveCompList"];
+      break;
+    case "Event":
+      wGlobalData = gEvents;
+      wDataToDisplay = filterByListChoice("Event");
+      wControls = ["#rptEventList"];
+      break;
+    case "Opponent":
+      wGlobalData = gOpponents;
+      wDataToDisplay = filterByListChoice("Opponent");
+      wControls = ["#rptOpponentList"];
+      break;
+    case "Fixture":
+      wGlobalData = gFixtures;
+      wDataToDisplay = filterByListChoice("Fixture");
+      wControls = ["#rptFixtureList"];
+      break;
+    case "RefEvent":
+      wGlobalData = gRefEvents;
+      wDataToDisplay = [...gRefEvents];
+      wControls = ["#rptRefEventList"];
+      break;
+    case "CanEvent":
+      wGlobalData = gCanEvents;
+      wDataToDisplay = filterByListChoice("CanEvent");
+      wControls = ["#rptCanEventList"];
+      break;
+    default:
+      console.log(
+        "public/objects/entity resetPaginationParameter 1 invalid switch target [" +
+          pTarget +
+          "]"
+      );
+      wGlobalData = [];
+      wDataToDisplay = [];
+      break;
+  }
 
 	return [wGlobalData, wDataToDisplay, wFirstLine, wControls, wSort, wOrder];
 }
@@ -821,54 +841,61 @@ export function resetPaginationParameters(pTarget){
 export function getTargetDataset(pTarget){
     let wDataset = "";
 	switch (pTarget) {
-		case "Notice":
-			wDataset = `lstNotices`;
-			break;
-		case "StandingData":
-			wDataset = `lstSettings`;
-			break;
-		case "League":
-			wDataset = `lstLeagues`;
-			break;
-		case "Booking":
-			wDataset = `lstBookings`;
-			break;
-		case "Officer":
-			wDataset = `lstOfficers`;
-			break;
-		case "Team":
-			wDataset = `lstTeams`;
-			break;
-		case "Locker":
-        case "Member":
-			wDataset = `lstMembers`;
-			break;
-		case "RefComp":
-			wDataset = `lstClubComp`;
-			break;
-		case "LiveComp":
-			wDataset = `lstClubComp`;
-			break;
-		case "Event":
-			wDataset = `lstEvents`;
-			break;
-		case "Opponent":
-			wDataset = `lstLeagueOpponents`;
-			break;
-		case "Fixture":
-            wDataset = `lstKennetImport`;
-			break;
-		case "RefEvent":
-			wDataset = `lstReferenceEvent`;
-			break;
-		case "CanEvent":
-			wDataset = `lstCandidateEvent`;
-			break;
-		default:
-            console.log("public/objects/entity getTargetDataset invalid switch target [" + pTarget + "]");
-			wDataset = "";
-			break;
-		}
+    case "Notice":
+      wDataset = `lstNotices`;
+      break;
+    case "Label":
+      wDataset = `lstLabels`;
+      break;
+    case "StandingData":
+      wDataset = `lstSettings`;
+      break;
+    case "League":
+      wDataset = `lstLeagues`;
+      break;
+    case "Booking":
+      wDataset = `lstBookings`;
+      break;
+    case "Officer":
+      wDataset = `lstOfficers`;
+      break;
+    case "Team":
+      wDataset = `lstTeams`;
+      break;
+    case "Locker":
+    case "Member":
+      wDataset = `lstMembers`;
+      break;
+    case "RefComp":
+      wDataset = `lstClubComp`;
+      break;
+    case "LiveComp":
+      wDataset = `lstClubComp`;
+      break;
+    case "Event":
+      wDataset = `lstEvents`;
+      break;
+    case "Opponent":
+      wDataset = `lstLeagueOpponents`;
+      break;
+    case "Fixture":
+      wDataset = `lstKennetImport`;
+      break;
+    case "RefEvent":
+      wDataset = `lstReferenceEvent`;
+      break;
+    case "CanEvent":
+      wDataset = `lstCandidateEvent`;
+      break;
+    default:
+      console.log(
+        "public/objects/entity getTargetDataset invalid switch target [" +
+          pTarget +
+          "]"
+      );
+      wDataset = "";
+      break;
+  }
 	return wDataset;
 }
 
@@ -889,58 +916,72 @@ export function getTargetParameters(pTarget){
     
     wFirstLine = gEntityFirstRow;
     switch (pTarget) {
-        case "Notice":
-			wSort = ['_createdDate'];
-            wOrder = ["desc"];
-            break;
-        case "StandingData":
-			wSort = ['refKey'];
-            break;
-        case "League":
-			wSort = ['gender', 'leagueName'];
-            break;
-        case "Booking":
-			wSort = ['requiredJDate', 'resourceKey'];
-            break;
-        case "Officer":
-			wSort = ['committee', 'order'];
-            break;
-        case "Team":
-			wSort = ['gender', 'league', 'division'];
-            break;
-        case "Member":
-			wSort = ['surname', 'firstName'];
-            wFirstLine = gMembersFirstRow;
-            break;
-        case "Locker":
-            wSort = ['id'];
-            break;
-        case "RefComp":
-            wSort = ['mix', 'title'];
-            break;
-        case "LiveComp":
-            wSort = ['mix', 'title'];
-            break;
-        case "Event":
-            wSort = ['requiredYear', 'requiredJDate', 'startTime',  'subject'];
-            break;
-        case "Opponent":
-            wSort = ['league', 'team'];
-            break;
-        case "Fixture":
-            wSort = ['league', 'week', 'playOn'];
-            //wOrder = ['asc', 'desc', 'asc']
-            break;
-        case "RefEvent":
-            wSort = ['eventType', 'subject'];
-            break;
-        case "CanEvent":
-            wSort = ['requiredYear', 'requiredJDate', 'startTime', 'homeAway', 'subject'];
-            break;
-        default:
-            console.log("/public/objects/entity getTargetParamters invalid pTarget [" + pTarget + "]");
-            wSort = [];
-            break;
+      case "Notice":
+        wSort = ["_createdDate"];
+        wOrder = ["desc"];
+        break;
+      case "Label":
+        wSort = ["_title"];
+        wOrder = ["desc"];
+        break;
+      case "StandingData":
+        wSort = ["refKey"];
+        break;
+      case "League":
+        wSort = ["gender", "leagueName"];
+        break;
+      case "Booking":
+        wSort = ["requiredJDate", "resourceKey"];
+        break;
+      case "Officer":
+        wSort = ["committee", "order"];
+        break;
+      case "Team":
+        wSort = ["gender", "league", "division"];
+        break;
+      case "Member":
+        wSort = ["surname", "firstName"];
+        wFirstLine = gMembersFirstRow;
+        break;
+      case "Locker":
+        wSort = ["id"];
+        break;
+      case "RefComp":
+        wSort = ["mix", "title"];
+        break;
+      case "LiveComp":
+        wSort = ["mix", "title"];
+        break;
+      case "Event":
+        wSort = ["requiredYear", "requiredJDate", "startTime", "subject"];
+        break;
+      case "Opponent":
+        wSort = ["league", "team"];
+        break;
+      case "Fixture":
+        wSort = ["league", "week", "playOn"];
+        //wOrder = ['asc', 'desc', 'asc']
+        break;
+      case "RefEvent":
+        wSort = ["eventType", "subject"];
+        break;
+      case "CanEvent":
+        wSort = [
+          "requiredYear",
+          "requiredJDate",
+          "startTime",
+          "homeAway",
+          "subject",
+        ];
+        break;
+      default:
+        console.log(
+          "/public/objects/entity getTargetParamters invalid pTarget [" +
+            pTarget +
+            "]"
+        );
+        wSort = [];
+        break;
     }
     return [wFirstLine, wSort, wOrder];
 }
@@ -967,173 +1008,202 @@ export function filterByListChoice(pTarget){
     let wTeamName = "";
 
 	switch (pTarget) {
-		case "League":
-	        wChoice = $w('#rgpLeagueChoice').value;
-            if (wChoice === "A") {
-                wDataToDisplay = [...gLeagues];
-            } else {
-                wDataToDisplay = gLeagues.filter( (item) => item.gender === wChoice);
-            }
-			break;
-		case "Team":
-	        wChoice = $w('#rgpTeamChoice').value;
-            if (wChoice === "A") {
-                wDataToDisplay = [...gTeams];
-            } else {
-                wDataToDisplay = gTeams.filter( (item) => item.gender === wChoice);
-            }
-			break;
-		case "Booking":
-            wByWho = $w('#rgpBookingChoice').value;
-            wByDate = $w('#rgpBookingChoiceDate').value;
-            if (wByWho === "A"){
-                wDataToDisplay2 = [...gBookings];
-            } else {
-    	        wBookerId = $w('#lblBookingChoiceBookerId').text;
-            	wDataToDisplay2 = gBookings.filter( (item) => item.bookerId === wBookerId);
-            }
-            if (wByDate === "N") {
-                wDataToDisplay = [...wDataToDisplay2];
-            } else {
-                switch (wByDate) {
-                    case "O":
-    	                wDateOn = DateToOrdinal($w('#dpkBookingChoiceDateOn').value);
-                        wDataToDisplay = wDataToDisplay2.filter( (item) => item.requiredJDate === wDateOn)                        
-                        break;
-                    case "F":
-            	        wDateFrom = DateToOrdinal($w('#dpkBookingChoiceDateFrom').value);
-                        //console.log("Day From = ", wDateFrom);
-                       wDataToDisplay = wDataToDisplay2.filter( (item) => item.requiredJDate >= wDateFrom)                        
-                        break;
-                    case "R":
-            	        wDateFrom = DateToOrdinal($w('#dpkBookingChoiceDateRangeA').value);
-        	            wDateTo = DateToOrdinal($w('#dpkBookingChoiceDateRangeB').value);
-                        //console.log("Day from to = ", wDateFrom, wDateTo);
-                        wDataToDisplay = wDataToDisplay2.filter( (item) => item.requiredJDate >= wDateFrom && item.requiredJDate < wDateTo)                        
-                        break;
-                }
-            }
+    case "League":
+      wChoice = $w("#rgpLeagueChoice").value;
+      if (wChoice === "A") {
+        wDataToDisplay = [...gLeagues];
+      } else {
+        wDataToDisplay = gLeagues.filter((item) => item.gender === wChoice);
+      }
+      break;
+    case "Team":
+      wChoice = $w("#rgpTeamChoice").value;
+      if (wChoice === "A") {
+        wDataToDisplay = [...gTeams];
+      } else {
+        wDataToDisplay = gTeams.filter((item) => item.gender === wChoice);
+      }
+      break;
+    case "Booking":
+      wByWho = $w("#rgpBookingChoice").value;
+      wByDate = $w("#rgpBookingChoiceDate").value;
+      if (wByWho === "A") {
+        wDataToDisplay2 = [...gBookings];
+      } else {
+        wBookerId = $w("#lblBookingChoiceBookerId").text;
+        wDataToDisplay2 = gBookings.filter(
+          (item) => item.bookerId === wBookerId
+        );
+      }
+      if (wByDate === "N") {
+        wDataToDisplay = [...wDataToDisplay2];
+      } else {
+        switch (wByDate) {
+          case "O":
+            wDateOn = DateToOrdinal($w("#dpkBookingChoiceDateOn").value);
+            wDataToDisplay = wDataToDisplay2.filter(
+              (item) => item.requiredJDate === wDateOn
+            );
             break;
-		case "Notice":
-		    wChoice = $w('#drpNoticeChoice').value;
-            if (wChoice === "A") {
-                wDataToDisplay = [...gNotices];
-            } else {
-    			wDataToDisplay = gNotices.filter( (item) => item.targetType === wChoice);
-            }
-			break;
-		case "StandingData":
-		    wChoice = $w('#drpStandingDataChoice').value;
-            if (wChoice === "A") {
-                wDataToDisplay = [...gStandingDatas];
-            } else {
-    			wDataToDisplay = gStandingDatas.filter( (item) => item.webPage === wChoice);
-            }
-			break;
+          case "F":
+            wDateFrom = DateToOrdinal($w("#dpkBookingChoiceDateFrom").value);
+            //console.log("Day From = ", wDateFrom);
+            wDataToDisplay = wDataToDisplay2.filter(
+              (item) => item.requiredJDate >= wDateFrom
+            );
+            break;
+          case "R":
+            wDateFrom = DateToOrdinal($w("#dpkBookingChoiceDateRangeA").value);
+            wDateTo = DateToOrdinal($w("#dpkBookingChoiceDateRangeB").value);
+            //console.log("Day from to = ", wDateFrom, wDateTo);
+            wDataToDisplay = wDataToDisplay2.filter(
+              (item) =>
+                item.requiredJDate >= wDateFrom && item.requiredJDate < wDateTo
+            );
+            break;
+        }
+      }
+      break;
+    case "Notice":
+      wChoice = $w("#drpNoticeChoice").value;
+      if (wChoice === "A") {
+        wDataToDisplay = [...gNotices];
+      } else {
+        wDataToDisplay = gNotices.filter((item) => item.targetType === wChoice);
+      }
+      break;
+    case "StandingData":
+      wChoice = $w("#drpStandingDataChoice").value;
+      if (wChoice === "A") {
+        wDataToDisplay = [...gStandingDatas];
+      } else {
+        wDataToDisplay = gStandingDatas.filter(
+          (item) => item.webPage === wChoice
+        );
+      }
+      break;
 
-		case "Officer":
-	        wChoice = $w('#drpOfficerChoice').value;
-			wDataToDisplay = gOfficers.filter( (item) => item.committee === wChoice);
-            break;
-		case "Member":
-            wChoice = $w('#drpMemberChoiceStatus').value;
-            wType = $w('#drpMemberChoiceType').value;
-            if (wChoice === "All" && wType === "All") {
-                wDataToDisplay = [...gMembers];
-            } else if (wChoice === "All") {
-                wDataToDisplay = gMembers.filter ( item => item.type === wType) ; 
-            } else if (wType === "All") {
-                wDataToDisplay = gMembers.filter ( item => item.status === wChoice) ; 
-            } else {
-                wDataToDisplay = gMembers.filter ( item => item.type === wType && item.status === wChoice) ; 
-            }
-			break;
-        case "Locker":
-            wDataToDisplay = [...gLockers];
-            break;
-        case "RefComp":
-			wDataToDisplay = [...gRefComps];
-			break;
-		case "LiveComp":
-			wDataToDisplay = [...gLiveComps];
-			break;
-		case "Event":
-	        wChoice = $w('#drpEventChoice').value;
-            if (choices.includes(wChoice)){
-                if (wChoice === "All") {
-                    wDataToDisplay = [...gEvents];
-                } else {
-                    wDataToDisplay = gEvents.filter( (item) => item.eventType === wChoice);
-                }
-            } else {
-                wDataToDisplay = gEvents.filter( (item) => item.team === wChoice);
-            }
-            break;
-		case "Opponent":
-	        wChoice = $w('#drpOpponentChoice').value;
-            if (wChoice === "All") {
-                wDataToDisplay = [...gOpponents];
-            } else {
-                wDataToDisplay = gOpponents.filter( (item) => item.league === wChoice);
-            }
-            break;
-		case "Fixture":
-	        wChoice = $w('#drpFixtureChoice').value;
-            if (!$w('#boxFixtureChoiceTeam').collapsed) {
-                wTeamName = $w('#drpFixtureChoiceTeam').value;
-            }
-            wLeagueRoot = wChoice.substring(0, 2);
-            if (wLeagueRoot === "FG") {
-                wDivision = 0;
-                wLeagueBase = wChoice;
-            } else if (wLeagueRoot === "RS") {
-                wDivision = 1;
-                wLeagueBase = wLeagueRoot;
-            } else {
-                wLeagueBase = wChoice.slice(0, -1);
-                wLeagueDivision = wChoice.slice(-1);
-                wDivision = parseInt(wLeagueDivision, 10);
-            }
-            //console.log(gFixtures);
-            //console.log(wChoice, wLeagueBase, wDivision, typeof wDivision);
-            if (wChoice === "All") {
-                wDataToDisplay = [...gFixtures];
-            } else {
-                if (wTeamName === "") {
-                    wDataToDisplay = gFixtures.filter( (item) => item.league === wLeagueBase && item.division === wDivision);
-                } else {
-                    wDataToDisplay = gFixtures.filter( (item) => item.league === wLeagueBase && item.division === wDivision
-                        && (item.home === wTeamName || item.away === wTeamName));
-                }
-            }
-			break;
-		case "RefEvent":
-			wDataToDisplay = [...gRefEvents];
-			break;
-		case "CanEvent":
-	        wChoice = $w('#drpCanEventChoice').value;
-            switch (wChoice) {
-                case "All":
-                    wDataToDisplay = [...gCanEvents];
-                    break;
-                case "XLG":
-                    wDataToDisplay = gCanEvents.filter( (item) => item.eventType === "CE" || item.eventType === "CG" || item.eventType === "HG");
-                    break;
-                case "CG":
-                case "HG":
-                case "CE":
-                    wDataToDisplay = gCanEvents.filter( (item) => item.eventType === wChoice);
-                    break;
-                default:
-                    wDataToDisplay = gCanEvents.filter( (item) => item.team === wChoice);
-                    break;
-            }
-            break;
-		default:
-	        console.log("public/objects/entity filterListByChoice 1 invalid switch target", pTarget);
-    		wDataToDisplay = [];
-			break;
-		}
+    case "Officer":
+      wChoice = $w("#drpOfficerChoice").value;
+      wDataToDisplay = gOfficers.filter((item) => item.committee === wChoice);
+      break;
+    case "Member":
+      wChoice = $w("#drpMemberChoiceStatus").value;
+      wType = $w("#drpMemberChoiceType").value;
+      if (wChoice === "All" && wType === "All") {
+        wDataToDisplay = [...gMembers];
+      } else if (wChoice === "All") {
+        wDataToDisplay = gMembers.filter((item) => item.type === wType);
+      } else if (wType === "All") {
+        wDataToDisplay = gMembers.filter((item) => item.status === wChoice);
+      } else {
+        wDataToDisplay = gMembers.filter(
+          (item) => item.type === wType && item.status === wChoice
+        );
+      }
+      break;
+    case "Locker":
+      wDataToDisplay = [...gLockers];
+      break;
+    case "RefComp":
+      wDataToDisplay = [...gRefComps];
+      break;
+    case "LiveComp":
+      wDataToDisplay = [...gLiveComps];
+      break;
+    case "Event":
+      wChoice = $w("#drpEventChoice").value;
+      if (choices.includes(wChoice)) {
+        if (wChoice === "All") {
+          wDataToDisplay = [...gEvents];
+        } else {
+          wDataToDisplay = gEvents.filter((item) => item.eventType === wChoice);
+        }
+      } else {
+        wDataToDisplay = gEvents.filter((item) => item.team === wChoice);
+      }
+      break;
+    case "Opponent":
+      wChoice = $w("#drpOpponentChoice").value;
+      if (wChoice === "All") {
+        wDataToDisplay = [...gOpponents];
+      } else {
+        wDataToDisplay = gOpponents.filter((item) => item.league === wChoice);
+      }
+      break;
+    case "Fixture":
+      wChoice = $w("#drpFixtureChoice").value;
+      if (!$w("#boxFixtureChoiceTeam").collapsed) {
+        wTeamName = $w("#drpFixtureChoiceTeam").value;
+      }
+      wLeagueRoot = wChoice.substring(0, 2);
+      if (wLeagueRoot === "FG") {
+        wDivision = 0;
+        wLeagueBase = wChoice;
+      } else if (wLeagueRoot === "RS") {
+        wDivision = 1;
+        wLeagueBase = wLeagueRoot;
+      } else {
+        wLeagueBase = wChoice.slice(0, -1);
+        wLeagueDivision = wChoice.slice(-1);
+        wDivision = parseInt(wLeagueDivision, 10);
+      }
+      //console.log(gFixtures);
+      //console.log(wChoice, wLeagueBase, wDivision, typeof wDivision);
+      if (wChoice === "All") {
+        wDataToDisplay = [...gFixtures];
+      } else {
+        if (wTeamName === "") {
+          wDataToDisplay = gFixtures.filter(
+            (item) => item.league === wLeagueBase && item.division === wDivision
+          );
+        } else {
+          wDataToDisplay = gFixtures.filter(
+            (item) =>
+              item.league === wLeagueBase &&
+              item.division === wDivision &&
+              (item.home === wTeamName || item.away === wTeamName)
+          );
+        }
+      }
+      break;
+    case "RefEvent":
+      wDataToDisplay = [...gRefEvents];
+      break;
+    case "CanEvent":
+      wChoice = $w("#drpCanEventChoice").value;
+      switch (wChoice) {
+        case "All":
+          wDataToDisplay = [...gCanEvents];
+          break;
+        case "XLG":
+          wDataToDisplay = gCanEvents.filter(
+            (item) =>
+              item.eventType === "CE" ||
+              item.eventType === "CG" ||
+              item.eventType === "HG"
+          );
+          break;
+        case "CG":
+        case "HG":
+        case "CE":
+          wDataToDisplay = gCanEvents.filter(
+            (item) => item.eventType === wChoice
+          );
+          break;
+        default:
+          wDataToDisplay = gCanEvents.filter((item) => item.team === wChoice);
+          break;
+      }
+      break;
+    default:
+      console.log(
+        "public/objects/entity filterListByChoice 1 invalid switch target",
+        pTarget
+      );
+      wDataToDisplay = [];
+      break;
+  }
 
 	return wDataToDisplay;
 }
@@ -1169,184 +1239,191 @@ export function updateGlobalDataStore(pRec, pTarget){
 	let wSelectedItem = wGlobalData.find(item => item._id === pRec._id);
 	if (wSelectedItem){
 		switch (pTarget) {
-            case "LiveComp":
-                wSelectedItem.title = pRec.title;
-                wSelectedItem.compRef = pRec.compRef;
-                wSelectedItem.maintainedBy = pRec.maintainedBy;
-                wSelectedItem.inTableDisplay = pRec.inTableDisplay;
-                wSelectedItem.bookable = pRec.bookable;
-                wSelectedItem.shape = pRec.shape;
-                wSelectedItem.mix = pRec.mix;
-                wSelectedItem.gameType = pRec.gameType;
-                wSelectedItem.competitorType = pRec.competitorType;
-                wSelectedItem.compYear = pRec.compYear;
-                wSelectedItem.status = pRec.status;
-                wSelectedItem.order = pRec.order;
-                wSelectedItem.noStages = pRec.noStages;
-                wSelectedItem.winnerNames = pRec.winnerNames;
-                wSelectedItem.secondNames = pRec.secondNames;
-                wSelectedItem.noCompetitors = pRec.noCompetitors;
-                break;
-            case "CanEvent":
-            case "Event":
-                wSelectedItem.startDate = pRec.startDate;
-                wSelectedItem.subject = pRec.subject;
-                wSelectedItem.rinks = pRec.rinks;
-                wSelectedItem.homeAway = pRec.homeAway;
-                wSelectedItem.startTime = pRec.startTime;
-                wSelectedItem.duration = pRec.duration;
+      case "LiveComp":
+        wSelectedItem.title = pRec.title;
+        wSelectedItem.compRef = pRec.compRef;
+        wSelectedItem.maintainedBy = pRec.maintainedBy;
+        wSelectedItem.inTableDisplay = pRec.inTableDisplay;
+        wSelectedItem.bookable = pRec.bookable;
+        wSelectedItem.shape = pRec.shape;
+        wSelectedItem.mix = pRec.mix;
+        wSelectedItem.gameType = pRec.gameType;
+        wSelectedItem.competitorType = pRec.competitorType;
+        wSelectedItem.compYear = pRec.compYear;
+        wSelectedItem.status = pRec.status;
+        wSelectedItem.order = pRec.order;
+        wSelectedItem.noStages = pRec.noStages;
+        wSelectedItem.winnerNames = pRec.winnerNames;
+        wSelectedItem.secondNames = pRec.secondNames;
+        wSelectedItem.noCompetitors = pRec.noCompetitors;
+        break;
+      case "CanEvent":
+      case "Event":
+        wSelectedItem.startDate = pRec.startDate;
+        wSelectedItem.subject = pRec.subject;
+        wSelectedItem.rinks = pRec.rinks;
+        wSelectedItem.homeAway = pRec.homeAway;
+        wSelectedItem.startTime = pRec.startTime;
+        wSelectedItem.duration = pRec.duration;
 
-                wSelectedItem.eventType = pRec.eventType;
-                wSelectedItem.useType = pRec.useType;
-                wSelectedItem.gameType = pRec.gameType;
-                wSelectedItem.dress = pRec.dress;
-                wSelectedItem.league = pRec.league;
-                wSelectedItem.team = pRec.team;
-                wSelectedItem.eventId = null;
-                wSelectedItem.mix = pRec.mix;
-                wSelectedItem.uploadStatus = pRec.uploadStatus;
-                wSelectedItem.requiredYear = pRec.requiredYear;
-                wSelectedItem.requiredJDate = pRec.requiredJDate;
-                wSelectedItem.calKey = null;
-                wSelectedItem.status = pRec.status;
-                wSelectedItem.summary = pRec.summary;
-                break;
-            case "Booking":
-                wSelectedItem.startDate = pRec.startDate;
-                wSelectedItem.subject = pRec.subject;
-                wSelectedItem.rinks = pRec.rinks;
-                wSelectedItem.homeAway = pRec.homeAway;
-                wSelectedItem.startTime = pRec.startTime;
-                wSelectedItem.duration = pRec.duration;
+        wSelectedItem.eventType = pRec.eventType;
+        wSelectedItem.useType = pRec.useType;
+        wSelectedItem.gameType = pRec.gameType;
+        wSelectedItem.dress = pRec.dress;
+        wSelectedItem.league = pRec.league;
+        wSelectedItem.team = pRec.team;
+        wSelectedItem.eventId = null;
+        wSelectedItem.mix = pRec.mix;
+        wSelectedItem.uploadStatus = pRec.uploadStatus;
+        wSelectedItem.requiredYear = pRec.requiredYear;
+        wSelectedItem.requiredJDate = pRec.requiredJDate;
+        wSelectedItem.calKey = null;
+        wSelectedItem.status = pRec.status;
+        wSelectedItem.summary = pRec.summary;
+        break;
+      case "Booking":
+        wSelectedItem.startDate = pRec.startDate;
+        wSelectedItem.subject = pRec.subject;
+        wSelectedItem.rinks = pRec.rinks;
+        wSelectedItem.homeAway = pRec.homeAway;
+        wSelectedItem.startTime = pRec.startTime;
+        wSelectedItem.duration = pRec.duration;
 
-                wSelectedItem.eventType = pRec.eventType;
-                wSelectedItem.useType = pRec.useType;
-                wSelectedItem.gameType = pRec.gameType;
-                wSelectedItem.dress = pRec.dress;
-                wSelectedItem.league = pRec.league;
-                wSelectedItem.team = pRec.team;
-                wSelectedItem.eventId = null;
-                wSelectedItem.mix = pRec.mix;
-                wSelectedItem.uploadStatus = pRec.uploadStatus;
-                wSelectedItem.requiredYear = pRec.requiredYear;
-                wSelectedItem.requiredJDate = pRec.requiredJDate;
-                wSelectedItem.calKey = null;
-                wSelectedItem.status = pRec.status;
-                wSelectedItem.summary = pRec.summary;
-                break;
-            case "Notice":
-                wSelectedItem.targetType = pRec.targetType;
-                wSelectedItem.target = pRec.target;
-                wSelectedItem.title = pRec.title;
-                wSelectedItem.urgent = pRec.urgent;
-                wSelectedItem.picture = pRec.picture;
-                wSelectedItem.message = pRec.message;
-                wSelectedItem.status = pRec.status;
-                wSelectedItem.source = pRec.source;
-                break;
-            case "StandingData":
-                wSelectedItem.webPage = pRec.webPage;
-                wSelectedItem.refKey = pRec.refKey;
-                wSelectedItem.name = pRec.name;
-                wSelectedItem.value = pRec.value;
-                break;
-            case "Officer":
-                wSelectedItem.committee = pRec.committee;
-                wSelectedItem.position = pRec.position;
-                wSelectedItem.holderId = pRec.holderId;
-                wSelectedItem.order = pRec.order;
-                break;
-            case "Member":
-                wSelectedItem.dateLeft = pRec.dateLeft;
-                wSelectedItem.username = pRec.username;
-                wSelectedItem.loginEmail = pRec.loginEmail;
-                wSelectedItem.firstName = pRec.firstName;
-                wSelectedItem.surname = pRec.surname;
-                wSelectedItem.gender = pRec.gender;
-                wSelectedItem.type = pRec.type;
-                wSelectedItem.status = pRec.status;
-                wSelectedItem.contactpref = pRec.contactpref;
-                wSelectedItem.allowshare = pRec.allowshare;
-                wSelectedItem.contactEmail = pRec. contactEmail;
-                wSelectedItem.altEmail = pRec.altEmail;
-                wSelectedItem.mobilePhone = pRec.mobilePhone;
-                wSelectedItem.homePhone = pRec.homePhone;
-                wSelectedItem.locker = pRec.locker;
-                wSelectedItem.addrLine1 = pRec.addrLine1;
-                wSelectedItem.addrLine2 = pRec.addrLine2;
-                wSelectedItem.town = pRec.town;
-                wSelectedItem.postCode = pRec.postCode;
-                wSelectedItem.wixId = pRec.wixId;
-                wSelectedItem.photo = pRec.photo;
-                break;
-            case "Locker":
-                wSelectedItem.ownerName = pRec.ownerName;
-                break;
-            case "Opponent":
-                wSelectedItem.league = pRec.league;
-                wSelectedItem.team = pRec.team;
-                wSelectedItem.status = pRec.status;
-                break;
-            case "Fixture":
-                wSelectedItem.weekEnding = pRec.weekEnding;
-                wSelectedItem.week = pRec.week;
-                wSelectedItem.playOn = pRec.playOn;
-                wSelectedItem.home = pRec.home;
-                wSelectedItem.away = pRec.away;
-                wSelectedItem.homeAway = pRec.homeAway;
-                wSelectedItem.league = pRec.league;
-                wSelectedItem.division = pRec.division;
-                wSelectedItem.primed = pRec.primed;
-            break;
-            case "Team":
-                wSelectedItem.duration = pRec.duration;
-                wSelectedItem.startTime = pRec.startTime;
-                wSelectedItem.dress = pRec.dress;
-                wSelectedItem.teamKey = pRec.teamKey;
-                wSelectedItem.teamName = pRec.teamName;
-                wSelectedItem.leagueName = pRec.leagueName;
-                wSelectedItem.league = pRec.league;
-                wSelectedItem.useType = pRec.useType;
-                wSelectedItem.gameType = pRec.gameType;
-                wSelectedItem.division = pRec.division;
-                wSelectedItem.noMatches = pRec.noMatches;
-                wSelectedItem.gender = pRec.gender;
-                wSelectedItem.managerId = pRec.managerId;
-                wSelectedItem.dayCaptainId = pRec.dayCaptainId;
-                wSelectedItem.url = pRec.url;
-                wSelectedItem.url2 = pRec.url2;
-                break;
-            case "League":
-                wSelectedItem.duration = pRec.duration;
-                wSelectedItem.startTime = pRec.startTime;
-                wSelectedItem.dress = pRec.dress;
-                wSelectedItem.leagueKey = pRec.leagueKey;
-                wSelectedItem.division = pRec.division;
-                wSelectedItem.leagueName = pRec.leagueName;
-                wSelectedItem.useType = pRec.useType;
-                wSelectedItem.dress = pRec.dress;
-                wSelectedItem.noMatches = pRec.noMatches;
-                wSelectedItem.gender = pRec.gender;
-                wSelectedItem.resultUrl = pRec.resultUrl;
-                wSelectedItem.linkUrl = pRec.linkUrl;
-                break;
-            case "RefEvent":
-                wSelectedItem.subject = pRec.subject;
-                wSelectedItem.rinks = pRec.rinks;
-                wSelectedItem.startTime = pRec.startTime;
-                wSelectedItem.duration = pRec.duration;
-                wSelectedItem.eventType = pRec.eventType;
-                wSelectedItem.useType = pRec.useType;
-                wSelectedItem.gameType = pRec.gameType;
-                wSelectedItem.dress = pRec.dress;
-                wSelectedItem.league = pRec.league;
-                wSelectedItem.team = pRec.team;
-                wSelectedItem.mix = pRec.mix;
-                break;
-            default:
-                console.log("public/objects/entity updateGlobalDataStore 2 Invalid pTarget", pTarget);
-                break;
-        } //switch
+        wSelectedItem.eventType = pRec.eventType;
+        wSelectedItem.useType = pRec.useType;
+        wSelectedItem.gameType = pRec.gameType;
+        wSelectedItem.dress = pRec.dress;
+        wSelectedItem.league = pRec.league;
+        wSelectedItem.team = pRec.team;
+        wSelectedItem.eventId = null;
+        wSelectedItem.mix = pRec.mix;
+        wSelectedItem.uploadStatus = pRec.uploadStatus;
+        wSelectedItem.requiredYear = pRec.requiredYear;
+        wSelectedItem.requiredJDate = pRec.requiredJDate;
+        wSelectedItem.calKey = null;
+        wSelectedItem.status = pRec.status;
+        wSelectedItem.summary = pRec.summary;
+        break;
+      case "Notice":
+        wSelectedItem.targetType = pRec.targetType;
+        wSelectedItem.target = pRec.target;
+        wSelectedItem.title = pRec.title;
+        wSelectedItem.urgent = pRec.urgent;
+        wSelectedItem.picture = pRec.picture;
+        wSelectedItem.message = pRec.message;
+        wSelectedItem.status = pRec.status;
+        wSelectedItem.source = pRec.source;
+        break;
+      case "Label":
+        wSelectedItem.title = pRec.title;
+        wSelectedItem.count = pRec.count;
+        break;
+      case "StandingData":
+        wSelectedItem.webPage = pRec.webPage;
+        wSelectedItem.refKey = pRec.refKey;
+        wSelectedItem.name = pRec.name;
+        wSelectedItem.value = pRec.value;
+        break;
+      case "Officer":
+        wSelectedItem.committee = pRec.committee;
+        wSelectedItem.position = pRec.position;
+        wSelectedItem.holderId = pRec.holderId;
+        wSelectedItem.order = pRec.order;
+        break;
+      case "Member":
+        wSelectedItem.dateLeft = pRec.dateLeft;
+        wSelectedItem.username = pRec.username;
+        wSelectedItem.loginEmail = pRec.loginEmail;
+        wSelectedItem.firstName = pRec.firstName;
+        wSelectedItem.surname = pRec.surname;
+        wSelectedItem.gender = pRec.gender;
+        wSelectedItem.type = pRec.type;
+        wSelectedItem.status = pRec.status;
+        wSelectedItem.contactpref = pRec.contactpref;
+        wSelectedItem.allowshare = pRec.allowshare;
+        wSelectedItem.contactEmail = pRec.contactEmail;
+        wSelectedItem.altEmail = pRec.altEmail;
+        wSelectedItem.mobilePhone = pRec.mobilePhone;
+        wSelectedItem.homePhone = pRec.homePhone;
+        wSelectedItem.locker = pRec.locker;
+        wSelectedItem.addrLine1 = pRec.addrLine1;
+        wSelectedItem.addrLine2 = pRec.addrLine2;
+        wSelectedItem.town = pRec.town;
+        wSelectedItem.postCode = pRec.postCode;
+        wSelectedItem.wixId = pRec.wixId;
+        wSelectedItem.photo = pRec.photo;
+        break;
+      case "Locker":
+        wSelectedItem.ownerName = pRec.ownerName;
+        break;
+      case "Opponent":
+        wSelectedItem.league = pRec.league;
+        wSelectedItem.team = pRec.team;
+        wSelectedItem.status = pRec.status;
+        break;
+      case "Fixture":
+        wSelectedItem.weekEnding = pRec.weekEnding;
+        wSelectedItem.week = pRec.week;
+        wSelectedItem.playOn = pRec.playOn;
+        wSelectedItem.home = pRec.home;
+        wSelectedItem.away = pRec.away;
+        wSelectedItem.homeAway = pRec.homeAway;
+        wSelectedItem.league = pRec.league;
+        wSelectedItem.division = pRec.division;
+        wSelectedItem.primed = pRec.primed;
+        break;
+      case "Team":
+        wSelectedItem.duration = pRec.duration;
+        wSelectedItem.startTime = pRec.startTime;
+        wSelectedItem.dress = pRec.dress;
+        wSelectedItem.teamKey = pRec.teamKey;
+        wSelectedItem.teamName = pRec.teamName;
+        wSelectedItem.leagueName = pRec.leagueName;
+        wSelectedItem.league = pRec.league;
+        wSelectedItem.useType = pRec.useType;
+        wSelectedItem.gameType = pRec.gameType;
+        wSelectedItem.division = pRec.division;
+        wSelectedItem.noMatches = pRec.noMatches;
+        wSelectedItem.gender = pRec.gender;
+        wSelectedItem.managerId = pRec.managerId;
+        wSelectedItem.dayCaptainId = pRec.dayCaptainId;
+        wSelectedItem.url = pRec.url;
+        wSelectedItem.url2 = pRec.url2;
+        break;
+      case "League":
+        wSelectedItem.duration = pRec.duration;
+        wSelectedItem.startTime = pRec.startTime;
+        wSelectedItem.dress = pRec.dress;
+        wSelectedItem.leagueKey = pRec.leagueKey;
+        wSelectedItem.division = pRec.division;
+        wSelectedItem.leagueName = pRec.leagueName;
+        wSelectedItem.useType = pRec.useType;
+        wSelectedItem.dress = pRec.dress;
+        wSelectedItem.noMatches = pRec.noMatches;
+        wSelectedItem.gender = pRec.gender;
+        wSelectedItem.resultUrl = pRec.resultUrl;
+        wSelectedItem.linkUrl = pRec.linkUrl;
+        break;
+      case "RefEvent":
+        wSelectedItem.subject = pRec.subject;
+        wSelectedItem.rinks = pRec.rinks;
+        wSelectedItem.startTime = pRec.startTime;
+        wSelectedItem.duration = pRec.duration;
+        wSelectedItem.eventType = pRec.eventType;
+        wSelectedItem.useType = pRec.useType;
+        wSelectedItem.gameType = pRec.gameType;
+        wSelectedItem.dress = pRec.dress;
+        wSelectedItem.league = pRec.league;
+        wSelectedItem.team = pRec.team;
+        wSelectedItem.mix = pRec.mix;
+        break;
+      default:
+        console.log(
+          "public/objects/entity updateGlobalDataStore 2 Invalid pTarget",
+          pTarget
+        );
+        break;
+    } //switch
         wSelectedItem.selected = false;
 	} else {
         pRec.selected = false;
@@ -1361,55 +1438,61 @@ export function updateGlobalDataStore(pRec, pTarget){
         wSortedData = _.orderBy(wGlobalData, wSort);
     }
 	switch (pTarget) {
-		case "Notice":
-			gNotices = [...wSortedData];
-			break;
-		case "StandingData":
-			gStandingDatas = [...wSortedData];
-			break;
-		case "Officer":
-			gOfficers = [...wSortedData];
-			break;
-		case "League":
-			gLeagues = [...wSortedData];
-			break;
-		case "Team":
-			gTeams = [...wSortedData];
-			break;
-		case "Member":
-			gMembers = [...wSortedData];
-			break;
-        case "Locker":
-            gLockers = [...wSortedData];
-            break;
-        case "RefComp":
-			gRefComps = [...wSortedData];
-			break;
-		case "LiveComp":
-			gLiveComps = [...wSortedData];
-			break;
-		case "Event":
-			gEvents = [...wSortedData];
-			break;
-		case "Booking":
-			gBookings = [...wSortedData];
-			break;
-		case "Opponent":
-			gOpponents = [...wSortedData];
-			break;
-		case "Fixture":
-			gFixtures = [...wSortedData];
-			break;
-		case "RefEvent":
-			gRefEvents = [...wSortedData];
-			break;
-		case "CanEvent":
-			gCanEvents = [...wSortedData];
-			break;
-        default:
-            console.log("public/objects/entity updateGlobalDataStore 3 Invalid pTarget", pTarget);
-            break;
-	}
+    case "Notice":
+      gNotices = [...wSortedData];
+      break;
+    case "Label":
+      gLabels = [...wSortedData];
+      break;
+    case "StandingData":
+      gStandingDatas = [...wSortedData];
+      break;
+    case "Officer":
+      gOfficers = [...wSortedData];
+      break;
+    case "League":
+      gLeagues = [...wSortedData];
+      break;
+    case "Team":
+      gTeams = [...wSortedData];
+      break;
+    case "Member":
+      gMembers = [...wSortedData];
+      break;
+    case "Locker":
+      gLockers = [...wSortedData];
+      break;
+    case "RefComp":
+      gRefComps = [...wSortedData];
+      break;
+    case "LiveComp":
+      gLiveComps = [...wSortedData];
+      break;
+    case "Event":
+      gEvents = [...wSortedData];
+      break;
+    case "Booking":
+      gBookings = [...wSortedData];
+      break;
+    case "Opponent":
+      gOpponents = [...wSortedData];
+      break;
+    case "Fixture":
+      gFixtures = [...wSortedData];
+      break;
+    case "RefEvent":
+      gRefEvents = [...wSortedData];
+      break;
+    case "CanEvent":
+      gCanEvents = [...wSortedData];
+      break;
+    default:
+      console.log(
+        "public/objects/entity updateGlobalDataStore 3 Invalid pTarget",
+        pTarget
+      );
+      break;
+  }
 	return true;
 }
 /**
@@ -1441,55 +1524,61 @@ export function deleteGlobalDataStore(pIds, pTarget){
         wSortedData = _.orderBy(wGlobalData, wSort);
     }
     switch (pTarget) {
-		case "Booking":
-			gBookings = [...wSortedData];
-			break;
-		case "Notice":
-			gNotices = [...wSortedData];
-			break;
-		case "StandingData":
-			gStandingDatas = [...wSortedData];
-			break;
-		case "Officer":
-			gOfficers = [...wSortedData];
-			break;
-		case "Team":
-			gTeams = [...wSortedData];
-			break;
-		case "League":
-			gLeagues = [...wSortedData];
-			break;
-		case "Member":
-			gMembers = [...wSortedData];
-			break;
-        case "Locker":
-            gLockers = [...wSortedData];
-            break;
-		case "RefComp":
-			gRefComps = [...wSortedData]
-			break;
-		case "LiveComp":
-			gLiveComps = [...wSortedData]
-			break;
-		case "Event":
-			gEvents = [...wSortedData]
-			break;
-		case "Opponent":
-			gOpponents = [...wSortedData]
-			break;
-		case "Fixture":
-			gFixtures = [...wSortedData]
-			break;
-		case "RefEvent":
-			gRefEvents = [...wSortedData]
-			break;
-		case "CanEvent":
-			gCanEvents = [...wSortedData]
-			break;
-		default:
-            console.log("public/objects/entity deleteGlobalDatastore 2 invalid switch target", pTarget);
-			break;
-	}
+      case "Booking":
+        gBookings = [...wSortedData];
+        break;
+      case "Notice":
+        gNotices = [...wSortedData];
+        break;
+      case "Label":
+        gLabels = [...wSortedData];
+        break;
+      case "StandingData":
+        gStandingDatas = [...wSortedData];
+        break;
+      case "Officer":
+        gOfficers = [...wSortedData];
+        break;
+      case "Team":
+        gTeams = [...wSortedData];
+        break;
+      case "League":
+        gLeagues = [...wSortedData];
+        break;
+      case "Member":
+        gMembers = [...wSortedData];
+        break;
+      case "Locker":
+        gLockers = [...wSortedData];
+        break;
+      case "RefComp":
+        gRefComps = [...wSortedData];
+        break;
+      case "LiveComp":
+        gLiveComps = [...wSortedData];
+        break;
+      case "Event":
+        gEvents = [...wSortedData];
+        break;
+      case "Opponent":
+        gOpponents = [...wSortedData];
+        break;
+      case "Fixture":
+        gFixtures = [...wSortedData];
+        break;
+      case "RefEvent":
+        gRefEvents = [...wSortedData];
+        break;
+      case "CanEvent":
+        gCanEvents = [...wSortedData];
+        break;
+      default:
+        console.log(
+          "public/objects/entity deleteGlobalDatastore 2 invalid switch target",
+          pTarget
+        );
+        break;
+    }
 	return true;
 }
 /**
@@ -1553,6 +1642,7 @@ export function clearEditBox(pTarget) {
         case "CanEvent":
         case "Event":
         case "Notice":
+        case "Label":
         case "Officer":
             // Do nothing. The Populate function is in the main page code
             break;
@@ -1620,6 +1710,7 @@ export function populateEdit(pTarget){
         case "CanEvent":
         case "Officer":
         case "Notice":
+        case "Label":
         case "Event":
             // Do nothing. The Populate function is in the main page code
             break;
@@ -1639,64 +1730,70 @@ export function populateEdit(pTarget){
  */
 export function hideGoToButtons(pTarget) {
     switch (pTarget) {
-        case "Member":
-            $w('#btnMemberAToSync').hide();
-            $w('#btnMemberAToCustom').hide();
-            $w('#btnMemberAToLocker').hide();
-            break;
-        case "Locker":
-            $w('#btnLockerAToMember').hide();
-            break;
-        case "Booking":
-            $w('#btnBookingAToSpecial').hide();
-            break;
-        case "StandingData":
-            $w('#btnStandingDataAToA').hide();
-            break;
-        case "Officer":
-            $w('#btnOfficerAToA').hide();
-            break;
-        case "Notice":
-            $w('#btnNoticeAToB').hide();
-            break;
-        case "Team":
-            $w('#btnTeamAToLeague').hide();
-            break;
-        case "League":
-            $w('#btnLeagueAToTeam').hide();
-            break;
-        case "RefComp":
-            $w('#btnRefCompAToLiveComp').hide();
-            break;
-        case "LiveComp":
-            $w('#btnLiveCompAToRefComp').hide();
-            break;
-        case "Event":
-            $w('#btnEventAToCanEvent').hide();
-            break;
-        case "Opponent":
-            $w('#btnOpponentAToFixture').hide();
-            $w('#btnOpponentAToRefEvent').hide();
-            $w('#btnOpponentAToCanEvent').hide();
-            break;
-        case "Fixture":
-            $w('#btnFixtureAToOpponent').hide();
-            $w('#btnFixtureAToRefEvent').hide();
-            $w('#btnFixtureAToCanEvent').hide();
-            break;
-        case "RefEvent":
-            $w('#btnRefEventAToOpponent').hide();
-            $w('#btnRefEventAToFixture').hide();
-            $w('#btnRefEventAToCanEvent').hide();
-            break;
-        case "CanEvent":
-            $w('#btnCanEventAToOpponent').hide();
-            $w('#btnCanEventAToFixture').hide();
-            $w('#btnCanEventAToRefEvent').hide();
-            break;
-        default:
-            console.log("/public/objects/entity hideGoToButtons Invalid switch key", pTarget)
-            break;
+      case "Member":
+        $w("#btnMemberAToSync").hide();
+        $w("#btnMemberAToCustom").hide();
+        $w("#btnMemberAToLocker").hide();
+        break;
+      case "Locker":
+        $w("#btnLockerAToMember").hide();
+        break;
+      case "Booking":
+        $w("#btnBookingAToSpecial").hide();
+        break;
+      case "StandingData":
+        $w("#btnStandingDataAToA").hide();
+        break;
+      case "Officer":
+        $w("#btnOfficerAToA").hide();
+        break;
+      case "Notice":
+        $w("#btnNoticeAToLabel").hide();
+        break;
+      case "Label":
+        $w("#btnLabelAToNotice").hide();
+        break;
+      case "Team":
+        $w("#btnTeamAToLeague").hide();
+        break;
+      case "League":
+        $w("#btnLeagueAToTeam").hide();
+        break;
+      case "RefComp":
+        $w("#btnRefCompAToLiveComp").hide();
+        break;
+      case "LiveComp":
+        $w("#btnLiveCompAToRefComp").hide();
+        break;
+      case "Event":
+        $w("#btnEventAToCanEvent").hide();
+        break;
+      case "Opponent":
+        $w("#btnOpponentAToFixture").hide();
+        $w("#btnOpponentAToRefEvent").hide();
+        $w("#btnOpponentAToCanEvent").hide();
+        break;
+      case "Fixture":
+        $w("#btnFixtureAToOpponent").hide();
+        $w("#btnFixtureAToRefEvent").hide();
+        $w("#btnFixtureAToCanEvent").hide();
+        break;
+      case "RefEvent":
+        $w("#btnRefEventAToOpponent").hide();
+        $w("#btnRefEventAToFixture").hide();
+        $w("#btnRefEventAToCanEvent").hide();
+        break;
+      case "CanEvent":
+        $w("#btnCanEventAToOpponent").hide();
+        $w("#btnCanEventAToFixture").hide();
+        $w("#btnCanEventAToRefEvent").hide();
+        break;
+      default:
+        console.log(
+          "/public/objects/entity hideGoToButtons Invalid switch key",
+          pTarget
+        );
+        break;
     }
 }
 /**
@@ -1710,64 +1807,70 @@ export function hideGoToButtons(pTarget) {
 export function showGoToButtons(pTarget) {
     
     switch (pTarget) {
-        case "Member":
-            $w('#btnMemberAToSync').show();
-            $w('#btnMemberAToCustom').show();
-            $w('#btnMemberAToLocker').show();
-            break;
-        case "Booking":
-            $w('#btnBookingAToSpecial').show();
-            break;
-        case "StandingData":
-            $w('#btnStandingDataAToA').show();
-            break;
-        case "Officer":
-            $w('#btnOfficerAToA').show();
-            break;
-        case "Locker":
-            $w('#btnLockerAToMember').show();
-            break;
-        case "Team":
-            $w('#btnTeamAToLeague').show();
-            break;
-        case "Notice":
-            $w('#btnNoticeAToB').show();
-            break;
-        case "League":
-            $w('#btnLeagueAToTeam').show();
-            break;
-        case "RefComp":
-            $w('#btnRefCompAToLiveComp').show();
-            break;
-        case "LiveComp":
-            $w('#btnLiveCompAToRefComp').show();
-            break;
-        case "Event":
-            $w('#btnEventAToCanEvent').show();
-            break;
-        case "Opponent":
-            $w('#btnOpponentAToFixture').show();
-            $w('#btnOpponentAToRefEvent').show();
-            $w('#btnOpponentAToCanEvent').show();
-            break;
-        case "Fixture":
-            $w('#btnFixtureAToOpponent').show();
-            $w('#btnFixtureAToRefEvent').show();
-            $w('#btnFixtureAToCanEvent').show();
-            break;
-        case "RefEvent":
-            $w('#btnRefEventAToOpponent').show();
-            $w('#btnRefEventAToFixture').show();
-            $w('#btnRefEventAToCanEvent').show();
-            break;
-        case "CanEvent":
-            $w('#btnCanEventAToOpponent').show();
-            $w('#btnCanEventAToFixture').show();
-            $w('#btnCanEventAToRefEvent').show();
-            break;
-        default:
-            console.log("/public/objects/entity showGoToButtons Invalid switch key", pTarget)
-            break;
+      case "Member":
+        $w("#btnMemberAToSync").show();
+        $w("#btnMemberAToCustom").show();
+        $w("#btnMemberAToLocker").show();
+        break;
+      case "Booking":
+        $w("#btnBookingAToSpecial").show();
+        break;
+      case "StandingData":
+        $w("#btnStandingDataAToA").show();
+        break;
+      case "Officer":
+        $w("#btnOfficerAToA").show();
+        break;
+      case "Locker":
+        $w("#btnLockerAToMember").show();
+        break;
+      case "Team":
+        $w("#btnTeamAToLeague").show();
+        break;
+      case "Notice":
+        $w("#btnNoticeAToLabel").show();
+        break;
+      case "Label":
+        $w("#btnLabelAToNotice").show();
+        break;
+      case "League":
+        $w("#btnLeagueAToTeam").show();
+        break;
+      case "RefComp":
+        $w("#btnRefCompAToLiveComp").show();
+        break;
+      case "LiveComp":
+        $w("#btnLiveCompAToRefComp").show();
+        break;
+      case "Event":
+        $w("#btnEventAToCanEvent").show();
+        break;
+      case "Opponent":
+        $w("#btnOpponentAToFixture").show();
+        $w("#btnOpponentAToRefEvent").show();
+        $w("#btnOpponentAToCanEvent").show();
+        break;
+      case "Fixture":
+        $w("#btnFixtureAToOpponent").show();
+        $w("#btnFixtureAToRefEvent").show();
+        $w("#btnFixtureAToCanEvent").show();
+        break;
+      case "RefEvent":
+        $w("#btnRefEventAToOpponent").show();
+        $w("#btnRefEventAToFixture").show();
+        $w("#btnRefEventAToCanEvent").show();
+        break;
+      case "CanEvent":
+        $w("#btnCanEventAToOpponent").show();
+        $w("#btnCanEventAToFixture").show();
+        $w("#btnCanEventAToRefEvent").show();
+        break;
+      default:
+        console.log(
+          "/public/objects/entity showGoToButtons Invalid switch key",
+          pTarget
+        );
+        break;
     }
 }
 /**
@@ -1792,55 +1895,61 @@ export function getTarget(pEvent, pType) {
 export function getTargetItem (pTarget, pId){
 	let wElement;
     switch (pTarget) {
-		case "Notice":
-			wElement = gNotices.find( wItem => wItem._id === pId);
-			break;
-		case "Booking":
-			wElement = gBookings.find((wItem) => wItem._id === pId);
-			break;
-		case "Member":
-			wElement = gMembers.find((wItem) => wItem._id === pId);
-			break;
-        case "Locker":
-            wElement = gLockers.find((wItem) => wItem._id === pId);
-            break;
-        case "StandingData":
-			wElement = gStandingDatas.find((wItem) => wItem._id === pId);
-			break;
-		case "Officer":
-			wElement = gOfficers.find((wItem) => wItem._id === pId);
-			break;
-		case "League":
-			wElement = gLeagues.find((wItem) => wItem._id === pId);
-			break;
-		case "Team":
-			wElement = gTeams.find((wItem) => wItem._id === pId);
-			break;
-		case "RefComp":
-			wElement = gRefComps.find((wItem) => wItem._id === pId);
-			break;
-		case "LiveComp":
-			wElement = gLiveComps.find((wItem) => wItem._id === pId);
-			break;
-		case "Event":
-			wElement = gEvents.find((wItem) => wItem._id === pId);
-			break;
-		case "Opponent":
-			wElement = gOpponents.find((wItem) => wItem._id === pId);
-			break;
-		case "Fixture":
-			wElement = gFixtures.find((wItem) => wItem._id === pId);
-			break;
-		case "RefEvent":
-			wElement = gRefEvents.find((wItem) => wItem._id === pId);
-			break;
-		case "CanEvent":
-			wElement = gCanEvents.find((wItem) => wItem._id === pId);
-			break;
-		default:
-            console.log("public/objects/entity getTargetItem 1 invalid switch target", pTarget);
-			break;
-	}
+      case "Notice":
+        wElement = gNotices.find((wItem) => wItem._id === pId);
+        break;
+      case "Label":
+        wElement = gLabels.find((wItem) => wItem._id === pId);
+        break;
+      case "Booking":
+        wElement = gBookings.find((wItem) => wItem._id === pId);
+        break;
+      case "Member":
+        wElement = gMembers.find((wItem) => wItem._id === pId);
+        break;
+      case "Locker":
+        wElement = gLockers.find((wItem) => wItem._id === pId);
+        break;
+      case "StandingData":
+        wElement = gStandingDatas.find((wItem) => wItem._id === pId);
+        break;
+      case "Officer":
+        wElement = gOfficers.find((wItem) => wItem._id === pId);
+        break;
+      case "League":
+        wElement = gLeagues.find((wItem) => wItem._id === pId);
+        break;
+      case "Team":
+        wElement = gTeams.find((wItem) => wItem._id === pId);
+        break;
+      case "RefComp":
+        wElement = gRefComps.find((wItem) => wItem._id === pId);
+        break;
+      case "LiveComp":
+        wElement = gLiveComps.find((wItem) => wItem._id === pId);
+        break;
+      case "Event":
+        wElement = gEvents.find((wItem) => wItem._id === pId);
+        break;
+      case "Opponent":
+        wElement = gOpponents.find((wItem) => wItem._id === pId);
+        break;
+      case "Fixture":
+        wElement = gFixtures.find((wItem) => wItem._id === pId);
+        break;
+      case "RefEvent":
+        wElement = gRefEvents.find((wItem) => wItem._id === pId);
+        break;
+      case "CanEvent":
+        wElement = gCanEvents.find((wItem) => wItem._id === pId);
+        break;
+      default:
+        console.log(
+          "public/objects/entity getTargetItem 1 invalid switch target",
+          pTarget
+        );
+        break;
+    }
     return wElement;
 }
 
@@ -1857,68 +1966,75 @@ export function resetSection(pTarget) {
     gMode = MODE.CLEAR;
     let wNoEntries = 0;
     switch (pTarget) {
-        case "Notice":
-            wNoEntries = gNotices.length;
-            //$w('#chkMemberListSelect').checked = false;
-            break;
-        case "Booking":
-            wNoEntries = gBookings.length;
-            //$w('#chkMemberListSelect').checked = false;
-            break;
-        case "Officer":
-            wNoEntries = gOfficers.length;
-            //$w('#chkMemberListSelect').checked = false;
-            break;
-        case "StandingData":
-            wNoEntries = gStandingDatas.length;
-            break;
-        case "Team":
-            wNoEntries = gTeams.length;
-            //$w('#chkMemberListSelect').checked = false;
-            break;
-        case "League":
-            wNoEntries = gLeagues.length;
-            //$w('#chkMemberListSelect').checked = false;
-            break;
-        case "Member":
-            wNoEntries = gMembers.length;
-            //$w('#chkMemberListSelect').checked = false;
-            break;
-        case "Locker":
-            wNoEntries = gLockers.length;
-            //$w('#chkLockerListSelect').checked = false;
-            break;
-        case "RefComp":
-            wNoEntries = gRefComps.length;
-            //$w('#chkRefCompListSelect').checked = false;
-            break;
-        case "LiveComp":
-            wNoEntries = gLiveComps.length;
-            //$w('#chkLiveCompListSelect').checked = false;
-            break;
-        case "Event":
-            wNoEntries = gEvents.length;
-            //$w('#chkEventListSelect').checked = false;
-            break;
-        case "Opponent":
-            wNoEntries = gOpponents.length;
-            //$w('#chkEventListSelect').checked = false;
-            break;
-        case "Fixture":
-            wNoEntries = gFixtures.length;
-            //$w('#chkEventListSelect').checked = false;
-            break;
-        case "RefEvent":
-            wNoEntries = gRefEvents.length;
-            //$w('#chkEventListSelect').checked = false;
-            break;
-        case "CanEvent":
-            wNoEntries = gCanEvents.length;
-            //$w('#chkEventListSelect').checked = false;
-            break;
-        default:
-            console.log("/public/objects/entity resetSection invalid pTarget = ", pTarget);
-            break;
+      case "Notice":
+        wNoEntries = gNotices.length;
+        //$w('#chkMemberListSelect').checked = false;
+        break;
+      case "Label":
+        wNoEntries = gLabels.length;
+        //$w('#chkMemberListSelect').checked = false;
+        break;
+      case "Booking":
+        wNoEntries = gBookings.length;
+        //$w('#chkMemberListSelect').checked = false;
+        break;
+      case "Officer":
+        wNoEntries = gOfficers.length;
+        //$w('#chkMemberListSelect').checked = false;
+        break;
+      case "StandingData":
+        wNoEntries = gStandingDatas.length;
+        break;
+      case "Team":
+        wNoEntries = gTeams.length;
+        //$w('#chkMemberListSelect').checked = false;
+        break;
+      case "League":
+        wNoEntries = gLeagues.length;
+        //$w('#chkMemberListSelect').checked = false;
+        break;
+      case "Member":
+        wNoEntries = gMembers.length;
+        //$w('#chkMemberListSelect').checked = false;
+        break;
+      case "Locker":
+        wNoEntries = gLockers.length;
+        //$w('#chkLockerListSelect').checked = false;
+        break;
+      case "RefComp":
+        wNoEntries = gRefComps.length;
+        //$w('#chkRefCompListSelect').checked = false;
+        break;
+      case "LiveComp":
+        wNoEntries = gLiveComps.length;
+        //$w('#chkLiveCompListSelect').checked = false;
+        break;
+      case "Event":
+        wNoEntries = gEvents.length;
+        //$w('#chkEventListSelect').checked = false;
+        break;
+      case "Opponent":
+        wNoEntries = gOpponents.length;
+        //$w('#chkEventListSelect').checked = false;
+        break;
+      case "Fixture":
+        wNoEntries = gFixtures.length;
+        //$w('#chkEventListSelect').checked = false;
+        break;
+      case "RefEvent":
+        wNoEntries = gRefEvents.length;
+        //$w('#chkEventListSelect').checked = false;
+        break;
+      case "CanEvent":
+        wNoEntries = gCanEvents.length;
+        //$w('#chkEventListSelect').checked = false;
+        break;
+      default:
+        console.log(
+          "/public/objects/entity resetSection invalid pTarget = ",
+          pTarget
+        );
+        break;
     }
     //if($w(`#box${pTarget}Choice`).rendered) { $w(`#box${pTarget}Choice`).expand()};
     $w(`#chk${pTarget}ListSelect`).checked = false;
@@ -1999,122 +2115,132 @@ export function pushToSelectStack(pRec, pId) {
  */
 export function resetCommands(pTarget) {
 	switch (pTarget) {
-		case "Notice":
-			$w(`#btnNoticeACreate`).show();
-			$w(`#btnNoticeAUpdate`).hide();
-			$w(`#btnNoticeADelete`).hide();
-			$w(`#btnNoticeASave`).hide();
-			$w(`#btnNoticeACancel`).hide();
-			break;
-		case "Booking":
-			$w(`#btnBookingACreate`).show();
-			$w(`#btnBookingAUpdate`).hide();
-			$w(`#btnBookingADelete`).hide();
-			$w(`#btnBookingASave`).hide();
-			$w(`#btnBookingACancel`).hide();
-			break;
-		case "Member":
-			$w(`#btnMemberACreate`).show();
-			$w(`#btnMemberAUpdate`).hide();
-			$w(`#btnMemberADelete`).hide();
-			$w(`#btnMemberASave`).hide();
-			$w(`#btnMemberACancel`).hide();
-			break;
-        case "Locker":
-            $w('#boxLockerCommands').expand();
-            $w(`#btnLockerACreate`).hide();
-            $w(`#btnLockerAUpdate`).hide();
-            $w(`#btnLockerADelete`).hide();
-            $w(`#btnLockerASave`).hide();
-            $w(`#btnLockerACancel`).hide();
-            break;
-        case "StandingData":
-			$w(`#btnStandingDataACreate`).show();
-			$w(`#btnStandingDataAUpdate`).hide();
-			$w(`#btnStandingDataADelete`).hide();
-			$w(`#btnStandingDataASave`).hide();
-			$w(`#btnStandingDataACancel`).hide();
-			break;
-		case "Officer":
-			$w(`#btnOfficerACreate`).show();
-			$w(`#btnOfficerAUpdate`).hide();
-			$w(`#btnOfficerADelete`).hide();
-			$w(`#btnOfficerASave`).hide();
-			$w(`#btnOfficerACancel`).hide();
-			break;
-		case "League":
-			$w(`#btnLeagueACreate`).show();
-			$w(`#btnLeagueAUpdate`).hide();
-			$w(`#btnLeagueADelete`).hide();
-			$w(`#btnLeagueASave`).hide();
-			$w(`#btnLeagueACancel`).hide();
-			break;
-		case "Team":
-			$w(`#btnTeamACreate`).show();
-			$w(`#btnTeamAUpdate`).hide();
-			$w(`#btnTeamADelete`).hide();
-			$w(`#btnTeamASave`).hide();
-			$w(`#btnTeamACancel`).hide();
-			break;
-		case "LiveComp":
-			$w(`#btnLiveCompACreate`).show();
-			$w(`#btnLiveCompAUpdate`).hide();
-			$w(`#btnLiveCompADelete`).hide();
-			$w(`#btnLiveCompASave`).hide();
-			$w(`#btnLiveCompACancel`).hide();
-			break;
-		case "RefComp":
-			$w(`#btnRefCompACreate`).show();
-			$w(`#btnRefCompAUpdate`).hide();
-			$w(`#btnRefCompADelete`).hide();
-			$w(`#btnRefCompASave`).hide();
-			$w(`#btnRefCompACancel`).hide();
-			break;
-		case "Event":
-			$w(`#btnEventACreate`).show();
-			$w(`#btnEventAUpdate`).hide();
-			$w(`#btnEventADelete`).hide();
-			$w(`#btnEventASave`).hide();
-			$w(`#btnEventACancel`).hide();
-			break;
-		case "Opponent":
-			$w(`#btnOpponentACreate`).show();
-			$w(`#btnOpponentAUpdate`).hide();
-			$w(`#btnOpponentADelete`).hide();
-			$w(`#btnOpponentASave`).hide();
-			$w(`#btnOpponentACancel`).hide();
-			break;
-		case "Fixture":
-			$w(`#btnFixtureACreate`).show();
-			$w(`#btnFixtureAUpdate`).hide();
-			$w(`#btnFixtureADelete`).hide();
-			$w(`#btnFixtureASave`).hide();
-			$w(`#btnFixtureACancel`).hide();
-			break;
-		case "RefEvent":
-			$w(`#btnRefEventACreate`).show();
-			$w(`#btnRefEventAUpdate`).hide();
-			$w(`#btnRefEventADelete`).hide();
-			$w(`#btnRefEventASave`).hide();
-			$w(`#btnRefEventACancel`).hide();
-			break;
-		case "CanEvent":
-			$w(`#btnCanEventACreate`).show();
-			$w(`#btnCanEventAUpdate`).hide();
-			$w(`#btnCanEventADelete`).hide();
-			$w(`#btnCanEventASave`).hide();
-			$w(`#btnCanEventACancel`).hide();
-			break;
-		default:
-            console.log("public/objects/entity resetCommands 1 invalid switch target", pTarget);
+    case "Notice":
+      $w(`#btnNoticeACreate`).show();
+      $w(`#btnNoticeAUpdate`).hide();
+      $w(`#btnNoticeADelete`).hide();
+      $w(`#btnNoticeASave`).hide();
+      $w(`#btnNoticeACancel`).hide();
+      break;
+    case "Label":
+      $w(`#btnLabelACreate`).show();
+      $w(`#btnLabelAUpdate`).hide();
+      $w(`#btnLabelADelete`).hide();
+      $w(`#btnLabelASave`).hide();
+      $w(`#btnLabelACancel`).hide();
+      break;
+    case "Booking":
+      $w(`#btnBookingACreate`).show();
+      $w(`#btnBookingAUpdate`).hide();
+      $w(`#btnBookingADelete`).hide();
+      $w(`#btnBookingASave`).hide();
+      $w(`#btnBookingACancel`).hide();
+      break;
+    case "Member":
+      $w(`#btnMemberACreate`).show();
+      $w(`#btnMemberAUpdate`).hide();
+      $w(`#btnMemberADelete`).hide();
+      $w(`#btnMemberASave`).hide();
+      $w(`#btnMemberACancel`).hide();
+      break;
+    case "Locker":
+      $w("#boxLockerCommands").expand();
+      $w(`#btnLockerACreate`).hide();
+      $w(`#btnLockerAUpdate`).hide();
+      $w(`#btnLockerADelete`).hide();
+      $w(`#btnLockerASave`).hide();
+      $w(`#btnLockerACancel`).hide();
+      break;
+    case "StandingData":
+      $w(`#btnStandingDataACreate`).show();
+      $w(`#btnStandingDataAUpdate`).hide();
+      $w(`#btnStandingDataADelete`).hide();
+      $w(`#btnStandingDataASave`).hide();
+      $w(`#btnStandingDataACancel`).hide();
+      break;
+    case "Officer":
+      $w(`#btnOfficerACreate`).show();
+      $w(`#btnOfficerAUpdate`).hide();
+      $w(`#btnOfficerADelete`).hide();
+      $w(`#btnOfficerASave`).hide();
+      $w(`#btnOfficerACancel`).hide();
+      break;
+    case "League":
+      $w(`#btnLeagueACreate`).show();
+      $w(`#btnLeagueAUpdate`).hide();
+      $w(`#btnLeagueADelete`).hide();
+      $w(`#btnLeagueASave`).hide();
+      $w(`#btnLeagueACancel`).hide();
+      break;
+    case "Team":
+      $w(`#btnTeamACreate`).show();
+      $w(`#btnTeamAUpdate`).hide();
+      $w(`#btnTeamADelete`).hide();
+      $w(`#btnTeamASave`).hide();
+      $w(`#btnTeamACancel`).hide();
+      break;
+    case "LiveComp":
+      $w(`#btnLiveCompACreate`).show();
+      $w(`#btnLiveCompAUpdate`).hide();
+      $w(`#btnLiveCompADelete`).hide();
+      $w(`#btnLiveCompASave`).hide();
+      $w(`#btnLiveCompACancel`).hide();
+      break;
+    case "RefComp":
+      $w(`#btnRefCompACreate`).show();
+      $w(`#btnRefCompAUpdate`).hide();
+      $w(`#btnRefCompADelete`).hide();
+      $w(`#btnRefCompASave`).hide();
+      $w(`#btnRefCompACancel`).hide();
+      break;
+    case "Event":
+      $w(`#btnEventACreate`).show();
+      $w(`#btnEventAUpdate`).hide();
+      $w(`#btnEventADelete`).hide();
+      $w(`#btnEventASave`).hide();
+      $w(`#btnEventACancel`).hide();
+      break;
+    case "Opponent":
+      $w(`#btnOpponentACreate`).show();
+      $w(`#btnOpponentAUpdate`).hide();
+      $w(`#btnOpponentADelete`).hide();
+      $w(`#btnOpponentASave`).hide();
+      $w(`#btnOpponentACancel`).hide();
+      break;
+    case "Fixture":
+      $w(`#btnFixtureACreate`).show();
+      $w(`#btnFixtureAUpdate`).hide();
+      $w(`#btnFixtureADelete`).hide();
+      $w(`#btnFixtureASave`).hide();
+      $w(`#btnFixtureACancel`).hide();
+      break;
+    case "RefEvent":
+      $w(`#btnRefEventACreate`).show();
+      $w(`#btnRefEventAUpdate`).hide();
+      $w(`#btnRefEventADelete`).hide();
+      $w(`#btnRefEventASave`).hide();
+      $w(`#btnRefEventACancel`).hide();
+      break;
+    case "CanEvent":
+      $w(`#btnCanEventACreate`).show();
+      $w(`#btnCanEventAUpdate`).hide();
+      $w(`#btnCanEventADelete`).hide();
+      $w(`#btnCanEventASave`).hide();
+      $w(`#btnCanEventACancel`).hide();
+      break;
+    default:
+      console.log(
+        "public/objects/entity resetCommands 1 invalid switch target",
+        pTarget
+      );
 
-			$w(`#btn${pTarget}ACreate`).show();
-			$w(`#btn${pTarget}AUpdate`).hide();
-			$w(`#btn${pTarget}ADelete`).hide();
-			$w(`#btn${pTarget}ASave`).hide();
-			$w(`#btn${pTarget}ACancel`).hide();
-			break;
-	}
+      $w(`#btn${pTarget}ACreate`).show();
+      $w(`#btn${pTarget}AUpdate`).hide();
+      $w(`#btn${pTarget}ADelete`).hide();
+      $w(`#btn${pTarget}ASave`).hide();
+      $w(`#btn${pTarget}ACancel`).hide();
+      break;
+  }
 }
 
 /**
@@ -2209,103 +2335,206 @@ export function getSelectedItem(pTarget) {
     if (gSelectStack.length === 1) {
         let wSelectedItemId = gSelectStack[0];
         switch (pTarget) {
-            case "Booking":
-                //wSelectedItem = $w(`#rptMemberList`).data[pPointer];
-                //wSelectedItem = $w(`#rptMemberList`).data.find(item => item._id === pPointer)
-                wSelectedItem = gBookings.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "RefComp":
-                //wSelectedItem = $w(`#rptMemberList`).data[pPointer];
-                //wSelectedItem = $w(`#rptMemberList`).data.find(item => item._id === pPointer)
-                wSelectedItem = gRefComps.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "Member":
-                wSelectedItem = gMembers.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "Locker":
-                wSelectedItem = gLockers.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "Notice":
-                wSelectedItem = gNotices.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "StandingData":
-                wSelectedItem = gStandingDatas.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "Officer":
-                wSelectedItem = gOfficers.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "League":
-                wSelectedItem = gLeagues.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "Team":
-                wSelectedItem = gTeams.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "LiveComp":
-                wSelectedItem = gLiveComps.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "Event":
-                wSelectedItem = gEvents.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "Opponent":
-                wSelectedItem = gOpponents.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "Fixture":
-                wSelectedItem = gFixtures.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "RefEvent":
-                wSelectedItem = gRefEvents.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            case "CanEvent":
-                wSelectedItem = gCanEvents.find(item => item._id === wSelectedItemId)
-                if (wSelectedItem === -1) {
-                    console.log("/public/objects/entity getSelectedItem Not found", pTarget, wSelectedItemId);
-                }
-                break;
-            default:
-                console.log("/public/objects/entity getSelectedItem Invalid switch key", pTarget)
-                break;
+          case "Booking":
+            //wSelectedItem = $w(`#rptMemberList`).data[pPointer];
+            //wSelectedItem = $w(`#rptMemberList`).data.find(item => item._id === pPointer)
+            wSelectedItem = gBookings.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "RefComp":
+            //wSelectedItem = $w(`#rptMemberList`).data[pPointer];
+            //wSelectedItem = $w(`#rptMemberList`).data.find(item => item._id === pPointer)
+            wSelectedItem = gRefComps.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "Member":
+            wSelectedItem = gMembers.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "Locker":
+            wSelectedItem = gLockers.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "Notice":
+            wSelectedItem = gNotices.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "Label":
+            wSelectedItem = gLabels.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "StandingData":
+            wSelectedItem = gStandingDatas.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "Officer":
+            wSelectedItem = gOfficers.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "League":
+            wSelectedItem = gLeagues.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "Team":
+            wSelectedItem = gTeams.find((item) => item._id === wSelectedItemId);
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "LiveComp":
+            wSelectedItem = gLiveComps.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "Event":
+            wSelectedItem = gEvents.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "Opponent":
+            wSelectedItem = gOpponents.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "Fixture":
+            wSelectedItem = gFixtures.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "RefEvent":
+            wSelectedItem = gRefEvents.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          case "CanEvent":
+            wSelectedItem = gCanEvents.find(
+              (item) => item._id === wSelectedItemId
+            );
+            if (wSelectedItem === -1) {
+              console.log(
+                "/public/objects/entity getSelectedItem Not found",
+                pTarget,
+                wSelectedItemId
+              );
+            }
+            break;
+          default:
+            console.log(
+              "/public/objects/entity getSelectedItem Invalid switch key",
+              pTarget
+            );
+            break;
         }
     }
     return wSelectedItem;
@@ -2448,6 +2677,8 @@ export function showError(pTarget, pErrNo, pErrMsg = "") {
                     "Name must be supplied",
                     "Please inform member action completed",   //40
                     "Invalid contact email address format",
+                    "A label cannot be empty",
+                    "Label Title must be Unique",
                     ""
         ];
         let wControlName = `#txt${pTarget}ErrMsg`;
