@@ -12,7 +12,6 @@ import { getLabelObjects } from "backend/backNotices.web.js";
 import { getLabelSet } from "backend/backNotices.web.js";
 import { isLabelUnique } from "backend/backNotices.web.js";
 
-import { loadDlistOptions } from "backend/backSystem.jsw";
 import { saveRecord } from "backend/backEvents.jsw";
 import { bulkSaveRecords } from "backend/backEvents.jsw";
 import { deleteRecord } from "backend/backEvents.jsw";
@@ -77,7 +76,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 const gYear = new Date().getFullYear();
 // for testing ------	------------------------------------------------------------------------
 
@@ -140,12 +139,13 @@ $w.onReady(async function () {
       $w("#inpNoticeListNoPerPage").value = "15";
       $w("#inpLabelListNoPerPage").value = "15";
 
-      //await loadLabelChoice();
+      await loadListData();
       await loadLabelData();
-    }
+      await loadNoticeEditLabel();
+}
 
     // Notice Section Notice handlers
-    $w("#strNotice").onViewportEnter((event) => strNotice_viewportEnter(event));
+    //$w("#strNotice").onViewportEnter((event) => strNotice_viewportEnter(event));
     $w("#btnNoticeACreate").onClick((event) => doBtnCreateClick(event));
     $w("#btnNoticeAUpdate").onClick((event) => doBtnUpdateClick(event));
     $w("#btnNoticeADelete").onClick((event) => btnDelete_click(loggedInMember.lstId, event));
@@ -163,6 +163,11 @@ $w.onReady(async function () {
     $w("#inpNoticeListNoPerPage").onChange((event) => doInpListNoPerPageChange(event));
 
     $w("#drpNoticeEditTargetType").onChange((event) => doDrpNoticeEditTargetTypeChange(event));
+    $w('#btnNoticeEditPhotoAdd').onClick( () => btnNoticeEditPhotoAdd_click());
+    $w('#btnNoticeEditPhotoClose').onClick( () => btnNoticeEditPhotoClose_click());
+    $w('#drpNoticeEditLabel').onClick((event) => drpNoticeEditLabel_click(event));
+    $w("#btnNoticeEditSelectAdd").onClick(() => btnNoticeEditSelectAdd_click());
+    $w("#btnNoticeEditSelectRemove").onClick(() => btnNoticeEditSelectRemove_click());
     //$w('#drpNoticeEditHomeAway').onChange((event) => doDrpNoticeEditRinksChange(event));
     //$w('#tpkNoticeEditStartTime').onChange((event) => doDrpNoticeEditRinksChange(event));
     //$w('#tpkNoticeEditDuration').onChange((event) => doDrpNoticeEditRinksChange(event));
@@ -213,6 +218,7 @@ $w.onReady(async function () {
 export async function loadListData() {
   try {
     let wResult = await getAllNotices(loggedInMember.lstId, gYear);
+    console.log(wResult);
     if (wResult && wResult.status) {
       let wNotices = wResult.notices;
       setEntity("Notice", [...wNotices]);
@@ -285,8 +291,8 @@ function loadRptNoticeList($item, itemData, index) {
     case "A":
       wTargetType = "All";
       break;
-    case "D":
-      wTargetType = "DList";
+    case "L":
+      wTargetType = "Label";
       wTarget = itemData.target || "";
       break;
     case "S":
@@ -298,7 +304,7 @@ function loadRptNoticeList($item, itemData, index) {
       break;
   }
   if (index === 0) {
-    $item("#lblNoticeListTargetType").text = "TYpe";
+    $item("#lblNoticeListTargetType").text = "Type";
     $item("#lblNoticeListTarget").text = "Target";
     $item("#lblNoticeListTitle").text = "Title";
     $item("#chkNoticeListSelect").hide();
@@ -325,21 +331,25 @@ function loadRptLabelList($item, itemData, index) {
 
 // ------------------------------------------------ Load Dropdowns-----------------------------------------------
 //
-/**
-async function loadLabelChoice(){
-    const wLabelFirstOption = {"label": "All", "value": "All"};
+
+async function loadNoticeEditLabel(){
     const wResults = await getLabelSet();
     if (wResults && wResults.status) {
         let wLabels = wResults.labels;
-        if (wLabels.length > 0 ){
-            $w('#boxLabelChoice').expand();
-            wLabels.unshift(wLabelFirstOption);
-            $w('#drpLabelChoice').options = wLabels;
-            $w('#drpLabelChoice').value = "All";
+        let wOptions = wLabels.map( item => {
+          return {
+            "label": item.title + " (" + String(item.count) + ")",
+            "value": item.title
+          }
+        })
+        console.log(wOptions);
+        if (wOptions.length > 0 ){
+            $w('#drpNoticeEditLabel').options = wOptions;
+            $w('#drpNoticeEditLabel').setindex = 0;
         }
     }
 }
-*/
+
 export async function loadNoticesDropDown() {
   let wOptions = [
     { label: "All Members", value: "A" },
@@ -356,24 +366,14 @@ export async function loadNoticesDropDown() {
 async function populateNoticeEditDropDowns() {
   let wNoticeEditOptions = [
     { label: "Club Members", value: "A" },
-    { label: "DList", value: "D" },
+    { label: "Label", value: "L" },
     { label: "Select", value: "S" },
   ];
 
   $w("#drpNoticeEditTargetType").options = wNoticeEditOptions;
   $w("#drpNoticeEditTargetType").value = "A";
-
-  const wResult = await loadDlistOptions();
-  if (wResult && wResult.status) {
-    let wNoticeEditDlist = wResult.options;
-    $w("#drpNoticeEditDlist").options = wNoticeEditDlist;
-    $w("#drpNoticeEditDlist").selectedIndex = 0;
-  } else {
-    console.log(
-      "/page/MaintainNotice populateNoticeEditDropdowns no dlist found"
-    );
-  }
 }
+
 
 //====== Notice Events ================================================
 //
@@ -407,6 +407,19 @@ export async function drpNoticeFilterType_change(event) {
 function doDrpNoticeEditTargetTypeChange(event) {
   let wTargetType = event.target.value;
   configureBoxes(wTargetType);
+}
+
+function btnNoticeEditPhotoAdd_click() {
+  $w('#boxNoticeEditPhoto').expand();
+  $w('#btnNoticeEditPhotoAdd').collapse();
+  $w('#btnNoticeEditPhotoClose').expand();
+}
+
+
+function btnNoticeEditPhotoClose_click() {
+  $w('#boxNoticeEditPhoto').collapse();
+  $w('#btnNoticeEditPhotoAdd').expand();
+  $w('#btnNoticeEditPhotoClose').collapse();
 }
 
 export function doNoticeViewChange(event) {
@@ -457,10 +470,10 @@ export async function btnNoticeASave_click(event) {
         wNotice.target = null;
         break;
       case "D":
-        wNotice.target = $w("#drpNoticeEditDlist").value;
+        wNotice.target = $w("#drpNoticeEditLabel").value;
         break;
       case "S":
-        wNotice.target = $w("#rptNoticeEditDlist").data;
+        wNotice.target = $w("#rptNoticeEditSelected").data;
         break;
       default:
         console.log(
@@ -551,6 +564,70 @@ export async function drpNoticeChoiceChange(event) {
   hideWait("Notice");
 }
 
+// Note that the following variables are also used in the Label section
+let wSelectedRow = 0;
+let wTableRows = [];
+
+export function tblNoticeEditSelect_onRowSelect(event) {
+  wSelectedRow = event.rowIndex; // 2  console.log("Row select, id", wId);
+  wTableRows = $w('#tblNoticeEditSelect').rows;
+}
+
+export async function drpNoticeEditLabel_click(event){
+  let wValue = event.target.value;
+  console.log(wValue);
+} 
+
+export async function btnNoticeEditSelectAdd_click() {
+  let wParams = {
+    "seeds": "N",
+    "mix": "X",
+    "type": 1,
+    "noTeams": 12
+  }
+  wTableRows = $w('#tblNoticeEditSelect').rows;
+
+  let wMembers = await wixWindow.openLightbox("lbxSelectManyMembers", wParams);
+  try {
+    if (wMembers) {
+      if (wMembers.length > 0) {
+        for (let wMember of wMembers) {
+          let wTableEntry = { "_id": undefined, "memberId": wMember._id, "name": wMember.player, "email": wMember.contactEmail }
+          wTableRows.push(wTableEntry);
+        }
+        tblNoticeEditSelectExpand();
+        $w('#tblNoticeEditSelect').rows = wTableRows;
+      }
+    }
+  } catch (err) {
+    console.log("MaintainNotice btnNoticeEditSelectAdd try-catch, err");
+    console.log(err);
+  }
+}
+
+export async function btnNoticeEditSelectRemove_click() {
+  try {
+    wTableRows = $w('#tblNoticeEditSelect').rows;
+
+    let wSelectedRowData = wTableRows[wSelectedRow];
+    console.log("Table length = ", wTableRows.length);
+    let wId = wSelectedRowData._id;
+    wTableRows.splice(wSelectedRow, 1);
+
+    if (wTableRows.length === 0) {
+      tblNoticeEditSelectCollapse();
+    } else {
+      tblNoticeEditSelectExpand();
+      $w('#tblNoticeEditSelect').rows = wTableRows;
+    }
+    wSelectedRow = 0;
+  }
+  catch (err) {
+    console.log("MaintainNotice btnNoticeEditSelectRemove try-catch, err");
+    console.log(err);
+  }
+}
+
 export async function cstrpNotice_viewportEnter(event) {
   //await displayEventTableData(gEvents);
 }
@@ -568,7 +645,8 @@ export function doNoticeView(pTarget) {
 }
 
 export function strNotice_viewportEnter(event) {
-  //console.log("Viewport")
+  console.log("Viewport");
+  console.log(event);
   //displayMemberTableData($w('#drpMemberListTypeChoice').value, $w('#drpMemberListStatusChoice').value);
 }
 // ================================================= Notice Supporting Functions =================================================
@@ -581,7 +659,7 @@ export async function clearNoticeEdit() {
   $w("#rgpNoticeEditUrgent").value = "N";
   $w("#rgpNoticeEditPublish").value = "Y";
   $w("#rgpNoticeEditTransmit").value = "Y";
-  $w("#drpNoticeEditDlist").selectedIndex = 0;
+  $w("#drpNoticeEditLabel").selectedIndex = 0;
   $w("#imgNoticeEditPicture").src = null;
 
   $w("#inpNoticeEditMessage").value = "";
@@ -592,29 +670,50 @@ function configureBoxes(pTargetType) {
   switch (pTargetType) {
     case "A":
       $w("#boxNoticeEditPublish").expand();
-      $w("#boxNoticeEditDlist").collapse();
+      $w("#boxNoticeEditLabel").collapse();
       $w("#boxNoticeEditSelect").collapse();
+      $w('#rgpNoticeEditPublish').value = "Y";
+      $w('#rgpNoticeEditTransmit').value = "N";
       break;
-    case "D":
+    case "L":
       $w("#boxNoticeEditPublish").collapse();
-      $w("#boxNoticeEditDlist").expand();
+      $w("#boxNoticeEditLabel").expand();
       $w("#boxNoticeEditSelect").collapse();
+      $w('#rgpNoticeEditPublish').value = "N";
+      $w('#rgpNoticeEditTransmit').value = "Y";
       break;
     case "S":
       $w("#boxNoticeEditPublish").collapse();
-      $w("#boxNoticeEditDlist").collapse();
+      $w("#boxNoticeEditLabel").collapse();
       $w("#boxNoticeEditSelect").expand();
+      tblNoticeEditSelectCollapse();
+      $w('#rgpNoticeEditPublish').value = "N";
+      $w('#rgpNoticeEditTransmit').value = "Y";
       break;
     default:
       $w("#boxNoticeEditPublish").expand();
-      $w("#boxNoticeEditDlist").collapse();
+      $w("#boxNoticeEditLabel").collapse();
       $w("#boxNoticeEditSelect").collapse();
+      $w('#rgpNoticeEditPublish').value = "Y";
+      $w('#rgpNoticeEditTransmit').value = "N";
       console.log(
         "pages/MaintainNotice drpNoticeEditTargetTypeChange Invalid Target Type, ",
         pTargetType
       );
       break;
   }
+}
+
+function tblNoticeEditSelectExpand() {
+  $w('#tblNoticeEditSelect').expand();
+  //$w('#tblNoticeEditSelect').rows = [];
+  $w('#lblNoticeEditNone').collapse();
+}
+
+function tblNoticeEditSelectCollapse(){
+  $w('#tblNoticeEditSelect').collapse();
+  $w('#tblNoticeEditSelect').rows = [];
+  $w('#lblNoticeEditNone').expand();
 }
 
 export async function populateNoticeEdit() {
@@ -626,11 +725,11 @@ export async function populateNoticeEdit() {
     wSelectedRecord.targetType === "A" ? null : wSelectedRecord.target;
 
   $w("#inpNoticeEditTitle").value = wSelectedRecord.title;
-  if (wTarget && wTarget === "D") {
-    $w("#drpNoticeEditDlist").value = wSelectedRecord.target[0];
+  if (wTarget && wTarget === "L") {
+    $w("#drpNoticeEditLabel").value = wSelectedRecord.target[0];
   }
   if (wTarget && wTarget === "S") {
-    $w("#drpNoticeEditDlist").value = wSelectedRecord.target[0];
+    $w("#drpNoticeEditLabel").value = wSelectedRecord.target[0];
   }
   
   $w("#rgpNoticeEditUrgent").value = wSelectedRecord.urgent;
@@ -846,15 +945,12 @@ export async function doBtnLabelCancellationClick(event) {
   btnCancellation_click(event);
 }
 
-export function btnLabelAToNotice_click() {
+export async function btnLabelAToNotice_click() {
+  await loadNoticeEditLabel();
   $w("#secNotice").expand();
   //$w("#secSync").collapse();
   $w("#secLabel").collapse();
-  loadLabels();
 }
-
-let wSelectedRow = 0;
-let wTableRows = [];
 
 export function btnLabelEditObjects_onRowSelect(event) {
   let rowData = event.rowData; // {"fName": "John", "lName": "Doe"}

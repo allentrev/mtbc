@@ -60,30 +60,6 @@ export async function loadReferenceData() {
 	}
 }
 
-export async function loadDlistOptions() {
-	try{
-		let res = await wixData.query('lstSettings')
-			.startsWith("title", "DL")
-			.ascending("name")
-			.find();
-		if (res.items.length ===  0) {
-			return {"status": false, "options": [], "error": null};
-		} else {
-			let wList = res.items;
-			let wOptions = wList.map( item => {
-				return {"label": item.name,
-						"value": item.title				}
-			})
-			return {"status": true, "options": wOptions, "error": null};
-		}
-	}
-	catch (err) {
-		console.log("/backend/backSystem loadDlistOptions Try-catch, err");
-		console.log(err);
-		return {"status": false, "options": null, "error": err};
-	}
-}
-
 export async function getStandingDataItemByKey(pKey) {
 	let wKey = pKey.toUpperCase();
 	try{
