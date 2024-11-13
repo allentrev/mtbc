@@ -121,6 +121,7 @@ $w.onReady(async function () {
       );
     } else {
       console.log("/page/MaintainNotice onReady Not signed in");
+      
       showError("Notice", 28);
       setTimeout(() => {
         wixLocation.to("/");
@@ -218,13 +219,11 @@ $w.onReady(async function () {
 export async function loadListData() {
   try {
     let wResult = await getAllNotices(loggedInMember.lstId, gYear);
-    console.log(wResult);
     if (wResult && wResult.status) {
       let wNotices = wResult.notices;
       setEntity("Notice", [...wNotices]);
       $w("#strNotice").expand();
       if (wNotices && wNotices.length > 0) {
-        //gItemsToDisplay = [...gCompetitions];
         $w("#boxNoticeChoice").expand();
         $w("#boxNoticeList").expand();
         $w("#boxNoticeNone").collapse();
@@ -233,7 +232,6 @@ export async function loadListData() {
         await doNoticeView("");
         resetPagination("Notice");
       } else {
-        //gItemsToDisplay = [...gReferences];
         $w("#boxLabelList").collapse();
         $w("#boxLabelNone").expand();
         $w("#boxLabelEdit").collapse();
@@ -289,20 +287,24 @@ function loadRptNoticeList($item, itemData, index) {
   let wTarget = "";
   switch (itemData.targetType) {
     case "A":
-      wTargetType = "All";
+      wTargetType = "<All>";
       break;
     case "L":
-      wTargetType = "Label";
-      wTarget = itemData.target || "";
+      wTargetType = "L";
+      wTarget = itemData.target.toString() || "";
       break;
     case "S":
-      wTargetType = "Select";
-      wTarget = itemData.target || "";
-      break;
+      wTargetType = "S";
+      if (itemData.target && itemData.target.length > 0){
+        wTarget = String(itemData.target.length);
+      } else {
+        wTarget = "";
+      }break;
     default:
       wTargetType = "All";
       break;
   }
+
   if (index === 0) {
     $item("#lblNoticeListTargetType").text = "Type";
     $item("#lblNoticeListTarget").text = "Target";
@@ -342,10 +344,9 @@ async function loadNoticeEditLabel(){
             "value": item.title
           }
         })
-        console.log(wOptions);
         if (wOptions.length > 0 ){
             $w('#drpNoticeEditLabel').options = wOptions;
-            $w('#drpNoticeEditLabel').setindex = 0;
+            //$w('#drpNoticeEditLabel').setindex = 0;
         }
     }
 }
@@ -455,25 +456,27 @@ export async function btnNoticeASave_click(event) {
       _id: "",
       title: $w("#inpNoticeEditTitle").value,
       targetType: $w("#drpNoticeEditTargetType").value,
-      target: null,
+      target: [],
       urgent: $w("#rgpNoticeEditUrgent").value,
       picture: $w("#imgNoticeEditPicture").src,
       message: $w("#inpNoticeEditMessage").value.trim(),
       status: "O",
-      source: null,
+      web: $w("#rgpNoticeEditPublish").value,
+      send: $w("#rgpNoticeEditTransmit").value
     };
 
     let wResult;
     wResult = { status: true, savedRecord: {}, error: "" };
     switch (wNotice.targetType) {
       case "A":
-        wNotice.target = null;
+        wNotice.target = ["<ALL>"];
         break;
-      case "D":
-        wNotice.target = $w("#drpNoticeEditLabel").value;
+      case "L":
+        wNotice.target = [`<${$w("#drpNoticeEditLabel").value}>`];
         break;
       case "S":
-        wNotice.target = $w("#rptNoticeEditSelected").data;
+        let wSelectTableData = $w('#tblNoticeEditSelect').rows;
+        wNotice.target = formTransmitToList();
         break;
       default:
         console.log(
@@ -499,50 +502,49 @@ export async function btnNoticeASave_click(event) {
         );
     }
     // Save record performed in switch code blocks above;
-    if (wPublish) {
-      wResult = await saveRecord("lstNotices", wNotice);
-      if (wResult && wResult.status) {
-        let wSavedRecord = wResult.savedRecord;
-        switch (getMode()) {
-          case MODE.CREATE:
-            wNotice._id = wSavedRecord._id;
-            wNotice._createdDate = wSavedRecord._createdDate;
-            showError("Notice", 8);
-            break;
-          case MODE.UPDATE:
-            showError("Notice", 7);
-            break;
-          default:
-            console.log(
-              "/page/MaintainNotice btnNoticeASave invalid mode = [" +
-                getMode() +
-                "]"
-            );
-        }
-        updateGlobalDataStore(wSavedRecord, "Notice");
-        updatePagination("Notice");
-        resetCommands("Notice");
+    wResult = await saveRecord("lstNotices", wNotice);
+    if (wResult && wResult.status) {
+      let wSavedRecord = wResult.savedRecord;
+      switch (getMode()) {
+        case MODE.CREATE:
+          wNotice._id = wSavedRecord._id;
+          wNotice._createdDate = wSavedRecord._createdDate;
+          showError("Notice", 8);
+          break;
+        case MODE.UPDATE:
+          showError("Notice", 7);
+          break;
+        default:
+          console.log(
+            "/page/MaintainNotice btnNoticeASave invalid mode = [" +
+              getMode() +
+              "]"
+          );
+      }
+      updateGlobalDataStore(wSavedRecord, "Notice");
+      updatePagination("Notice");
+      resetCommands("Notice");
+    } else {
+      if (wResult && wResult.savedRecord) {
+        console.log(
+          "/page/MaintainNotice btnNoticeASave_click saveRecord failed, savedRecord, error"
+        );
+        console.log(wResult.savedRecord);
+        console.log(wResult.error);
+      } else if (wResult) {
+        console.log(
+          "/page/MaintainNotice btnNoticeASave_click saverecord failed, error"
+        );
+        console.log(wResult.error);
       } else {
-        if (wResult && wResult.savedRecord) {
-          console.log(
-            "/page/MaintainNotice btnNoticeASave_click saveRecord failed, savedRecord, error"
-          );
-          console.log(wResult.savedRecord);
-          console.log(wResult.error);
-        } else if (wResult) {
-          console.log(
-            "/page/MaintainNotice btnNoticeASave_click saverecord failed, error"
-          );
-          console.log(wResult.error);
-        } else {
-          console.log(
-            "/page/MaintainNotice btnNoticeASave_click wResult undefined"
-          );
-          console.log(wResult.error);
-        }
+        console.log(
+          "/page/MaintainNotice btnNoticeASave_click wResult undefined"
+        );
+        console.log(wResult.error);
       }
     }
     if (wTransmit) {
+      console.log("Transmit msg 1")
       //send message
     }
     resetSection("Notice");
@@ -556,6 +558,16 @@ export async function btnNoticeASave_click(event) {
       wixLocation.to("/syserror");
     }
   }
+}
+
+function formTransmitToList(){
+  let wTableData = $w("#tblNoticeEditSelect").rows;
+  let wList = wTableData.map (item => {
+    return (
+      `${item.name}<${item.email}>`
+    )
+  });
+  return wList;
 }
 
 export async function drpNoticeChoiceChange(event) {
@@ -659,8 +671,12 @@ export async function clearNoticeEdit() {
   $w("#rgpNoticeEditUrgent").value = "N";
   $w("#rgpNoticeEditPublish").value = "Y";
   $w("#rgpNoticeEditTransmit").value = "Y";
+  $w('#drpNoticeEditTargetType').value = "All";
   $w("#drpNoticeEditLabel").selectedIndex = 0;
   $w("#imgNoticeEditPicture").src = null;
+  $w('#tblNoticeEditSelect').rows = [];
+  $w('#tblNoticeEditSelect').collapse();
+  $w('#lblNoticeEditNone').expand();
 
   $w("#inpNoticeEditMessage").value = "";
   $w("#inpNoticeEditTitle").focus();
@@ -720,25 +736,59 @@ export async function populateNoticeEdit() {
   let wSelectedRecord = getSelectedItem("Notice");
   configureBoxes(wSelectedRecord.targetType);
 
-  let wPublish = wSelectedRecord.targetType === "A" ? "Y" : "N";
-  let wTarget =
-    wSelectedRecord.targetType === "A" ? null : wSelectedRecord.target;
+  $w('#drpNoticeEditStatus').value = wSelectedRecord.status;
+  $w('#drpNoticeEditTargetType').value = wSelectedRecord.targetType;
+  //$w('#tblNoticeEditSelect').rows = wTableData;
+  loadNoticeEditSelectFromDB(wSelectedRecord);
 
   $w("#inpNoticeEditTitle").value = wSelectedRecord.title;
-  if (wTarget && wTarget === "L") {
-    $w("#drpNoticeEditLabel").value = wSelectedRecord.target[0];
-  }
-  if (wTarget && wTarget === "S") {
-    $w("#drpNoticeEditLabel").value = wSelectedRecord.target[0];
-  }
-  
   $w("#rgpNoticeEditUrgent").value = wSelectedRecord.urgent;
-  $w("#rgpNoticeEditPublish").value = wPublish;
-  $w("#rgpNoticeEditTransmit").value = "Y";
+  $w("#rgpNoticeEditPublish").value = wSelectedRecord.web;
+  $w("#rgpNoticeEditTransmit").value = wSelectedRecord.send;
   $w("#inpNoticeEditMessage").value = wSelectedRecord.message;
   $w("#imgNoticeEditPicture").src = wSelectedRecord.src;
 
   $w("#inpNoticeEditTitle").focus();
+}
+
+function loadNoticeEditSelectFromDB(pRec){
+  let wTableData = [];
+  let name = "";
+  let email = "";
+  let wTo = pRec.target;
+  let wTargetType = pRec.targetType;
+  if (wTo && wTo.length > 0){
+    wTableData = wTo.map( item => {
+      const start = item.indexOf('<');
+      const end = item.indexOf('>');
+      if (start !== -1 && end !== -1) {
+        name = item.slice(0, start).trim();           // "Julia Allen"
+        email = item.slice(start + 1, end).trim();
+      }   
+      return {
+        "name": name,
+        "email": email
+      }
+    })
+  }
+  $w('#drpNoticeEditLabel').value = wTo;
+  if (wTableData && wTableData.length > 0){
+    if (pRec.targetType === "S") {
+      $w('#tblNoticeEditSelect').expand();
+      $w('#lblNoticeEditNone').collapse();
+      $w('#tblNoticeEditSelect').rows = wTableData;
+    } /** type = L */else {
+      $w('#drpNoticeEditLabel').value = wTableData[0].email;
+    }
+  } else {
+    if (pRec.targetType === "S") {
+      $w('#tblNoticeEditSelect').collapse();
+      $w('#lblNoticeEditNone').expand();
+    } /** type = L */else {
+      console.log("SHould not get there");
+      console.log("dd");
+    }
+  }
 }
 
 async function processRecord(pTarget, pItem) {

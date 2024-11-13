@@ -35,7 +35,6 @@ export const getAllNotices = webMethod(
     try {
 		  let wThisYear = new Date(pYear, 0, 1,10,0,0);
       const results = await wixData.query("lstNotices")
-    	  .eq("status", "O")
 			  .ge("_createdDate", wThisYear)
     		.descending("_createdDate")
 			  .find();

@@ -1313,6 +1313,8 @@ export function updateGlobalDataStore(pRec, pTarget){
         wSelectedItem.message = pRec.message;
         wSelectedItem.status = pRec.status;
         wSelectedItem.source = pRec.source;
+        wSelectedItem.web = pRec.web;
+        wSelectedItem.send = pRec.send;
         break;
       case "Label":
         wSelectedItem.title = pRec.title;
