@@ -5,13 +5,12 @@
 //------------------------------------------------------------------------------------------------------
 import wixWindow		from 'wix-window';
 
-import {getAllNotices}	from 'public/objects/notice.js';
-import {formatDate}		from 'public/fixtures';
+import {getAllNotices}	from 'backend/backNotices.web';
 
 let wData = [];
+const gYear = new Date().getFullYear();
 
 $w.onReady(function () {
-	//TODO: write your page related code here...
 
 	loadNotices();
 
@@ -25,36 +24,24 @@ $w.onReady(function () {
 });
 
 export async function loadNotices() {
-	wData = await getAllNotices();		// all open notices
-	$w("#repeater1").data = wData;
-	if (wData.length === 0 ){
-		console.log("/page Noticeboard loadNotices No notices");
+	let wResult = await getAllNotices(gYear);
+	let wAllNotices = wResult.notices;
+	if (wAllNotices && wAllNotices.length > 0){
+		wData = wAllNotices.filter(item => item.status === "O")
+		$w("#repeater1").data = wData;
+	} else {
+		console.log("Noticeboard loadNotices No notices");
 	}
 }
 
 async function loadRepeater($item, itemData) {
 
-		let wSrc = itemData.source;
-		if (wSrc) {
-			$item('#vplyr1').expand();
-			$item('#vplyr1').src = wSrc;
+		let wText = itemData.message;
+		if (wText.includes("<p") || wText.includes("</p>")) {
+			$item("#txtMessage").html = itemData.message;
 		} else {
-			$item('#vplyr1').collapse();
+			$item("#txtMessage").text = itemData.message;
 		}
-		// item holds: title, picture, message, createdDate
-		let wPositionKey = itemData.positionKey;
 		$item("#txtTitle").text = itemData.title;
-		////let wDateTime = itemData._createdDate;
-		//let wDate2 = wDateTime.toDateString();
-		////-let wHours = wDateTime.getHours();
-		////if (wHours < 10 ){
-		////	wHours = "0" + wHours;
-		////}
-		////let wMinutes = wDateTime.getMinutes();
-		////if (wMinutes < 10 ){
-		////	wMinutes = "0" + wMinutes;
-		////}
-    	////let wDate = formatDate(wDateTime);
-		$item("#txtMessage").text = itemData.message;
 		$item("#imgPicture").src = itemData.picture;
 }

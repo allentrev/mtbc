@@ -31,7 +31,7 @@ export const name1 = webMethod(
 //
 export const getAllNotices = webMethod(
   Permissions.Anyone, 
-  async (pUserId, pYear) => {
+  async (pYear) => {
     try {
 		  let wThisYear = new Date(pYear, 0, 1,10,0,0);
       const results = await wixData.query("lstNotices")
@@ -41,13 +41,38 @@ export const getAllNotices = webMethod(
       return {"status": true, "notices": results.items, "error": null};
     }
     catch (err) {
-      console.log(`/backend/backNotices getAllNotices by ${pUserId} Try-catch, err`);
+      console.log(`/backend/backNotices getAllNotices Try-catch, err`);
       console.log(err);
       return {"status": false, "notices": null, "error": err};
     }
   }
 )
 
+export const updateNoticeStatus = webMethod(
+  Permissions.Anyone,
+  async (pUserId, pNoticeId, pStatus) => {
+    try {
+      return wixData.get("lstNotices", pNoticeId)
+        .then((item) => {
+          item.status = pStatus;
+          return wixData.update("lstNotices", item)
+        })
+        .then( (result) => {
+          return { "status": true, "notice": result, "error": null };
+        })
+        .catch((err) => {
+          return { "status": false, "notice": null, "error": err };
+        });
+    }
+    catch (err) {
+      console.log(`/backend/backNotices updateNoticeStatus by ${pUserId} Try-catch, err`);
+      console.log(err);
+      return { "status": false, "notice": null, "error": err };
+    }
+  }
+)
+
+//====== Labels--------------------------------------------------------------------------------------
 export const getAllLabels = webMethod(
   Permissions.Anyone,
   async () => {
@@ -59,13 +84,12 @@ export const getAllLabels = webMethod(
         .find();
       return { status: true, labels: results.items, error: null };
     } catch (err) {
-      console.log( `/backend/backNotices getAllLabels Try-catch, err`);
+      console.log(`/backend/backNotices getAllLabels Try-catch, err`);
       console.log(err);
       return { status: false, labels: null, error: err };
     }
   }
 );
-
 
 export const getLabelObjects = webMethod(
   Permissions.Anyone,
