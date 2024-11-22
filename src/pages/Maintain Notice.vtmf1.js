@@ -6,7 +6,9 @@ import wixLocation from "wix-location";
 import { retrieveSessionMemberDetails } from "public/objects/member";
 import _ from "lodash";
 
+import { sendMsg } from "backend/backMsg.web.js";
 import { getAllNotices } from "backend/backNotices.web.js";
+import { summariseText } from "backend/backNotices.web.js";
 import { getAllLabels } from "backend/backNotices.web.js";
 import { getLabelObjects } from "backend/backNotices.web.js";
 import { getLabelSet } from "backend/backNotices.web.js";
@@ -85,6 +87,10 @@ const isLoggedIn = gTest ? true : authentication.loggedIn();
 $w.onReady(async function () {
   try {
     let status;
+    console.log("Hi", gYear);
+
+    //sgMail.setApiKey(apiKey);
+
 
     //$w('#lblHdr1').text = `The following table summarises something....${gYear} season`;
     // for testing ------	------------------------------------------------------------------------
@@ -163,6 +169,8 @@ $w.onReady(async function () {
     $w("#pgnNoticeList").onClick((event) => doPgnListClick(event));
     $w("#inpNoticeListNoPerPage").onChange((event) => doInpListNoPerPageChange(event));
 
+    $w("#inpNoticeEditMessage").onChange((event) => doInpNoticeEditMessageChange(event));
+    $w("#btnNoticeEditSummary").onClick(() => btnNoticeEditSummary_click());
     $w("#drpNoticeEditTargetType").onChange((event) => doDrpNoticeEditTargetTypeChange(event));
     $w('#btnNoticeEditPhotoAdd').onClick( () => btnNoticeEditPhotoAdd_click());
     $w('#btnNoticeEditPhotoClose').onClick( () => btnNoticeEditPhotoClose_click());
@@ -179,7 +187,7 @@ $w.onReady(async function () {
     $w('#btnLabelACreate').onClick((event) => doBtnLabelCreateClick(event));
     $w('#btnLabelAUpdate').onClick((event) => doBtnLabelUpdateClick(event));
     $w('#btnLabelADelete').onClick((event) => btnDelete_click(loggedInMember.lstId, event));
-    $w('#btnLabelASave').onClick((event) => btnLabelASave_click(event));
+    //$w('#btnLabelASave').onClick((event) => btnLabelASave_click(event));
     $w('#btnLabelACancel').onClick((event) => btnCancel_click(event));
     $w("#btnLabelAToNotice").onClick(() =>  btnLabelAToNotice_click());
   
@@ -218,7 +226,7 @@ $w.onReady(async function () {
 //
 export async function loadListData() {
   try {
-    let wResult = await getAllNotices(loggedInMember.lstId, gYear);
+    let wResult = await getAllNotices(gYear);
     if (wResult && wResult.status) {
       let wNotices = wResult.notices;
       setEntity("Notice", [...wNotices]);
@@ -410,6 +418,40 @@ function doDrpNoticeEditTargetTypeChange(event) {
   configureBoxes(wTargetType);
 }
 
+async function btnNoticeEditSummary_click() {
+  showWait("Notice");
+  $w('#btnNoticeEditSummary').disable();
+  let wText = $w('#inpNoticeEditMessage').value;
+  let wNoSentences = (wText.length > 100) ? Math.round(wText.length / 100) : 1;
+  console.log("Length =", wText.length, "Sentenaces = ", wNoSentences); 
+  let wResult = await summariseText(wText, wNoSentences);
+  console.log(wResult);
+  if (wResult && wResult.status) {
+    console.log("IN mainm result");
+    $w('#inpNoticeEditSummary').value = wResult.summary;
+    $w('#grpNoticeEditSummary').expand();
+    $w('#btnNoticeEditSummary').enable();
+  } else {
+    console.log("MaintainNotice btnNoticeEditSummary summarise error, err");
+    console.log(wResult.error);
+    $w('#inpNoticeEditSummary').value = "";
+    $w('#grpNoticeEditSummary').collapse();
+    $w('#btnNoticeEditSummary').enable();
+  }
+  hideWait("Notice");
+}
+
+function doInpNoticeEditMessageChange(event){
+  let wText = event.target.value;
+  console.log(wText, wText.length);
+  if (wText.length > 160) {
+    $w('#btnNoticeEditSummary').expand();
+  } else {
+    $w('#btnNoticeEditSummary').collapse();
+    $w('#grpNoticeEditSummary').collapse();
+  }
+}
+
 function btnNoticeEditPhotoAdd_click() {
   $w('#boxNoticeEditPhoto').expand();
   $w('#btnNoticeEditPhotoAdd').collapse();
@@ -469,7 +511,7 @@ export async function btnNoticeASave_click(event) {
     wResult = { status: true, savedRecord: {}, error: "" };
     switch (wNotice.targetType) {
       case "A":
-        wNotice.target = ["<ALL>"];
+        wNotice.target = ["ALL"];
         break;
       case "L":
         wNotice.target = [`<${$w("#drpNoticeEditLabel").value}>`];
@@ -502,7 +544,8 @@ export async function btnNoticeASave_click(event) {
         );
     }
     // Save record performed in switch code blocks above;
-    wResult = await saveRecord("lstNotices", wNotice);
+    //wResult = await saveRecord("lstNotices", wNotice);
+    wResult.status = true;
     if (wResult && wResult.status) {
       let wSavedRecord = wResult.savedRecord;
       switch (getMode()) {
@@ -544,7 +587,25 @@ export async function btnNoticeASave_click(event) {
       }
     }
     if (wTransmit) {
-      console.log("Transmit msg 1")
+      console.log("Transmit msg 1");
+      //let wTo = populateToList(wNotice.targetType, wNotice.target);
+      let wUrgent = $w('#rgpNoticeEditUrgent').value;
+
+      let wParams = {
+        "subject": $w('#inpNoticeEditTitle').value,
+        "body": $w('#inpNoticeEditMessage').value
+      }
+      let wResult = await sendMsg("U", wNotice.target, wUrgent, "Blank_1", wParams);
+      console.log("Send msg result");
+      console.log(wResult);
+      //let wResult = {"status": true};
+      if (wResult && wResult.status) {
+        console.log("/membersArea/profile  btnMemberASave_click saveRecord sendMsgToJob OK for ", gMember._id);
+      } else {
+        console.log("/membersArea/profile  btnMemberASave_click saverecord sendMsgToJob failed, error");
+        console.log(wResult.error);
+      }
+
       //send message
     }
     resetSection("Notice");
@@ -560,14 +621,37 @@ export async function btnNoticeASave_click(event) {
   }
 }
 
+
 function formTransmitToList(){
   let wTableData = $w("#tblNoticeEditSelect").rows;
   let wList = wTableData.map (item => {
     return (
-      `${item.name}<${item.email}>`
-    )
+//      `${item.name}<${item.email}>,`
+      item.memberId
+)
   });
   return wList;
+}
+
+async function populateToList(pTargetType, pTarget){
+  console.log("populateToList", pTargetType);
+  console.log(pTarget);
+  let wTo = [];
+  switch (pTargetType) {
+    case "All":
+      // get all contact emails from the club      
+      break;
+    case "L":
+      // get the emails with the Label
+      break;
+    case "S":
+      // use the list given
+      break;
+    default:
+      //send error msg unknown target type  
+    break;
+  }  
+  return wTo;
 }
 
 export async function drpNoticeChoiceChange(event) {
@@ -736,10 +820,14 @@ export async function populateNoticeEdit() {
   let wSelectedRecord = getSelectedItem("Notice");
   configureBoxes(wSelectedRecord.targetType);
 
-  $w('#drpNoticeEditStatus').value = wSelectedRecord.status;
+  $w('#drpNoticeEeditStatus').value = wSelectedRecord.status;
   $w('#drpNoticeEditTargetType').value = wSelectedRecord.targetType;
   //$w('#tblNoticeEditSelect').rows = wTableData;
   loadNoticeEditSelectFromDB(wSelectedRecord);
+
+  $w('#grpNoticeEditSummary').collapse();
+  $w('#btnNoticeEditSummary').collapse();
+  $w('#inpNoticeEditSummary').value = "";
 
   $w("#inpNoticeEditTitle").value = wSelectedRecord.title;
   $w("#rgpNoticeEditUrgent").value = wSelectedRecord.urgent;
@@ -900,9 +988,12 @@ export async function doBtnLabelUpdateClick(event) {
   await populateLabelEdit();
 }
 export async function inpLabelEditTitle_change(event) {
+  
+  if (getMode() !== MODE.CREATE) { return}
   let wKey = event.target.value;
+  console.log(`Key = [${wKey}]`);
   let wTest = await isLabelUnique(wKey);
-  if (wTest) {
+  if (getMode() === MODE.CREATE && wTest) {
     $w('#btnLabelPrimeAdd').enable();
   } else {
     showError("Label", 43);
@@ -910,6 +1001,7 @@ export async function inpLabelEditTitle_change(event) {
   }
 }
 
+/** never used. CHanges to Label list are immediate and dont need to be Saved
 export async function btnLabelASave_click(event) {
   try {
     showWait("Label");
@@ -990,7 +1082,7 @@ export async function btnLabelASave_click(event) {
   }
 }
 
-
+*/
 export async function doBtnLabelCancellationClick(event) {
   btnCancellation_click(event);
 }
@@ -1018,8 +1110,8 @@ export async function btnLabelPrimeAdd_click() {
   wTableRows = $w('#tblLabelEditObjects').rows;
   const wKey = $w('#inpLabelEditTitle').value;
 
-  if ((getMode() !== MODE.CREATE) || !isLabelUnique(wKey)) {
-    showError("label", 43);
+  if ((getMode() === MODE.CREATE) && !isLabelUnique(wKey)) {
+    showError("Label", 43);
     $w('#inpLabelEditTitle').focus();
     return;
   }
@@ -1133,12 +1225,12 @@ export function doLabelView(pTarget) {
 export async function clearLabelEdit() {
 
   $w('#inpLabelEditTitle').value = "";
+  $w('#inpLabelEditTitle').enable();
   $w(`#tblLabelEditObjects`).rows = [];
   $w('#tblLabelEditObjects').collapse();
   $w('#lblLabelEditNone').expand();
   $w('#boxLabelPrime').expand();
   $w('#inpLabelEditTitle').focus();
-  $w('#btnLabelASave').disable();
   $w('#btnLabelPrimeAdd').disable();
   $w('#btnLabelPrimeRemove').disable();
   $w('#btnLabelPrimeRemove').disable();
@@ -1150,6 +1242,7 @@ export async function populateLabelEdit() {
   let wSelectedRecord = getSelectedItem("Label");
 
   const wKey = wSelectedRecord.title;
+  $w('#inpLabelEditTitle').disable();
   $w('#inpLabelEditTitle').value = wKey;
   let wResult = await getLabelObjects(wKey);
   if (wResult && wResult.status){

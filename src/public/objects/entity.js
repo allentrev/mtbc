@@ -412,12 +412,14 @@ export async function btnDelete_click(pUserId, event) {
 }
 
 export function btnCancel_click(event) {
-
-    gMode = MODE.CLEAR;
+ 
+  //console.log(" btnCancel_click");
+  gMode = MODE.CLEAR;
 	let wTarget = getTarget(event, "A");
-    resetSection(wTarget);
-    hideWait(wTarget);
-    return wTarget;
+  resetSection(wTarget);
+  hideWait(wTarget);
+  return wTarget;
+
 }
 
 export function doInpListNoPerPageChange(event) {
@@ -481,7 +483,7 @@ export async function doEntityASaveClick(pTarget) {
         
     try {
         showWait(pTarget);
-        console.log("doEntitiy save, target", pTarget);
+        //console.log("doEntitiy save, target", pTarget);
 	
         let wEntity = {
             "_id": "", 
@@ -536,12 +538,12 @@ export async function doEntityASaveClick(pTarget) {
                         //drop throuh    
                         break;
                     case 2:
-                        console.log("case 2showvalue = ", wResult.showValue);
+                        //console.log("case 2showvalue = ", wResult.showValue);
                         showError(pTarget, wResult.showValue);
                         $w(`#drp${pTarget}EditTeam`).value = wResult.teamKey; 
                         break;
                     case 3:
-                        console.log("case 3 showvalue = ", wResult.showValue);
+                        //console.log("case 3 showvalue = ", wResult.showValue);
                         showError("CanEvent", wResult.showValue);
                         $w(`#drp${pTarget}EditLeague`).value = wResult.leagueKey;
                         break;        
@@ -588,7 +590,7 @@ export async function doEntityASaveClick(pTarget) {
                 console.log (`client Maintain ${pTarget} btn${pTarget}Save invalid mode = [` + getMode() +`]`);
         }
         let wDataset = (pTarget === "CanEvent") ? "lstCandidateEvent" : "lstEvents";
-        console.log(wEntity);
+        //console.log(wEntity);
         wResult = await saveRecord(wDataset, wEntity);
         //let res = false;
         if (wResult.status) {
@@ -640,6 +642,7 @@ function setEntitySelected(pData, pState){
 }
 
 export function chkSelect_click(event) {
+  //console.log(" chkSelect_click");
 
     // @ts-ignore
     let wControl = $w.at(event.context);
@@ -1592,7 +1595,7 @@ export function deleteGlobalDataStore(pIds, pTarget){
  * @returns {void}
  */
 export function clearEditBox(pTarget) {
-
+    //console.log("oe clearEditBox");
     switch (pTarget) {
         case "RefComp":
             $w('#inpRefCompEditTitle').value = "";
@@ -1731,6 +1734,7 @@ export function populateEdit(pTarget){
  * @returns {void}
  */
 export function hideGoToButtons(pTarget) {
+  //console.log("oe hideGoToButtos");
     switch (pTarget) {
       case "Member":
         $w("#btnMemberAToSync").hide();
@@ -1807,7 +1811,8 @@ export function hideGoToButtons(pTarget) {
  * @returns {void}
  */
 export function showGoToButtons(pTarget) {
-    
+    //console.log("oe showGoToButtons");
+
     switch (pTarget) {
       case "Member":
         $w("#btnMemberAToSync").show();
@@ -1964,111 +1969,114 @@ export function getTargetItem (pTarget, pId){
  * @returns {void}
  */
 export function resetSection(pTarget) {
-      
-    gMode = MODE.CLEAR;
-    let wNoEntries = 0;
-    switch (pTarget) {
-      case "Notice":
-        wNoEntries = gNotices.length;
-        //$w('#chkMemberListSelect').checked = false;
-        break;
-      case "Label":
-        wNoEntries = gLabels.length;
-        //$w('#chkMemberListSelect').checked = false;
-        break;
-      case "Booking":
-        wNoEntries = gBookings.length;
-        //$w('#chkMemberListSelect').checked = false;
-        break;
-      case "Officer":
-        wNoEntries = gOfficers.length;
-        //$w('#chkMemberListSelect').checked = false;
-        break;
-      case "StandingData":
-        wNoEntries = gStandingDatas.length;
-        break;
-      case "Team":
-        wNoEntries = gTeams.length;
-        //$w('#chkMemberListSelect').checked = false;
-        break;
-      case "League":
-        wNoEntries = gLeagues.length;
-        //$w('#chkMemberListSelect').checked = false;
-        break;
-      case "Member":
-        wNoEntries = gMembers.length;
-        //$w('#chkMemberListSelect').checked = false;
-        break;
-      case "Locker":
-        wNoEntries = gLockers.length;
-        //$w('#chkLockerListSelect').checked = false;
-        break;
-      case "RefComp":
-        wNoEntries = gRefComps.length;
-        //$w('#chkRefCompListSelect').checked = false;
-        break;
-      case "LiveComp":
-        wNoEntries = gLiveComps.length;
-        //$w('#chkLiveCompListSelect').checked = false;
-        break;
-      case "Event":
-        wNoEntries = gEvents.length;
-        //$w('#chkEventListSelect').checked = false;
-        break;
-      case "Opponent":
-        wNoEntries = gOpponents.length;
-        //$w('#chkEventListSelect').checked = false;
-        break;
-      case "Fixture":
-        wNoEntries = gFixtures.length;
-        //$w('#chkEventListSelect').checked = false;
-        break;
-      case "RefEvent":
-        wNoEntries = gRefEvents.length;
-        //$w('#chkEventListSelect').checked = false;
-        break;
-      case "CanEvent":
-        wNoEntries = gCanEvents.length;
-        //$w('#chkEventListSelect').checked = false;
-        break;
-      default:
-        console.log(
-          "/public/objects/entity resetSection invalid pTarget = ",
-          pTarget
-        );
-        break;
-    }
-    //if($w(`#box${pTarget}Choice`).rendered) { $w(`#box${pTarget}Choice`).expand()};
-    $w(`#chk${pTarget}ListSelect`).checked = false;
-    $w(`#chk${pTarget}ListSelectAll`).checked = false;
+  //.log("oe resetSection");
+
+  gMode = MODE.CLEAR;
+  let wNoEntries = 0;
+  switch (pTarget) {
+    case "Notice":
+      wNoEntries = gNotices.length;
+      //$w('#chkMemberListSelect').checked = false;
+      break;
+    case "Label":
+      wNoEntries = gLabels.length;
+      //$w('#chkMemberListSelect').checked = false;
+      break;
+    case "Booking":
+      wNoEntries = gBookings.length;
+      //$w('#chkMemberListSelect').checked = false;
+      break;
+    case "Officer":
+      wNoEntries = gOfficers.length;
+      //$w('#chkMemberListSelect').checked = false;
+      break;
+    case "StandingData":
+      wNoEntries = gStandingDatas.length;
+      break;
+    case "Team":
+      wNoEntries = gTeams.length;
+      //$w('#chkMemberListSelect').checked = false;
+      break;
+    case "League":
+      wNoEntries = gLeagues.length;
+      //$w('#chkMemberListSelect').checked = false;
+      break;
+    case "Member":
+      wNoEntries = gMembers.length;
+      //$w('#chkMemberListSelect').checked = false;
+      break;
+    case "Locker":
+      wNoEntries = gLockers.length;
+      //$w('#chkLockerListSelect').checked = false;
+      break;
+    case "RefComp":
+      wNoEntries = gRefComps.length;
+      //$w('#chkRefCompListSelect').checked = false;
+      break;
+    case "LiveComp":
+      wNoEntries = gLiveComps.length;
+      //$w('#chkLiveCompListSelect').checked = false;
+      break;
+    case "Event":
+      wNoEntries = gEvents.length;
+      //$w('#chkEventListSelect').checked = false;
+      break;
+    case "Opponent":
+      wNoEntries = gOpponents.length;
+      //$w('#chkEventListSelect').checked = false;
+      break;
+    case "Fixture":
+      wNoEntries = gFixtures.length;
+      //$w('#chkEventListSelect').checked = false;
+      break;
+    case "RefEvent":
+      wNoEntries = gRefEvents.length;
+      //$w('#chkEventListSelect').checked = false;
+      break;
+    case "CanEvent":
+      wNoEntries = gCanEvents.length;
+      //$w('#chkEventListSelect').checked = false;
+      break;
+    default:
+      console.log(
+        "/public/objects/entity resetSection invalid pTarget = ",
+        pTarget
+      );
+      break;
+  } // switch
+  //if($w(`#box${pTarget}Choice`).rendered) { $w(`#box${pTarget}Choice`).expand()};
+  $w(`#chk${pTarget}ListSelect`).checked = false;
+  $w(`#chk${pTarget}ListSelectAll`).checked = false;
     
 	if (wNoEntries === 0) {
 		$w(`#box${pTarget}None`).expand();
 		$w(`#box${pTarget}List`).collapse();
-        if (pTarget !== "RefEvent"){
-    		$w(`#box${pTarget}Choice`).collapse();
-        }
-    } else {
+    if (pTarget !== "RefEvent"){
+    	$w(`#box${pTarget}Choice`).collapse();
+    }
+  } else {
 		$w(`#box${pTarget}None`).collapse();
 		$w(`#box${pTarget}List`).expand();
-        if (pTarget !== "RefEvent" &&  pTarget !== "RefComp" &&  pTarget !== "LiveComp" && pTarget !== 'Locker'){
-		    $w(`#box${pTarget}Choice`).expand();
-        }
+    if (pTarget !== "RefEvent" &&  pTarget !== "RefComp" &&  pTarget !== "LiveComp" && pTarget !== 'Locker' && pTarget !== "Label"){
+		  $w(`#box${pTarget}Choice`).expand();
     }
-    $w(`#box${pTarget}Edit`).collapse();
-    $w(`#box${pTarget}Prime`).collapse();
+  }
+  
+  $w(`#box${pTarget}Edit`).collapse();
+  $w(`#box${pTarget}Prime`).collapse();
 	if (pTarget === "LiveComp") {
 		$w(`#box${pTarget}Create`).collapse();
 		$w(`#box${pTarget}PrimeEdit`).collapse();
 	}
 
+  //console.log("oe resetSection 2");
 	resetCommands(pTarget);
-    showGoToButtons(pTarget);
+  showGoToButtons(pTarget);
     //updateDashboard();
 	
-    gSelectStack.length = 0;
-    $w(`#lbl${pTarget}ListCounter`).text = "0";
-    //$w(`#lbl${pTarget}ListTotal`).text = String(wNoEntries);
+  gSelectStack.length = 0;
+  $w(`#lbl${pTarget}ListCounter`).text = "0";
+  //$w(`#lbl${pTarget}ListTotal`).text = String(wNoEntries);
     
 }
 /**
@@ -2116,7 +2124,9 @@ export function pushToSelectStack(pRec, pId) {
  *
  */
 export function resetCommands(pTarget) {
-	switch (pTarget) {
+    //console.log("oe resetCOmmands");
+
+  switch (pTarget) {
     case "Notice":
       $w(`#btnNoticeACreate`).show();
       $w(`#btnNoticeAUpdate`).hide();
@@ -2254,7 +2264,7 @@ export function resetCommands(pTarget) {
  * @returns {void}
  */
 export function configureScreen(pTarget) {
-    //console.log("configurescree", pTarget);
+    //console.log("oe configurescree", pTarget);
     let wBoxPrime = `#box${pTarget}Prime`;
     let wBoxEdit = `#box${pTarget}Edit`;
 
@@ -2278,7 +2288,7 @@ export function configureScreen(pTarget) {
             } else {
                 $w(wbtnCreate).show();
             }
-            $w(wbtnDelete).hide();
+      $w(wbtnDelete).hide();
 			$w(wbtnUpdate).hide();
 			$w(wbtnSave).hide();
 			$w(wbtnCancel).show();
@@ -2331,8 +2341,10 @@ export function configureScreen(pTarget) {
 			break;
     }
 }
+
 //TODO Is this needed?Answer, yes, but needs rewriting to generalise = rewrite using getTargetItem
 export function getSelectedItem(pTarget) {
+    //console.log("oe getSelectedItem");
     let wSelectedItem = {};
     if (gSelectStack.length === 1) {
         let wSelectedItemId = gSelectStack[0];
@@ -2697,7 +2709,7 @@ export function showError(pTarget, pErrNo, pErrMsg = "") {
         }, 4000);
     }
     catch (err) {
-        console.log("/public/objects/entity showError Try-catch fail, err");
+      console.log(`/public/objects/entity showError Try-catch fail, target [${pTarget}], err no [${pErrNo}], err"`);
         console.log(err);
     }
 }

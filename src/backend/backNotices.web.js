@@ -1,5 +1,8 @@
 import wixData from 'wix-data';
 import { Permissions, webMethod } from "wix-web-module";
+import { getSecret } from 'wix-secrets-backend';
+import { created} from 'wix-http-functions';
+import { fetch, getJSON } from 'wix-fetch';
 
 //----------------------------------------------Template------------------------------------------------
 //
@@ -27,7 +30,54 @@ export const name1 = webMethod(
 // 0b331007-0dde-43b5-a06e-16794fd291c0 Julia
 // 15909692-9e75-4e26-a277-5506c3dda84d	betty
 
-//----------------------------------------------Functions------------------------------------------------
+export const summariseText = webMethod(
+  Permissions.Anyone,
+  async (pText, pNoSentences) => {
+    try {
+      console.log("Inside", pText, pNoSentences);
+      const apiKey = await getSecret("APIVerve");
+
+      let url = "https://api.apiverve.com/v1/textsummarizer?=";
+
+      let wEntry = pText.trim();
+      console.log(wEntry);
+
+      let body = { "text": wEntry, "sentences": 2 };
+      let bodyJson = JSON.stringify(body);
+      
+      let options = {
+        "method": "POST",
+        "headers": {
+          "x-api-key": apiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        "body": bodyJson
+      }
+
+    return fetch(url,options)
+      .then( (response) =>{
+        return response.json();
+      })
+      .then((json) => {
+        return { "status": true, "summary": json.data.summary, "error": null } 
+      })
+      .catch( (error) => {
+        console.log("backend/backNotices summariseText Catch error, error")
+        console.log(error);
+        return { "status": true, "summary": null, "error": error };
+      })
+    }
+    catch (err) {
+      console.log(`/backend/backNotices summariseText Try-catch, err`);
+      console.log(err);
+      return { "status": false, "summary": null, "error": err };
+    }
+  }
+) 
+
+
+//====== Notices----------------------------------------------------------------------
 //
 export const getAllNotices = webMethod(
   Permissions.Anyone, 
