@@ -7,7 +7,7 @@ import _ from 'lodash';
 import { buildMemberCache }		from 'public/objects/member';
 import { retrieveSessionMemberDetails } from 'public/objects/member';
 import { isRequiredRole } from 'public/objects/member';
-import { getFullName }	from 'public/objects/member.js';
+import { getFullNameLocally }	from 'public/objects/member.js';
 
 import { formatDateString } from 'public/fixtures';
 import { toJulian }					from 'public/fixtures';
@@ -600,7 +600,7 @@ export async function populateBookingEdit() {
     //console.log("Selected record");
     //console.log(wSelectedRecord);
     //console.log(wSelectedRecord.dateRequired);
-    let [wStatus, wBooker] = await getFullName(wSelectedRecord.bookerId);
+    let [wStatus, wBooker] = await getFullNameLocally(wSelectedRecord.bookerId);
 //----------------------Linked Bookings-------------------
     $w('#tblBookingEditLinks').rows = [];
     let wBookings;

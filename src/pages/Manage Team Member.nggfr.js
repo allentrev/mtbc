@@ -14,7 +14,7 @@ import { updateTeamPlayerStatus }			from	'backend/data.jsw';
 import { findTeamByKey }					from	'backend/backTeam.jsw';
 import { formatDateString }					from 	'public/fixtures';
 import { getEventByShortId }				from 	'public/objects/event.js';
-import { getMemberByShortId }				from 	'public/objects/member.js';
+import { findLstMemberByShortId }				from 	'backend/backMember.jsw';
 import { loadTeamMatches }					from	'public/objects/team.js';
 import { loadTeamPlayers }					from	'public/objects/team.js';
 //import { loadTeamSquad }					from	'public/objects/team.js';
@@ -234,7 +234,7 @@ export async function autoEntry(){
 		//	check validity of paramrters
 		gTeam = await findTeamByKey(wTeamKey);
 		gEvent = await getEventByShortId (wEventId);
-		gUser = await getMemberByShortId(wMemberId);	//this is lstMembers record
+		gUser = await findLstMemberByShortId(wMemberId);	//this is lstMembers record
 		let wTemp  = await getTeamPlayer(gEvent._id, gUser._id);
 		gTeamPlayerId = wTemp._id;
 		if (gTeamPlayerId === undefined){ 
@@ -865,7 +865,7 @@ export function btnClose_click(event) {
 async function updateTeamPlayers() {
 	for (let wPlayer of gTeamPlayers) {
 		let wShortId = wPlayer.memberId.substring(0,6);
-		let wMember = await getMemberByShortId(wShortId);
+		let wMember = await findLstMemberByShortId(wShortId);
 		if (wMember) { 
 			wPlayer.name = wMember.firstName + " " + wMember.surname;
 		} else { 

@@ -55,7 +55,7 @@ import { getNumPlayersForTeam } from 'backend/backTeam.jsw';
 
 
 import { parseStartDate } from 'public/fixtures';
-import { findLstMember } from 'public/objects/member';
+import { findLstMember } from 'backend/backMember.jsw';
 import { ROLES } from 'public/objects/member';
 
 import { saveSquadChanges } from 'backend/backTeam.jsw';

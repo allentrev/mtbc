@@ -595,29 +595,36 @@ export async function btnNoticeASave_click(event) {
         "subject": $w('#inpNoticeEditTitle').value,
         "body": $w('#inpNoticeEditMessage').value
       }
-      let wResult = await sendMsg("U", wNotice.target, wUrgent, "Blank_1", wParams);
+      let wResult = await sendMsg("U", wNotice.target, loggedInMember.name , wUrgent, "Blank_1", wParams);
       console.log("Send msg result");
       console.log(wResult);
       //let wResult = {"status": true};
       if (wResult && wResult.status) {
-        console.log("/membersArea/profile  btnMemberASave_click saveRecord sendMsgToJob OK for ", gMember._id);
+        console.log("MaintainNotice btnNoticeASave_click saveRecord sendMsg OK for ");
       } else {
-        console.log("/membersArea/profile  btnMemberASave_click saverecord sendMsgToJob failed, error");
+        console.log("MaintainNotice btnNoticeASave_click saverecord sendMsg failed, error");
         console.log(wResult.error);
       }
 
       //send message
     }
+    updatePagination("Notice");
     resetSection("Notice");
     $w("#btnNoticeASave").enable();
     hideWait("Notice");
     setMode(MODE.CLEAR);
-  } catch (err) {
+  }
+  catch (err) {
     console.log("/page/MaintainNotice btnNoticeASave_click Try-catch, err");
     console.log(err);
     if (!gTest) {
       wixLocation.to("/syserror");
     }
+    updatePagination("Notice");
+    resetSection("Notice");
+    $w("#btnNoticeASave").enable();
+    hideWait("Notice");
+    setMode(MODE.CLEAR);
   }
 }
 
@@ -762,6 +769,7 @@ export async function clearNoticeEdit() {
   $w('#tblNoticeEditSelect').collapse();
   $w('#lblNoticeEditNone').expand();
 
+  $w('#drpNoticeEditStatus').value = "O";
   $w("#inpNoticeEditMessage").value = "";
   $w("#inpNoticeEditTitle").focus();
 }
@@ -820,7 +828,7 @@ export async function populateNoticeEdit() {
   let wSelectedRecord = getSelectedItem("Notice");
   configureBoxes(wSelectedRecord.targetType);
 
-  $w('#drpNoticeEeditStatus').value = wSelectedRecord.status;
+  $w('#drpNoticeEditStatus').value = wSelectedRecord.status;
   $w('#drpNoticeEditTargetType').value = wSelectedRecord.targetType;
   //$w('#tblNoticeEditSelect').rows = wTableData;
   loadNoticeEditSelectFromDB(wSelectedRecord);

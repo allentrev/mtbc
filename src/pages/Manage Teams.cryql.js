@@ -14,7 +14,7 @@ import { getNewestLeagues }	from	'backend/backTeam.jsw';
 import { getNewestTeams }	from	'backend/backTeam.jsw';
 import { saveRecord } from 'backend/backEvents.jsw';
 
-import { findLstMember } 		from 	'public/objects/member';
+import { findLstMember } from 'backend/backMember.jsw';
 
 import { sendSMS }				from 	'backend/sendSMS.jsw';
 import { getTinyURL }			from 	'backend/sendSMS.jsw';

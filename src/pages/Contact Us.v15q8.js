@@ -8,7 +8,7 @@ import wixLocation 				from 'wix-location';
 import _ from 'lodash';
 
 import { loadStandingData } from 'backend/backSystem.jsw';
-import { buildMemberCache, getMember}from 'public/objects/member';
+import { findLstMember } from 'backend/backMember.jsw';
 import { loadOfficers } from 'backend/backOfficers.jsw';
 
 //---------------for testing------------------------------------------------------------------------
@@ -44,7 +44,6 @@ $w.onReady(async function () {
 		let wJobKeys = wTemp2.split(",");
 		//console.log("wJobKeys");
 		//console.log(wJobKeys);
-		await buildMemberCache();
 		wResult  = await loadOfficers();
 		if (wResult.status) {
 			wOfficers = wResult.officers;
@@ -57,10 +56,10 @@ $w.onReady(async function () {
 		//console.log(wJob);
 			let wPosition = wJob.position;
 			if (wJob.holderId) {
-				let wResult = await getMember(wJob.holderId);
+				let wResult = await findLstMember(wJob.holderId);
 				if (wResult.status) {
 					let wMember = wResult.member;
-					wName = wMember.fullName;
+					wName = wMember.firstName + " " + wMember.surname;
 					wPhone = hyphenatePhoneNumber(wMember.mobilePhone);
 				} else {
 					wName = "Vacant";

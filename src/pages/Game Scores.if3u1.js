@@ -69,7 +69,7 @@ let wStart = 0;
 let wPromotionList = [];
 let wSelectedId = null;
 
-let gMemberCache =[];
+let gCompetitorCache =[];
 //let wData = [];
 let wRole = "Admin";
 let wId = "";
@@ -152,14 +152,13 @@ $w.onReady(async function () {
 });
 
 //============================ Helper functions ===============================================
-//TODO RENAME gMemberCache as its confused with gMember
 function buildCache( pCompRef, intStage, intDiv) {
 	//ts("Build Cache");
-	gMemberCache = [];
+	gCompetitorCache = [];
 	let wData = loadGlobalCompetitors();
 	if (wData) {
 		let wSet = wData.filter( (item) => item.skipId !== null);
-		gMemberCache = wSet.map ( (item) => {
+		gCompetitorCache = wSet.map ( (item) => {
 			return {
 				"_id": item._id,
 				"skipId": item.skipId,
@@ -169,27 +168,27 @@ function buildCache( pCompRef, intStage, intDiv) {
 		})
 		let wItem = {"_id": TEMP_HOLDER, "skipId": TEMP_HOLDER, "skip": "Temporary Holder",
 			 "teamNames": ["Temporary Holder"]};
-		gMemberCache.push(wItem);
+		gCompetitors.push(wItem);
 	}
-	//console.log(gMemberCache);
+	//console.log(gCompetitorCache);
 	//te("Build Cache"); 
 }
 
-function getMember (pId){
+function getCompetitor (pId){
 	try {
 		if (pId === null || pId === "") {return ""};
 		//console.log(pId);
-		let wobj = gMemberCache.find(wobj => wobj.skipId === pId);
+		let wobj = gCompetitorCache.find(wobj => wobj.skipId === pId);
 		if (wobj) {
 			return wobj;
 		} else {
-			console.log("/page/MaintainScore getMember" , pId, " Not found in cache");
-			console.log(gMemberCache);
+			console.log("/page/MaintainScore getCompetitor" , pId, " Not found in cache");
+			console.log(gCompetitorCache);
 			return false;
 		}
 	}
 	catch ( err ) {
-		console.log("/page/MaintainScore getMember try catch ", err);
+		console.log("/page/MaintainScore getCompetitor try catch ", err);
 			return false;
 	}
 }
@@ -232,7 +231,7 @@ function loadLine($item, itemData){
 		$item('#inpB').hide();
 		if (itemData.status === BOOKING.OPEN) {
 			$item('#chkChanged').checked = true;
-			//const loggedInMember = await currentMember.getMember();	// returns current member object if logged in, else is undefined
+			//const loggedInMember = await currentMember.getCompetitor();	// returns current member object if logged in, else is undefined
 			if (loggedInMember) {
 				if (isRequiredRole(["Manager", "Admin"],loggedInMemberRoles)) {
 					$w('#btnSave').enable();
@@ -246,9 +245,9 @@ function loadLine($item, itemData){
 		}
 		if (itemData.playerAId === null || itemData.playerAId === ""){
 			$item('#txtPlayerA').text = "Bye";
-			$item("#txtPlayerB").text = (getMember(itemData.playerBId)).teamNames[0];
+			$item("#txtPlayerB").text = (getCompetitor(itemData.playerBId)).teamNames[0];
 		} else {
-			$item("#txtPlayerA").text = (getMember(itemData.playerAId)).teamNames[0];
+			$item("#txtPlayerA").text = (getCompetitor(itemData.playerAId)).teamNames[0];
 			$item('#txtPlayerB').text = "Bye";
 		}
  
@@ -292,7 +291,7 @@ export function parseTeam(pData){
 	if (wCompRec.competitorType === COMPETITOR_TYPE.TEAM){
 		return pData;
 	} else { 
-		return getMember(pData).teamNames[0];
+		return getCompetitor(pData).teamNames[0];
 	}	
 }
 
@@ -942,7 +941,7 @@ try {
 	} else {
 		wPlayer = pData.playerAId;	
 	}
-	const playerCompId = (getMember(wPlayer))._id;
+	const playerCompId = (getCompetitor(wPlayer))._id;
 
 	let res = await updateBookingGameScore(pData._id, BOOKING.COMPLETED, 0, 0);		//updates status of the booking record
 	//console.log("update booking game score status = ", res);
@@ -989,7 +988,7 @@ try {
 		wScoreB = 0;
 		wPlayer = pData.playerAId;	
 	}
-	const playerCompId = (getMember(wPlayer))._id;
+	const playerCompId = (getCompetitor(wPlayer))._id;
 	//TODO: replace this deleted status by a new status WalkOver and follow thru whole site
 	// the problem being that now dont see the entry in the games score list, so cant reverse the action
 	let res = await updateBookingGameScore(pData._id, BOOKING.COMPLETED, wScoreA, wScoreB);		//updates status of the booking record
@@ -1030,8 +1029,8 @@ try {
 	let playerACompId = "";
 	let playerBCompId = "";
 	if (wCompRec.competitorType !== COMPETITOR_TYPE.TEAM) {
-		playerACompId = (getMember(playerAId))._id;
-		playerBCompId = (getMember(playerBId))._id;
+		playerACompId = (getCompetitor(playerAId))._id;
+		playerBCompId = (getCompetitor(playerBId))._id;
 	} else { 
 		playerACompId = (getTeamCompetitor(playerAId))._id;
 		playerBCompId = (getTeamCompetitor(playerBId))._id;
@@ -1079,8 +1078,8 @@ try {
 				const wGameMatch = parseInt(pData.matchKey.slice(10),10);
 				if /** the final */ (wGameMatch === 1) { 
 					//console.log("The final");
-					wCompRec.winnerNames = (getMember(wWinnerId)).teamNames;
-					wCompRec.secondNames = (getMember(wSecondId)).teamNames;
+					wCompRec.winnerNames = (getCompetitor(wWinnerId)).teamNames;
+					wCompRec.secondNames = (getCompetitor(wSecondId)).teamNames;
 				}
 			}
 		} else {
@@ -1219,9 +1218,9 @@ try {
 	//console.log("GS4 doUpdateResult");
 	let pData = pItem.rec;
 	const playerAId = pData.playerAId;
-	const playerACompId = (getMember(playerAId))._id;
+	const playerACompId = (getCompetitor(playerAId))._id;
 	const playerBId = pData.playerBId;
-	const playerBCompId = (getMember(playerBId))._id;
+	const playerBCompId = (getCompetitor(playerBId))._id;
 	const wNewScoreA = parseInt(convertNull(pItem.scoreA,0),10);
 	const wNewScoreB = parseInt(convertNull(pItem.scoreB,0),10);
 
@@ -1676,8 +1675,8 @@ export function btnFixtureList_click(event) {
 		wDoc.push(wLine);
 		if (wGamesToPlay.length > 0) { 
 			for (let wGame of wGamesToPlay) { 
-				let pA = getMember(wGame.playerAId).teamNames[0];
-				let pB = getMember(wGame.playerBId).teamNames[0];
+				let pA = getCompetitor(wGame.playerAId).teamNames[0];
+				let pB = getCompetitor(wGame.playerBId).teamNames[0];
 				wLine = {"type": "M", "dateRequired": formatDateString(wGame.dateRequired, "Short"),
 						 "pA": pA, "scoreA": wGame.scoreA,
 						 "pB": pB, "scoreB": wGame.scoreB};

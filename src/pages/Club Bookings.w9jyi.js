@@ -12,12 +12,7 @@ import { formatDateString }				from 'public/fixtures';
 import { loadOpenTeamCompetitions } 	from 'public/objects/clubComp';
 import { getAllTeams } 					from 'public/objects/clubComp';
 import { buildMemberCache }		from 'public/objects/member';
-import { getFullName }		from 'public/objects/member';
-
-
-//let wCache = [];
-let gMembers = [];
-
+import { getFullNameLocally }		from 'public/objects/member';
 
 let w_time_slots = [
 	{"_id": "0", "txt": "10:00\nto\n11:30"},
@@ -159,22 +154,13 @@ async function loadLine($item, itemData, index) {
 		$item("#txtTime").text = w_time_slots[String(itemData.slotId - 1)].txt.substring(0, 6);
 		$item('#txtRink').text = String(itemData.rink);
 	}
-	[,$item("#txtPlayerA").text] = await getFullName(itemData.playerAId);
+	[,$item("#txtPlayerA").text] = await getFullNameLocally(itemData.playerAId);
 	if (itemData.playerBId === null || itemData.playerBId === undefined) {
 		$item("#txtPlayerB").text = "";
 	} else {
-		[,$item("#txtPlayerB").text] = await getFullName(itemData.playerBId);
+		[,$item("#txtPlayerB").text] = await getFullNameLocally(itemData.playerBId);
 	}
 }
-/**
-function getFullName(pId) {
-	let w_player = gMembers.find(item  => (item.id === pId));
-	if (typeof w_player === "undefined") {
-		return "Temporary Holder";
-	}
-	return w_player.fullName;
-}
-*/
 
 /**
  *	Adds an event handler that runs when the element is double-clicked.

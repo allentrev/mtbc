@@ -11,7 +11,7 @@ import { bulkSaveRecords } from 'backend/backEvents.jsw';
 import {loadCommittee}			from 'backend/backOfficers.jsw';
 import {loadOfficers}			from 'backend/backOfficers.jsw';
 import { buildMemberCache }		from 'public/objects/member';
-import { getFullName }		from 'public/objects/member';
+import { getFullNameLocally }		from 'public/objects/member';
 
 //------------------------------------------ Entity Imports ---------------------------------------
 import { setEntity, getEntity } from 'public/objects/entity';
@@ -179,7 +179,7 @@ async function loadRptOfficerList($item, itemData, index) {
         if (itemData.holderId === "") {
             wPerson = "Vacant";
         } else {
-            [wStatus, wPerson] = await getFullName(itemData.holderId);
+            [wStatus, wPerson] = await getFullNameLocally(itemData.holderId);
         }
         $item('#lblOfficerListRefKey').text = itemData.refKey;
         $item('#lblOfficerListPosition').text = itemData.position;
@@ -415,7 +415,7 @@ export async function clearOfficerEdit() {
 export async function populateOfficerEdit() {
     
     let wSelectedRecord = getSelectedItem("Officer");
-    let [wStatus, wPerson] = await getFullName(wSelectedRecord.holderId);
+    let [wStatus, wPerson] = await getFullNameLocally(wSelectedRecord.holderId);
 
     $w('#inpOfficerEditRefKey').disable();
 

@@ -22,7 +22,6 @@ import { sendConfirmationEmail } from 'backend/email.jsw';
 import { BookingGrid } from 'public/classes/bookingGrid.js'
 import { BookingCell } from 'public/classes/bookingCell.js'
 import { toJulian } from 'public/fixtures';
-import { initialiseMembers } from 'public/utility.js';
 
 import { COMPETITION, STAGE, COMPETITOR } from 'public/objects/clubComp';
 import { COMPETITOR_TYPE } from 'public/objects/clubComp';
@@ -46,6 +45,8 @@ import { initialiseRinksArray } from 'public/objects/booking';
 import { getRinksForDay }           from 'public/objects/booking';
 import { getSlotsForDay, getSlotString } from 'public/objects/booking';
 import { getTimeSlotStart }             from 'public/objects/booking';
+import { buildMemberCache } from 'public/objects/member';
+import { getFullNameLocally } from 'public/objects/member';
 
 let gSlot = 0;
 let gRink = 0;
@@ -147,10 +148,9 @@ $w.onReady(async function () {
         }
         wDate.setHours(10, 0, 0, 0);
 
-        let res = await initialiseRinksArray();
-        [status, gMembers] = await initialiseMembers();
+        await buildMemberCache();
         gCompetitions = await loadCompetitions(gYear);
-        if (!res || !gMembers || gCompetitions.length === 0){
+        if (!res || gCompetitions.length === 0){
             $w('#secHdr').collapse();
             $w('#secSysError').expand();
             $w('#secDesktop').collapse();
@@ -334,8 +334,8 @@ function loadrptGames($item, itemData, index) {
             $item('#txtSkipA').text = itemData.playerAId;
             $item("#txtSkipB").text = itemData.playerBId;
         } else {
-            $item('#txtSkipA').text = getFullName(itemData.playerAId);
-            $item("#txtSkipB").text = getFullName(itemData.playerBId);
+            $item('#txtSkipA').text = getFullNameLocally(itemData.playerAId);
+            $item("#txtSkipB").text = getFullNameLocally(itemData.playerBId);
         }
     }
     catch (err) {
@@ -905,9 +905,9 @@ export async function moveBooking() {
     let wNewBookings = wResult.bookings;
     let wNewBooking = wNewBookings[0];
     for (let wBooking of wNewBookings){
-        wBooking.booker = getFullName(wBooking.bookerId);
-        wBooking.playerA = getFullName(wBooking.playerAId);
-        wBooking.playerB = getFullName(wBooking.playerBId);
+        wBooking.booker = getFullNameLocally(wBooking.bookerId);
+        wBooking.playerA = getFullNameLocally(wBooking.playerAId);
+        wBooking.playerB = getFullNameLocally(wBooking.playerBId);
     }
     if (gFromCell && gFromCell.hasChildren) {
         let wResult2 = await deleteLinkedBookings(loggedInMember.lstId, gFromCell.bookingRef);
@@ -1946,16 +1946,6 @@ function isManager(pRoles) {
     return false;
 }
 
-/**
- * @TODO: if w_player is uundefined, then cant do .fullmame
- */
-function getFullName(pId) {
-    let w_player = gMembers.find(item => (item.id === pId));
-    if (typeof w_player === "undefined") {
-        return "Temporary Holder";
-    }
-    return w_player.fullName;
-}
 //=========================================Competition Box=====================================================
 //
 export async function btnLadiesComp_click(event) {
@@ -2379,14 +2369,14 @@ export async function processDay(pYear, pJDate) {
 
         for (let i = 0; i < w_book_out.length; i++) {
             let item = w_book_out[i];
-            w_book_out[i].booker = getFullName(item.bookerId);
+            w_book_out[i].booker = getFullNameLocally(item.bookerId);
             /** find wCompRec */
 
             if (item.matchKey !== "" && item.matchKey !== undefined) {
                 wCompRec = await getCompetition(pYear, item.compRef);
             }
             if (item.compRef.toUpperCase().includes("EVENT")) {
-                w_book_out[i].booker = getFullName(item.bookerId);
+                w_book_out[i].booker = getFullNameLocally(item.bookerId);
             } else {
                 if (item.usage === "Temporary booking") {
                     w_book_out[i].playerA = "Temporary Holder";
@@ -2394,7 +2384,7 @@ export async function processDay(pYear, pJDate) {
                 } else if (item.usage === "Not available") {
                     w_book_out[i].playerA = "Temporarily Closed";
                 } else {
-                    w_book_out[i].booker = getFullName(item.bookerId);
+                    w_book_out[i].booker = getFullNameLocally(item.bookerId);
                     if (item.playerAId === item.bookerId) {
                         w_book_out[i].playerA = w_book_out[i].booker;
                     } else {
@@ -2402,10 +2392,10 @@ export async function processDay(pYear, pJDate) {
                             if (wCompRec.competitorType === COMPETITOR_TYPE.TEAM) {
                                 w_book_out[i].playerA = item.playerAId;
                             } else {
-                                w_book_out[i].playerA = getFullName(item.playerAId);
+                                w_book_out[i].playerA = getFullNameLocally(item.playerAId);
                             }
                         } else {
-                            w_book_out[i].playerA = getFullName(item.playerAId);
+                            w_book_out[i].playerA = getFullNameLocally(item.playerAId);
                         }
                     }
                     if (item.playerBId) {
@@ -2413,10 +2403,10 @@ export async function processDay(pYear, pJDate) {
                             if (wCompRec.competitorType === COMPETITOR_TYPE.TEAM) {
                                 w_book_out[i].playerB = item.playerBId;
                             } else {
-                                w_book_out[i].playerB = getFullName(item.playerBId);
+                                w_book_out[i].playerB = getFullNameLocally(item.playerBId);
                             }
                         } else {
-                            w_book_out[i].playerB = getFullName(item.playerBId);
+                            w_book_out[i].playerB = getFullNameLocally(item.playerBId);
                         }
                     }
                 }
@@ -2705,7 +2695,7 @@ export async function btnTest_click(event) {
         //let item = w_records[i];
         let item = w_book_out[i];
         if (item.compRef.toUpperCase().includes("EVENT")) {
-            w_book_out[i].booker = getFullName(item.bookerId);
+            w_book_out[i].booker = getFullNameLocally(item.bookerId);
         } else {
             if (item.usage === "Temporary booking") {
                 w_book_out[i].playerA = "Temporary Holder";
@@ -2713,14 +2703,14 @@ export async function btnTest_click(event) {
             } else if (item.usage === "Not available") {
                 w_book_out[i].playerA = "Temporarily Closed";
             } else {
-                w_book_out[i].booker = getFullName(item.bookerId);
+                w_book_out[i].booker = getFullNameLocally(item.bookerId);
                 if (item.playerAId === item.bookerId) {
                     w_book_out[i].playerA = w_book_out[i].booker;
                 } else {
-                    w_book_out[i].playerA = getFullName(item.playerAId);
+                    w_book_out[i].playerA = getFullNameLocally(item.playerAId);
                 }
                 if (item.playerBId) {
-                    w_book_out[i].playerB = getFullName(item.playerBId);
+                    w_book_out[i].playerB = getFullNameLocally(item.playerBId);
                 }
             }
         }

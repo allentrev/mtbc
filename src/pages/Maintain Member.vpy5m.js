@@ -9,7 +9,7 @@ import { deleteWixMembers } from "backend/backMember.jsw";
 import { saveImportMemberRecord } from "backend/backMember.jsw";
 import { createMember } from "backend/backMember.jsw";
 import { deleteLstMember } from "backend/backMember.jsw";
-import { getAllMembers2 } from "backend/backMember.jsw";
+import { getAllMembers } from "backend/backMember.jsw";
 import { getAllImportMembers } from "backend/backMember.jsw";
 import { isUnique } from "backend/backMember.jsw";
 
@@ -76,11 +76,7 @@ $w.onReady(async function () {
     //$w('#lblHdr1').text = `The following table summarises something....${gYear} season`;
     // for testing ------	------------------------------------------------------------------------
     //let wUser = {"_id": "ab308621-7664-4e93-a7aa-a255a9ee6867", "loggedIn": true, "roles": [{"title": "Full"}]};	//
-    let wUser = {
-      _id: "88f9e943-ae7d-4039-9026-ccdf26676a2b",
-      loggedIn: true,
-      roles: [{ title: "Manager" }],
-    }; //Me
+    let wUser = {  _id: "88f9e943-ae7d-4039-9026-ccdf26676a2b", loggedIn: true, roles: [{ title: "Manager" }] }; //Me
     //let wUser = {"_id": "af7b851d-c5e5-49a6-adc9-e91736530794", "loggedIn": true, "roles": [{"title": "Coach"}]}; //Tony Roberts
     /**
         Mike Watson		bc6a53f1-f9b8-41aa-b4bc-cca8c6946630 
@@ -308,7 +304,7 @@ export async function loadMembers() {
   //console.log("load Members");
   try {
     showWait("Member");
-    let wAllMembers = await getAllMembers2();
+    let wAllMembers = await getAllMembers();
     if (wAllMembers) {
       //let wAllMembers = wResults.members;
       setEntity("Member", [...wAllMembers]);
@@ -1502,7 +1498,7 @@ async function loadWixMembersData() {
 }
 
 async function loadLstMembersData() {
-  let wAll = await getAllMembers2();
+  let wAll = await getAllMembers();
   gLstMembers = wAll
     .filter((item) => item.username !== "ClubHouse")
     .filter((item) => item.status !== "Past")
@@ -2495,7 +2491,7 @@ function doCustom() {
 
 async function processCustomOpen() {
   $w("#imgCustom").show();
-  let wAllRecords = await getAllMembers2();
+  let wAllRecords = await getAllMembers();
   if (wAllRecords) {
     gSet = [...wAllRecords];
     $w("#pbrCustom").targetValue = gSet.length;

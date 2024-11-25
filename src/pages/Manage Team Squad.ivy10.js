@@ -9,7 +9,7 @@ import wixLocation 				from 'wix-location';
 
 
 import { convertNulls }						from	'public/utility';
-import { getAllMembers }					from 	'public/objects/member';
+import { getAllMembers }					from 	'backend/backMember.jsw';
 
 
 import { getTeamsByGender }					from	'public/objects/team.js';

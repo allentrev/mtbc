@@ -9,29 +9,12 @@
 import wixData from 'wix-data';
 import wixWindow from "wix-window";
 
-import { authentication }	from 'wix-members-frontend';
-import { currentMember }	from 'wix-members-frontend';
-import {session} 				from 'wix-storage-frontend';
+import { authentication }		from 'wix-members-frontend';
+import { currentMember }		from 'wix-members-frontend';
+import { session} 				from 'wix-storage-frontend';
 
-import { getAllMembers2 }		from 'backend/backMember.jsw';
 import { collateMemberDetails }	from 'backend/backMember.jsw';
-
-
-/**
- * Enum for Competition object status values
- * @readonly
- * @enum {String}
- */
-export const ROLES = Object.freeze({
-	ADMIN:			"Admin",
-	MANAGER:		"Manager",
-	CAPTAIN:		"Captain",
-	DAY_CAPTAIN:	"Day_Captain",
-	PRESS:			"Press",
-	COACH:			"Coach",
-	MEMBER:			"Member",
-	VISITOR:		"Visitor"
-});
+import { getAllMembers }		from 'backend/backMember.jsw';
 
 export const STATUS = Object.freeze({
 	PENDING:		"Pending",
@@ -46,7 +29,19 @@ export const TYPE = Object.freeze({
 	TEST:			"Test"
 });
 
-let gMembers = [];
+export const ROLES = Object.freeze({
+	ADMIN: "Admin",
+	MANAGER: "Manager",
+	CAPTAIN: "Captain",
+	DAY_CAPTAIN: "Day_Captain",
+	COMPETITION: "Competition",
+	PRESS: "Press",
+	COACH: "Coach",
+	MEMBER: "Member",
+	VISITOR: "Visitor"
+});
+
+let gLocalNameCache = [];		// each record just contains {"_id", "fullName"}
 
 /**
  * Summary:	Checks if the user has the required role(s).
@@ -74,195 +69,23 @@ export function isRequiredRole(pRoleNeeded, pUserRoles){
 }
 
 export async function buildMemberCache() {
-    gMembers = await getAllMembers2();
+	let wMembers = await getAllMembers();
+	gLocalNameCache = wMembers.map ( item => {
+		return {
+			"id": item._id,
+			"fullName": item.fullName
+		}
+	})
 	return true;
 }
 
-
-export function getFullName(pId){
-	let wMember = gMembers.find( item => item.id === pId);
+export function getFullNameLocally(pId){
+	let wMember = gLocalNameCache.find( item => item.id === pId);
 	if (wMember) { 
 		return [true, wMember.fullName];
 	} else {
-		return [false, ""];
+		return [false, "Temporary Holder"];
 	}
-}
-
-export function getMember(pId){
-	let wMember = gMembers.find( item => item.id === pId);
-	if (wMember) { 
-		return {"status": true, "member": wMember, "error": null};
-	} else {
-		return {"status": false, "member": [], "error": "Couldn't find member" + pId};
-	}
-}
-
-export async function getAllMembersFront() {
-	const results = await getAllMembers2();
-
-	if (wixWindow.rendering.env === "backend") {
-		wixWindow.warmupData.set("myWarmupData", results);
-		wixWindow.warmupData.set("myWarmupMessage", "Rendering in the backend");
-	}  
-	return results;
-}
-// CANT WE JUST USE GETMEMBER INSTEAD
-export function findLstMembersProfile(pUserId) {
-	// this replicates the find-MemberProfile function, but using the read-all lstMembers 
-	// collection instead of the proper members collection
-	//console.log("Inside find-MemberProfile async" + pUserId);
-  	try {
-	return 	wixData.query("lstMembers")
-    		.eq("_id", pUserId)
-    		.find()
-		.then( (results) => {
-			if (results.items.length ===  0) {
-				return false;
-			} else {
-				return results.items[0];
-			}
-		})
-		.catch( (error) => {
-			Promise.reject(error)
-		});
-	}
-	catch (error) {
-		console.log("/public/objects/member findLstMembersProfile TryCatch (" + pUserId + ") " + error);
-	}
-}
-//AGAIN USE GMEMBER
-export async function getMemberByShortId (pId) {
-	const results = await wixData.query("lstMembers")
-		.startsWith('_id', pId)
-		.find();
-	if (results.items.length ===  0) {
-		return false;;
-	} else if(results.items.length > 1){
-		return false;
-	} else {
-		return results.items[0];
-	}
-}
-
-
-//------------------------------------------------------------------------------------------------------
-//
-//	Function:	This gets the lstMember record based on the Wix Userid
-//
-//  Inputs:		i1		Object	note
-//	Output:		o2		String	note
-//				false	Boolean	insert failed
-//
-//------------------------------------------------------------------------------------------------------
-export async function findLstMember(pUserId) {
-	// this replicates the find-MemberProfile function, but using the read-all lstMembers 
-	// collection instead of the proper members collection
-	//console.log("Inside find-MemberProfile async" + pUserId);
-  	try {
-		const results = await wixData.query("lstMembers")
-    		.eq("_id", pUserId)
-    		.find();
-		if (results.items.length ===  0) {
-			return false;
-		} else {
-			return results.items[0];
-		}
-	}
-	catch (error) {
-		console.log("/public/objects/member findLstMember TryCatch " + error);
-	}
-}
-
-
-//------------------------------------------------------------------------------------------------------
-//
-//	Function:	This gets the lstMember record based on the Wix Userid
-//
-//  Inputs:		i1		Object	note
-//	Output:		o2		String	note
-//				false	Boolean	insert failed
-//
-//------------------------------------------------------------------------------------------------------
-export async function findLstMemberBySurname(pName) {
-	// this replicates the find-MemberProfile function, but using the read-all lstMembers 
-	// collection instead of the proper members collection
-	//console.log("Inside find-MemberProfile async" + pUserId);
-  	try {
-		const results = await wixData.query("lstMembers")
-    		.eq("surname", pName)
-    		.find();
-		if (results.items.length ===  0) {
-			return false;
-		} else {
-			return results.items;
-		}
-	}
-	catch (error) {
-		console.log("/public/objects/member findLstMemberBySurname TryCatch " + error);
-	}
-}
-
-export async function getAllMembers() {
-	try {
-		let res = await wixData.query('lstMembers')
-			.ascending("surname")
-			.ascending("firstName")
-			.limit(1000)
-			.find();
-		if (res.length !== 0) {
-			let dlist = res.items.map(item => {
-				return {
-					id: item._id,
-					wixId: item.wixId,
-					type: item.type,
-					gender: item.gender,
-					surname: item.surname,
-					firstName: item.firstName,
-					player: item.firstName + " " + item.surname,
-					fullName: item.firstName + " " + item.surname,
-					contactpref: item.contactpref,
-					email: (item.contactEmail) ? item.contactEmail.toLowerCase() : null,
-					mobilePhone: item.mobilePhone,
-					homePhone: item.homePhone
-				}
-			});
-			return [true, dlist];
-		} else {
-			console.log("/public/objects/member getAllMembers zero length ");
-			return [false,[]];
-		}
-	}
-	catch (error) {
-		console.log("/public/objects/member getAllMembers tryCatch " + error);
-		return [false, []];
-	}
-}
-//------------------------------------------------------------------------------------------------------
-//
-//	Function:	This gets the lstMember record based on the Wix Userid
-//
-//  Inputs:		i1		Object	note
-//	Output:		o2		String	note
-//				false	Boolean	insert failed
-//
-//------------------------------------------------------------------------------------------------------
-
-export async function getEmailAddress (pUserId) {
-  	try {
-		let res = await findLstMember(pUserId);
-		if (res) {
-			return (res.contactEmail) ? res.contactEmail.toLowerCase() : null;
-			} else {
-			console.log("/public/objects/member GetEmailAddress Error: cant find Lst Member record " + pUserId);
-			return false;
-		}
-	}
-	catch (error) {
-		console.log("/public/objects/member GetEmailaddress TryCatch + error");
-		console.log(error);
-		return false;
-	}
-
 }
 
 /**
@@ -274,7 +97,10 @@ export async function getEmailAddress (pUserId) {
  * 				then there will not be these details set in the session storage. In this case, this function creates those details
  * 				and returns them as per normal. If no one is signed in, then it simply returms a false status and dummy Member and 
  * 				Roles objects/array. 
- *   *
+ * 
+ *              This must run in the client as it uses session storage 
+ *
+ * 
  * @param {boolean} pTest		Indicates whether this is a test run or a production call 
  * @param {object}  pTestUser	The psuedo user to use for a test run
  *

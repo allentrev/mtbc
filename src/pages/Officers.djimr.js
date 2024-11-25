@@ -10,6 +10,7 @@
 //------------------------------------------------------------------------------------------------------
 import wixLocation 				from 'wix-location';
 import wixWindow 				from 'wix-window';
+import { authentication }		from 'wix-members';
 
 import	_						from 'lodash';
 
@@ -17,9 +18,7 @@ import {loadCommittee}			from 'backend/backOfficers.jsw';
 import {findCommitteeId}		from 'backend/backOfficers.jsw';
 import { loadOfficers }			from 'backend/backOfficers.jsw';
 import { getAllLeagueTeams }	from 'backend/backTeam.jsw';
-import { buildMemberCache }		from 'public/objects/member';
-import { getMember }			from 'public/objects/member';
-import { authentication }		from 'wix-members';
+import { findLstMember }		from 'backend/backMember.jsw';
 import { getNewLeague }			from 'backend/backTeam.jsw';
 
 let wData = [];
@@ -29,7 +28,7 @@ let gTeams= [];
 let gTest = false;
 //--------------------------------------------------------------------------------------------------
 
-const isLoggedIn = authentication.loggedIn();
+const isLoggedIn = gTest ? true : authentication.loggedIn();
 
 let gOfficers = [];
 
@@ -39,13 +38,29 @@ $w.onReady(async function () {
 
 		let status;
 
+		// for testing ------	------------------------------------------------------------------------
+		//let wUser = {"_id": "ab308621-7664-4e93-a7aa-a255a9ee6867", "loggedIn": true, "roles": [{"title": "Full"}]};	//
+		let wUser = { _id: "88f9e943-ae7d-4039-9026-ccdf26676a2b", loggedIn: true, roles: [{ title: "Manager" }] }; //Me
+		//let wUser = {"_id": "af7b851d-c5e5-49a6-adc9-e91736530794", "loggedIn": true, "roles": [{"title": "Coach"}]}; //Tony Roberts
+		/**
+			Mike Watson		bc6a53f1-f9b8-41aa-b4bc-cca8c6946630
+			Sarah Allen		91eab866-e480-4ddc-9512-d27bbbed2f10	ab308621-7664-4e93-a7aa-a255a9ee6867
+			Trevor Allen	7e864e0b-e8b1-4150-8962-0191b2c1245e	88f9e943-ae7d-4039-9026-ccdf26676a2b
+			Tony Stuart		28f0e772-9cd9-4d2e-9c6d-2aae23118552	5c759fef-91f6-4ca9-ac83-f1fe2ff2f9b9
+			John Mitchell	40a77121-3265-4f0c-9c30-779a05366aa9	5132409b-6d6a-41c4-beb7-660b2360054e
+			Tony Roberts	4d520a1b-1793-489e-9511-ef1ad3665be2	af7b851d-c5e5-49a6-adc9-e91736530794
+			Cliff Jenkins	d81b1e42-6e92-43d0-bc1e-a5985a25487a	c287a94e-d333-40aa-aea6-11691501571e
+			Tim Eales		2292e639-7c69-459b-a609-81c63202b1ac	6e5b5de1-214f-4b03-badf-4ae9a6918f77
+			Yoneko Stuart	93daeee8-3d4b-40cc-a016-c88e93af1559	957faf19-39cd-47ca-9b81-5a0c2863bb87
+			*/
+
+		// end of esting fudge---------------
+
 		if (isLoggedIn) {
 			$w("#txtIntro").text = ` As a member, you can double click on a person's name to load that person's contact details`;
 		} else {
 			$w("#txtIntro").text = `As a visitor to this site, simply select from the dropdown the committee that you want to see the members of.`;
 		}
-
-		await buildMemberCache();
 		await loadListData();
 		await loadDropDownData();
 		
@@ -315,7 +330,7 @@ async function loadJobs(pJobs){
 		}
 
 		if (wJob.holderId) {
-			let wResult = await getMember(wJob.holderId);
+			let wResult = await findLstMember(wJob.holderId);
 			if (wResult.status){
 				wMember = wResult.member;
 				wName = wMember.firstName + " " + wMember.surname;
@@ -324,7 +339,6 @@ async function loadJobs(pJobs){
 				wEntry.contactEmail = wMember.contactEmail;
 				wEntry.mobilePhone = wMember.mobilePhone || "No mobile#";
 				wEntry.homePhone = wMember.homePhone || "No home#";
-
 			} else {
 				console.log("/page Officers loadJobs couldnt find member, id", wJob.holderId);
 				return;
@@ -390,7 +404,7 @@ async function loadTeamCaptains(pTeams){
 		let wMember = {};
 		let status;
 		if (wTeam.managerId) {
-			let wResult = await getMember(wTeam.managerId);
+			let wResult = await findLstMember(wTeam.managerId);
 			if (wResult.status){
 				wMember = wResult.member;
 				wName = wMember.firstName + " " + wMember.surname;
@@ -402,7 +416,12 @@ async function loadTeamCaptains(pTeams){
 
 			} else {
 				console.log("/page Officers loadJobs couldnt find captain, id", wTeam.managerId);
-				return;
+				wName = "Not found";
+				wEntry.holderId = "";
+				wEntry.allowShare = "N";
+				wEntry.contactEmail = "";
+				wEntry.mobilePhone = "";
+				wEntry.homePhone = "";
 			}
 		} else {
 			wName = "Vacant";

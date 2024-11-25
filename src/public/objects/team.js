@@ -9,7 +9,7 @@ import wixData from 'wix-data';
 import _ 									from 	'lodash';
 
 import { loadTableData as loadEventsTable }	from	'public/fixtures';
-import { findLstMember }					from	'public/objects/member';
+import { findLstMember } from 'backend/backMember.jsw';
 import { ROLES } 							from	'public/objects/member';
 import { findTeamByKey } 					from 	'backend/backTeam.jsw';
 
