@@ -87,7 +87,6 @@ const isLoggedIn = gTest ? true : authentication.loggedIn();
 $w.onReady(async function () {
   try {
     let status;
-    console.log("Hi", gYear);
 
     //sgMail.setApiKey(apiKey);
 
@@ -443,7 +442,6 @@ async function btnNoticeEditSummary_click() {
 
 function doInpNoticeEditMessageChange(event){
   let wText = event.target.value;
-  console.log(wText, wText.length);
   if (wText.length > 160) {
     $w('#btnNoticeEditSummary').expand();
   } else {
@@ -502,6 +500,7 @@ export async function btnNoticeASave_click(event) {
       urgent: $w("#rgpNoticeEditUrgent").value,
       picture: $w("#imgNoticeEditPicture").src,
       message: $w("#inpNoticeEditMessage").value.trim(),
+      summary: $w('#inpNoticeEditSummary').value.trim(),
       status: "O",
       web: $w("#rgpNoticeEditPublish").value,
       send: $w("#rgpNoticeEditTransmit").value
@@ -517,7 +516,6 @@ export async function btnNoticeASave_click(event) {
         wNotice.target = [`<${$w("#drpNoticeEditLabel").value}>`];
         break;
       case "S":
-        let wSelectTableData = $w('#tblNoticeEditSelect').rows;
         wNotice.target = formTransmitToList();
         break;
       default:
@@ -543,9 +541,10 @@ export async function btnNoticeASave_click(event) {
             "]"
         );
     }
-    // Save record performed in switch code blocks above;
-    //wResult = await saveRecord("lstNotices", wNotice);
-    wResult.status = true;
+    //  NOTE: Everything gets written to the database as an audit trail. The Web Marker in the record determines if it is 
+    //        output onto the Noticeboard on the web.
+    wResult = await saveRecord("lstNotices", wNotice);
+    //wResult.status = true;
     if (wResult && wResult.status) {
       let wSavedRecord = wResult.savedRecord;
       switch (getMode()) {
@@ -593,10 +592,11 @@ export async function btnNoticeASave_click(event) {
 
       let wParams = {
         "subject": $w('#inpNoticeEditTitle').value,
-        "body": $w('#inpNoticeEditMessage').value
+        "body": $w('#inpNoticeEditMessage').value,
+        "summary": $w('#inpNoticeEditSummary').value
       }
       let wResult = await sendMsg("U", wNotice.target, loggedInMember.name , wUrgent, "Blank_1", wParams);
-      console.log("Send msg result");
+      console.log("SendMsg result");
       console.log(wResult);
       //let wResult = {"status": true};
       if (wResult && wResult.status) {
@@ -678,7 +678,6 @@ export function tblNoticeEditSelect_onRowSelect(event) {
 
 export async function drpNoticeEditLabel_click(event){
   let wValue = event.target.value;
-  console.log(wValue);
 } 
 
 export async function btnNoticeEditSelectAdd_click() {
@@ -768,38 +767,45 @@ export async function clearNoticeEdit() {
   $w('#tblNoticeEditSelect').rows = [];
   $w('#tblNoticeEditSelect').collapse();
   $w('#lblNoticeEditNone').expand();
+  $w('#grpNoticeEditSummary').collapse();
+  $w('#btnNoticeEditSummary').collapse();
 
   $w('#drpNoticeEditStatus').value = "O";
   $w("#inpNoticeEditMessage").value = "";
+  $w("#inpNoticeEditSummary").value = "";
   $w("#inpNoticeEditTitle").focus();
 }
 
 function configureBoxes(pTargetType) {
   switch (pTargetType) {
     case "A":
-      $w("#boxNoticeEditPublish").expand();
+      $w('#rgpNoticeEditPublish').disable();
+      $w('#rgpNoticeEditTransmit').disable();
       $w("#boxNoticeEditLabel").collapse();
       $w("#boxNoticeEditSelect").collapse();
       $w('#rgpNoticeEditPublish').value = "Y";
       $w('#rgpNoticeEditTransmit').value = "N";
       break;
     case "L":
-      $w("#boxNoticeEditPublish").collapse();
+      $w('#rgpNoticeEditPublish').disable();
+      $w('#rgpNoticeEditTransmit').disable();
       $w("#boxNoticeEditLabel").expand();
       $w("#boxNoticeEditSelect").collapse();
       $w('#rgpNoticeEditPublish').value = "N";
       $w('#rgpNoticeEditTransmit').value = "Y";
       break;
     case "S":
-      $w("#boxNoticeEditPublish").collapse();
+      $w('#rgpNoticeEditPublish').disable();
+      $w('#rgpNoticeEditTransmit').disable();
       $w("#boxNoticeEditLabel").collapse();
       $w("#boxNoticeEditSelect").expand();
-      tblNoticeEditSelectCollapse();
+      $w('#tblNoticeEditSelect').collapse();
       $w('#rgpNoticeEditPublish').value = "N";
       $w('#rgpNoticeEditTransmit').value = "Y";
       break;
     default:
-      $w("#boxNoticeEditPublish").expand();
+      $w('#rgpNoticeEditPublish').disable();
+      $w('#rgpNoticeEditTransmit').disable();
       $w("#boxNoticeEditLabel").collapse();
       $w("#boxNoticeEditSelect").collapse();
       $w('#rgpNoticeEditPublish').value = "Y";
@@ -827,15 +833,26 @@ function tblNoticeEditSelectCollapse(){
 export async function populateNoticeEdit() {
   let wSelectedRecord = getSelectedItem("Notice");
   configureBoxes(wSelectedRecord.targetType);
+  console.log("Selected record");
+  console.log(wSelectedRecord);
 
   $w('#drpNoticeEditStatus').value = wSelectedRecord.status;
   $w('#drpNoticeEditTargetType').value = wSelectedRecord.targetType;
+
+
   //$w('#tblNoticeEditSelect').rows = wTableData;
   loadNoticeEditSelectFromDB(wSelectedRecord);
 
-  $w('#grpNoticeEditSummary').collapse();
-  $w('#btnNoticeEditSummary').collapse();
-  $w('#inpNoticeEditSummary').value = "";
+  let wPrecis = wSelectedRecord.summary;
+  if (wPrecis && wPrecis.length > 0) {
+    $w('#inpNoticeEditSummary').value = wPrecis;
+    $w('#grpNoticeEditSummary').expand();
+    $w('#btnNoticeEditSummary').expand();
+  } else {
+    $w('#inpNoticeEditSummary').value = "";
+    $w('#grpNoticeEditSummary').collapse();
+    $w('#btnNoticeEditSummary').collapse();
+  }
 
   $w("#inpNoticeEditTitle").value = wSelectedRecord.title;
   $w("#rgpNoticeEditUrgent").value = wSelectedRecord.urgent;
@@ -887,6 +904,7 @@ function loadNoticeEditSelectFromDB(pRec){
   }
 }
 
+/** I THINK THIS IS DEPRECTAED
 async function processRecord(pTarget, pItem) {
   //console.log("Process Record pItem");
   //console.log(pItem);
@@ -921,13 +939,12 @@ async function processRecord(pTarget, pItem) {
         //console.log("wId = ", wId);
         if (wNoticeBookings) {
           if (wNoticeBookings.length > 0) {
-            /** 
-                    wBookingsToSave = wNoticeBookings.map(item => {
-                        let wItem = { ...item };
-                        wItem.NoticeId = wSavedRec._id;
-                        return wItem;
-                    })
-                    */
+            // 
+            //        wBookingsToSave = wNoticeBookings.map(item => {
+            //            let wItem = { ...item };
+            //            wItem.NoticeId = wSavedRec._id;
+            //            return wItem;
+            //        })
             let wResult = await processNoticeBookings(
               wSavedRec._id,
               wNoticeBookings
@@ -953,6 +970,7 @@ async function processRecord(pTarget, pItem) {
   }
   return wSavedRec;
 }
+*/
 
 export function btnUpload_click(event) {
   $w("#txtNoticeErrMsg").hide();

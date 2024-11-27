@@ -51,7 +51,7 @@ let wMatchesInRound;
 let wMatchesInNextRound = [];
 let wRound;
 let wStart = 0;
-
+//TODO look at wCache and members data in the client
 let wCache =[];
 //let wData = [];
 let wRole = "Admin";

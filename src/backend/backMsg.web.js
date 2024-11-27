@@ -4,9 +4,12 @@ import { getSecret }			from 'wix-secrets-backend';
 
 import twilio from 'twilio';
 import  sgMail 					from '@sendgrid/mail';
+import _ from 'lodash';
 
 import { findOfficer }    from 'backend/backOfficers.jsw';
 import { findLstMember }  from 'backend/backMember.jsw';
+import { getAllActiveMembersContact } from 'backend/backMember.jsw';
+import { getLabelObjects } from 'backend/backNotices.web';
 
 export const testEmail2 = webMethod(
   Permissions.Anyone,
@@ -44,7 +47,7 @@ export const testEmail2 = webMethod(
 )//webmethodvvv
 
 /**
- * @typedef {Object} wControl
+ * @typedef {Object} gControl
  * @property {string} id - The unique identifier for the recipient.
  * @property {string} contactpref - The contact preference of the recipient (e.g., 'E' for Email, 'S' for SMS).
  * @property {string} contactEmail - The email address of the recipient.
@@ -114,6 +117,19 @@ export const sendMsgToJob = webMethod(
   } // async function
 )
 
+let gControl = {
+  "id": "",
+  "contactpref": "",
+  "contactEmail": "",
+  "mobilePhone": "",
+  "toName": "",
+  "urgent": "N",
+  "senderName": "",
+  "toList": [],
+};
+let gToEmailList = [];
+let gToSMSList = [];
+let gToWhatsAppList = [];
 
 /**
  * Summary:	Sends a message to a person or job based on provided parameters.
@@ -122,7 +138,7 @@ export const sendMsgToJob = webMethod(
  * 
  * @function
  * @param {string} pType - Type of message to send E=Email, S=SMS, W=WhatsApp, U=User defined
- * @param {Array.<string>} pToList - An array of member Ids identifying the members to be contacted
+ * @param {Array.<string>} pToList - An array of member Ids or email addresses identifying the members to be contacted
  * @param {string|null} pFromName - Name of the sender (if applicable).
  * @param {boolean} pUrgent - Indicates if the message is urgent.
  * @param {string} pTarget - Target of the message. This is the message name
@@ -134,148 +150,215 @@ export const sendMsg = webMethod(
   Permissions.Anyone,
   async (pType, pToList, pFromName, pUrgent, pTarget, pParams) => {
 
+    const wParams = { ...pParams };
+    const wTarget = pTarget;
+    
     console.log("sendMsg, pType, ToList, From, Urgent, Target, Params",
-      pType,
-      pToList,
-      pFromName,
-      pUrgent,
-      pTarget,
-      pParams
-    );
-    let wParams = {...pParams};
+      pType, pToList, pFromName, pUrgent, wTarget);
+    console.log(wParams);
+    
     //console.log("sendMsg", wParams);
-    let wControl = {
-      "id": "",
-      "contactpref": "",
-      "contactEmail": "",
-      "mobilePhone": "",
-      "toName": "",
-      "urgent": "N",
-      "senderName": "",
-      "toList": [],
-    };
-    let wToEmailList = [];
-    let wToSMSList = [];
-    let wToWhatsAppList = [];
+    gToEmailList = [];
+    gToSMSList = [];
+    gToWhatsAppList = [];
   
-    let wResult = {"status": true, "error": null};
-    let wEmailResult = {"status": true, "error": null};
-    let wSMSResult = {"status": true, "error": null};
-    let wWhatsAppResult = {"status": true, "error": null};
+    let wMsgType = "";
+    let wContactPref = "";
 
-    for (let wMemberId of pToList){
-      wResult = await findLstMember(wMemberId);
-      if (wResult && wResult.status){
-        
-        //let wContactPref = wResult.member.contactpref;
-        let wContactEmail = wResult.member.contactEmail;
-        let wMobilePhone = wResult.member.mobilePhone;
-        let wToName = wResult.member.firstName + " " + wResult.member.surname;
+    gControl.senderName = pFromName;
 
-        let [wMsgType, wContactPref] = validateMsgTypeAndContactPref(pType, wResult.member);
-        wControl.id = wResult.member._id;
-        wControl.contactpref = wContactPref;
-        wControl.contactEmail = wContactEmail;
-        wControl.mobilePhone = wMobilePhone;
-        wControl.toName = wToName;
-        wControl.urgent = pUrgent;
-        wControl.senderName = pFromName;
-    
-        let wToEmailEntry = `${wToName}<${wContactEmail}>`;
-        let wToSMSEntry = {"name": wToName, "mobile": wMobilePhone};
-        let wToWhatsAppEntry = {"name": wToName, "mobile": wMobilePhone};
-        switch (wMsgType) {
-          case "E":
-            wToEmailList.push(wToEmailEntry);
-            break;
-          case "S":
-            wToSMSList.push(wToSMSEntry);
-            break;
-          case "U":
-            switch (wContactPref) {
-              case "E":
-                wToEmailList.push(wToEmailEntry);
-                break;
-              case "S":
-                wToSMSList.push(wToSMSEntry);
-                break;
-              case "W":
-                wToWhatsAppList.push(wToWhatsAppEntry);
-                break;
-              case "B":
-                wToEmailList.push(wToEmailEntry);
-                wToSMSList.push(wToSMSEntry);
-                break;
-              case "N":
-                wResult = {"status": true, "error": null};
-                break;
-              default:
-                console.warn(`/backend/backMsg  sendMsg fail, invalid contactpref`, wContactPref);
-                wResult = {"status": false, "error": "Invalid contactpref"};
-                break;
-            } // contactpref switch
-            break;
-          default:
-            console.warn(`/backend/backMsg  sendMsg fail, invalid type [${pType}]`);
-            wResult = {"status": false, "error": "Invalid Type"};
-            break;
-        } // type switch
+    for (let wElement of pToList){
+      console.log("sendMsg FOr Loop iteration");
+      if (wElement === "<All>") {
+        // do all club members
+        await processAllList();
+        break;
+      } else if (wElement.includes("@")) {
+        //do email element
+        [wMsgType, wContactPref] = await processEmailElement(pType, pUrgent, pFromName, wElement);
+      } else if (wElement.includes("<")) {
+        // do label 
+        await processLabelList(pType, pUrgent, pFromName, wElement);
+        break;
       } else {
-        console.warn(`/backend/backMsg  sendMsg couldn't find member, `,wMemberId);
+        // do send list  
+        [wMsgType, wContactPref] = await processMemberElement(pType, pUrgent, pFromName, wElement);
       }
-    } // For
-
-    if (wToEmailList && wToEmailList.length > 0) {
-      let wEmailControl = {...wControl};
-      wEmailControl.toList =[...wToEmailList];
-    
-      wEmailResult = await sendEmail(pTarget, wEmailControl, wParams);
-      if (wEmailResult && wEmailResult.status){
-        console.warn(`/backend/backMsg  sendMsg sendEmail sent OK, msgType, JobKey `, pTarget);
-        wEmailResult = {"status": true, "error": null};
-      } else {
-        console.warn(`/backend/backMsg  sendMsg sendEmail fail, msgType, JobKey `, pTarget);
-        wEmailResult = {"status": false, "error": wEmailResult.error || "Result undefined"};
-      }
+      await doMsgSortingOffice(wMsgType,wContactPref);
     }
 
-    if (wToSMSList && wToSMSList.length > 0) {
-      let wSMSControl = {...wControl};
-      wSMSControl.toList = [...wToSMSList];
-      wSMSResult = await sendSMS(pTarget, wSMSControl, wParams);
-      if (wSMSResult && wSMSResult.status){
-        console.warn(`/backend/backMsg  sendMsg sendSMS sent OK, msgType, JobKey `, pTarget);
-
-        wSMSResult = {"status": true, "error": null};
-      } else {
-        console.warn(`/backend/backMsg  sendMsg sendSMS fail, msgType, JobKey `, pTarget);
-        wSMSResult = {"status": false, "error": wSMSResult.error || "Result undefined"};
-      }
-    }
-
-    if (wToWhatsAppList && wToWhatsAppList.length > 0) {
-      let wWhatsAppControl = {...wControl};
-      wWhatsAppControl.toList = [...wToWhatsAppList];
-      wWhatsAppResult = await sendWhatsApp(pTarget, wWhatsAppControl, wParams);
-      if (wWhatsAppResult && wWhatsAppResult.status){
-        console.warn(`/backend/backMsg  sendMsg sendWhatsApp sent OK, msgType, JobKey `, pTarget);
-        wWhatsAppResult = {"status": true, "error": null};
-      } else {
-        console.warn(`/backend/backMsg  sendMsg sendWhatsApp fail, msgType, JobKey `, pTarget);
-        wWhatsAppResult = {"status": false, "error": wWhatsAppResult.error || "Result undefined"};
-      }
-    }
-
-    if (!wEmailResult.status || !wSMSResult.status || !wWhatsAppResult.status) {
-      wResult.status =false;
-      wResult.error = "A failure occurred. Please check logs";
-    }
-
-    return wResult;
+    const wResult1 = await doSendEmail(wTarget, wParams);
+    const wResult2 = await doSendSMS(wTarget, wParams);
+    const wResult3 = await doSendWhatsApp(wTarget, wParams);
+    console.log("Results");
+    console.log(wResult1);
+    console.log(wResult2);
+    console.log(wResult3);
+  
+    return { "status": true, "error": null };
   } // async function
 )
 
-function validateMsgTypeAndContactPref(pType, pMember){
+/**
+ * Processes all active members and updates global contact lists for email, SMS, and WhatsApp.
+ *
+ * @async
+ * @function
+ * @returns {Promise<void>} A promise that resolves when all contact lists have been updated.
+ *
+ * @description
+ * - Calls `getAllActiveMembersContact` to retrieve lists of active members' contact details.
+ * - Merges the retrieved email, SMS, and WhatsApp contact lists with existing global lists using `_.union` to avoid duplicates.
+ * - Updates the global variables `wToEmailList`, `wToSMSList`, and `wToWhatsAppList` with the merged lists.
+ */
+export async function processAllList(){
+  console.log(
+    "processAllList");
+  
+  let [wEmailMembers, wSMSMembers, wWhatsAppMembers, wNoneMembers ] = await getAllActiveMembersContact();
+  gToEmailList = _.union(gToEmailList, wEmailMembers);
+  gToSMSList = _.union(gToSMSList, wSMSMembers);
+  gToWhatsAppList = _.union(gToWhatsAppList, wWhatsAppMembers);
+  
+  return true;
+
+}
+
+/**
+ * Processes a string containing labels to extract and format email entries.
+ *
+ * @async
+ * @function
+ * @param {string} pElement - A string containing labels enclosed in `<` and `>`.
+ * @returns {Promise<boolean>} A promise that resolves to `true` once the processing is complete.
+ *
+ * @description
+ * - Extracts substrings enclosed in `<` and `>` from the input string.
+ * - Fetches label objects for each extracted label using the `getLabelObjects` function.
+ * - Formats the fetched objects into email entries (`name<email>`) and removes duplicates.
+ * - Stores the unique email entries in the global `wToEmailList` variable.
+ * - Logs the resulting list of email entries.
+ */
+export async function processLabelList(pType, pUrgent, pFromName, pElement) {
+  console.log(
+    "processLabelList, Element",
+    pElement);
+
+  let wMatches = pElement.match(/<([^>]+)>/g);
+  let wToAddList = [];
+  if (wMatches) {
+    let wMatchesText = wMatches.map(match => match.slice(1, -1));
+    for (let wMatch of wMatchesText){
+      let wResult = await getLabelObjects(wMatch);
+      if (wResult && wResult.objects.length > 0){
+        let wObjectList = wResult.objects;
+        console.log("ObjectList", wObjectList);
+        for (let wMember of wObjectList) {
+          let [ wMsgType, wContactPref] = await processMemberElement(pType, pUrgent, pFromName, wMember.memberId);
+          await doMsgSortingOffice(wMsgType, wContactPref);
+        }
+      }
+    }
+    console.log("processLabelList, wToEMailList, sms, WA");
+    console.log(gToEmailList);
+    console.log(gToSMSList);
+    console.log(gToWhatsAppList);
+  }
+  return true;
+}
+
+export async function processMemberElement(pType, pUrgent, pFromName, pMemberId){
+  console.log(
+    "processMemberElement, Type, Urgent, FromName, MemberID",
+    pType, pUrgent, pFromName, pMemberId);
+  
+    let wResult = await findLstMember(pMemberId);
+  let wMsgType = "";
+  let wContactPref = "";
+  if (wResult && wResult.status) {
+    //let wContactPref = wResult.member.contactpref;
+    let wContactEmail = wResult.member.contactEmail;
+    let wMobilePhone = wResult.member.mobilePhone;
+    let wToName = wResult.member.firstName + " " + wResult.member.surname;
+
+    [wMsgType, wContactPref] = await validateMsgTypeAndContactPref(pType, wResult.member);
+    gControl.id = wResult.member._id;
+    gControl.contactpref = wContactPref;
+    gControl.contactEmail = wContactEmail;
+    gControl.mobilePhone = wMobilePhone;
+    gControl.toName = wToName;
+    gControl.urgent = pUrgent;
+    gControl.senderName = pFromName;
+  } else {
+    console.warn(`/backend/backMsg  processMemberElement couldn't find member, `, pMemberId);
+  }
+  return [wMsgType, wContactPref];
+}
+
+export async function processEmailElement(pType, pUrgent, pFromName, pEmail){
+  // should never get here from Maintain Notice as S type converts to a list of memberIds
+  console.log(
+    "processEmailElement, Type, Urgent, FromName, MemberID",
+    pType, pUrgent, pFromName, pMemberId);
+
+  let wMsgType = "S";
+  let wContactPref = "E";
+  gControl.toName = "Trevor Allen";
+  console.log("backend/backMsg processEmailElement flow control issue ", pEmail);
+  gControl.contactEmail = "allentrev88@gmail.com";
+  return [wMsgType, wContactPref];
+}
+
+export async function doMsgSortingOffice(pMsgType, pContactPref){
+  console.log(
+    "doMsgSortingOffice, MsgType, ContactPref",
+    pMsgType, pContactPref);
+
+  let wToEmailEntry = `${gControl.toName}<${gControl.contactEmail}>`;
+  let wToSMSEntry = { "name": gControl.toName, "mobile": gControl.mobilePhone };
+  let wToWhatsAppEntry = { "name": gControl.toName, "mobile": gControl.mobilePhone };
+
+  switch (pMsgType) {
+    case "E":
+      gToEmailList.push(wToEmailEntry);
+      break;
+    case "S":
+      gToSMSList.push(wToSMSEntry);
+      break;
+    case "U":
+      switch (pContactPref) {
+        case "E":
+          gToEmailList.push(wToEmailEntry);
+          break;
+        case "S":
+          gToSMSList.push(wToSMSEntry);
+          break;
+        case "W":
+          gToWhatsAppList.push(wToWhatsAppEntry);
+          break;
+        case "B":
+          gToEmailList.push(wToEmailEntry);
+          gToSMSList.push(wToSMSEntry);
+          break;
+        case "N":
+          // Do nothing
+          break;
+        default:
+          console.warn(`/backend/backMsg  sendMsg fail, invalid contactpref`, pContactPref);
+          break;
+      } // contactpref switch
+      break;
+    default:
+      console.warn(`/backend/backMsg  sendMsg fail, invalid type [${pMsgType}]`);
+      break;
+  } // type switch
+  return true;
+}
+
+export async function validateMsgTypeAndContactPref(pType, pMember){
+  console.log(
+    "validateMsgTypeAndContactPref, Type, Member",
+    pType, pMember);
   let wMsgType = "U";
   let wContactPref = "N";
   const wContactEmail = pMember.contactEmail;
@@ -288,6 +371,94 @@ function validateMsgTypeAndContactPref(pType, pMember){
   }
   return [wMsgType, wContactPref];
 }
+
+/**
+ * Sends an email to a specified target using the provided parameters.
+ *
+ * @async
+ * @function
+ * @param { string } pTarget - The target type of the email(e.g., a specific email template or category).
+ * @param { object } pParams - The parameters for the email content and additional configurations.
+ * @returns {Promise<object>} - A promise that resolves to an object containing:
+ *                              - {boolean} status - Indicates if the email was sent successfully.
+ *                              - {string|null} error - Error message if the sending failed, otherwise null.
+ */
+async function doSendEmail(pTarget, pParams){
+  console.log(
+    "doSendEmail, pTarget, Params, length",
+    pTarget, pParams, gToEmailList.length);
+  
+  let wEmailResult = {};
+
+  if (gToEmailList && gToEmailList.length > 0) {
+    let wEmailControl = { ...gControl };
+    wEmailControl.toList = [...gToEmailList];
+    if (gToEmailList.length > 1){
+      wEmailControl.toName = "All"
+    }
+
+    const wResult = await sendEmail(pTarget, wEmailControl, pParams);
+    if (wResult && wResult.status) {
+      console.warn(`/backend/backMsg  sendMsg sendEmail sent OK, msgType, JobKey `, pTarget);
+      wEmailResult = { "status": true, "error": null };
+    } else {
+      console.warn(`/backend/backMsg  sendMsg sendEmail fail, msgType, JobKey `, pTarget);
+      wEmailResult = { "status": false, "error": wEmailResult.error || "Result undefined" };
+    }
+  } else {
+    wEmailResult = { "status": true, "error": "Nothing to process" };
+  }
+  return wEmailResult;
+}
+
+async function doSendSMS(pTarget, pParams) {
+  console.log(
+    "doSendSMS, pTarget, Params, length",
+    pTarget, pParams, gToSMSList.length);
+  
+  let wSMSResult = {};
+  
+  if (gToSMSList && gToSMSList.length > 0) {
+    let wSMSControl = { ...gControl };
+    wSMSControl.toList = [...gToSMSList];
+    const wResult = await sendSMS(pTarget, wSMSControl, pParams);
+    if (wResult && wResult.status) {
+      console.warn(`/backend/backMsg  sendMsg sendSMS sent OK, msgType, JobKey `, pTarget);
+      wSMSResult = { "status": true, "error": null };
+    } else {
+      console.warn(`/backend/backMsg  sendMsg sendSMS fail, msgType, JobKey `, pTarget);
+      wSMSResult = { "status": false, "error": wSMSResult.error || "Result undefined" };
+    }
+  } else {
+    wSMSResult = { "status": true, "error": "Nothing to process" };
+  }
+  return wSMSResult;
+}
+
+async function doSendWhatsApp(pTarget, pParams) {
+  console.log(
+    "doSendWhatsApp, pTarget, Params, length",
+    pTarget, pParams, gToWhatsAppList.length);
+  
+  let wWhatsAppResult = {};
+  
+  if (gToWhatsAppList && gToWhatsAppList.length > 0) {
+    let wWhatsAppControl = { ...gControl };
+    wWhatsAppControl.toList = [...gToWhatsAppList];
+    const wResult = await sendWhatsApp(pTarget, wWhatsAppControl, pParams);
+    if (wResult && wResult.status) {
+      console.warn(`/backend/backMsg  sendMsg sendWhatsApp sent OK, msgType, JobKey `, pTarget);
+      wWhatsAppResult = { "status": true, "error": null };
+    } else {
+      console.warn(`/backend/backMsg  sendMsg sendWhatsApp fail, msgType, JobKey `, pTarget);
+      wWhatsAppResult = { "status": false, "error": wWhatsAppResult.error || "Result undefined" };
+    }
+  } else {
+    wWhatsAppResult = { "status": true, "error": "Nothing to process" };
+  }
+  return wWhatsAppResult;
+}
+
 //----------------------------------------------------------------------------------------------------------------------------
 /**
  * Sends an email to a list of recipients based on the provided control parameters.
@@ -295,11 +466,11 @@ function validateMsgTypeAndContactPref(pType, pMember){
  * @async
  * @function sendEmail
  * @param {string} pTarget - The target identifier for the email.
- * @param {Object} pControl - Control parameters for sending the email.
- * @param {String[]} pControl.toList - The list of email recipients.
- * @param {Object} pParams - Additional parameters for the email.
+ * @param {object} pControl - Control parameters for sending the email.
+ * @param {string[]} pControl.toList - The list of email recipients.
+ * @param {object} pParams - Additional parameters for the email.
  * 
- * @returns {Promise<Object>} - A promise that resolves to an object containing:
+ * @returns {Promise<object>} - A promise that resolves to an object containing:
  *                              - {boolean} status - Indicates if the email was sent successfully.
  *                              - {string|null} error - Error message if the sending failed, otherwise null.
  * 
@@ -308,19 +479,20 @@ async function sendEmail (pTarget, pControl, pParams) {
 
     console.log(
       "sendEmail, pTarget, Control, Params",
-      pTarget,
-      pControl,
-      pParams
-    );
-  const wTo = pControl.toList;
+      pTarget, pControl, pParams );
+  
+      const wTo = pControl.toList;
+  
   let wResult = {};
 
-  wResult = createEmail(pTarget, pControl, pParams);
-  if (wResult && wResult.status){
-    const wSubject = wResult.email.subject;
-    const wBody = wResult.email.body;
-    wResult = await transmitEmail(wTo, wSubject, wBody);  
-    if (wResult && wResult.status){
+  const wResult1 = await createEmail(pTarget, pControl, pParams);
+  if (wResult1 && wResult1.status){
+    console.log("after create email");
+    console.log(wResult1);
+    const wSubject = wResult1.email.subject;
+    const wBody = wResult1.email.body;
+    const wResult2 = await transmitEmail(wTo, wSubject, wBody);  
+    if (wResult2 && wResult2.status){
       wResult = {"status": true, "error": null};
     } else {
       console.warn(`/backend/backMsg  sendEmail transmitEmail failed, error`);
@@ -332,6 +504,7 @@ async function sendEmail (pTarget, pControl, pParams) {
     console.log(wResult.error || "Result undefined");
     wResult = {"status": false, "error": wResult.error || "Result undefined"};
   }
+  
   return wResult;
 }
 /**
@@ -351,18 +524,26 @@ async function sendEmail (pTarget, pControl, pParams) {
  */
 async function sendSMS (pTarget, pControl, pParams) {
 
+  console.log(
+    "sendSMS, pTarget, Control, Params",
+    pTarget, pControl, pParams);
+
+  
   const wToList = pControl.toList;  // in the form {name, phone number}
   const wTo = wToList.map( item => item.mobile);
+  
   let wResult = {};
   //if (wTo.startsWith("+")) {}
   //wTo = "+6593210160";
 
-  wResult = createSMS(pTarget, pControl, pParams);
-  if (wResult && wResult.status){
-    const wSubject = wResult.sms.subject;
-    const wMessage = wResult.sms.body;
-    wResult = await transmitSMS(wTo, wSubject + "\n" + wMessage);  
-    if (wResult && wResult.status){
+  const wResult1 = await createSMS(pTarget, pControl, pParams);
+  if (wResult1 && wResult1.status){
+    console.log("After create SMS");
+    console.log(wResult1);
+    const wSubject = wResult1.sms.subject;
+    const wMessage = wResult1.sms.body;
+    const wResult2 = await transmitSMS(wTo, wSubject + "\n" + wMessage);  
+    if (wResult2 && wResult2.status){
       wResult = {"status": true, "error": null};
     } else {
       console.warn(`/backend/backMsg  sendSMS transmitSMS failed, error`);
@@ -396,18 +577,19 @@ async function sendWhatsApp (pTarget, pControl, pParams) {
   const wToList = pControl.toList;  // in the form {name, phone number}
   // eslint-disable-next-line no-unused-vars
   const wTo = wToList.map( item => item.mobile);
+  
   let wResult = {};
 
   //if (wTo.startsWith("+")) {}
   //wTo = "+6593210160";
-  wResult = createSMS(pTarget, pControl, pParams);
-  if (wResult && wResult.status){
+  const wResult1 = await createSMS(pTarget, pControl, pParams);
+  if (wResult1 && wResult1.status){
     // eslint-disable-next-line no-unused-vars
-    const wSubject = wResult.sms.subject;
+    const wSubject = wResult1.sms.subject;
     // eslint-disable-next-line no-unused-vars
-    const wMessage = wResult.sms.body;
-    //wResult = await transmitWhatsApp(wTo, wSubject + "\n" + wMessage);  
-    if (wResult && wResult.status){
+    const wMessage = wResult1.sms.body;
+    const wResult2 = await transmitWhatsApp(wTo, wSubject + "\n" + wMessage);  
+    if (wResult2 && wResult2.status){
       wResult = {"status": true, "error": null};
     } else {
       console.warn(`/backend/backMsg  sendWhatsApp transmitWhatsAppSMS failed, error`);
@@ -423,28 +605,44 @@ async function sendWhatsApp (pTarget, pControl, pParams) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------------
-function createEmail(pTarget, pControl, pParams){
+/**
+ * Creates an email object based on the specified target type and parameters.
+ *
+ * @param {string} pTarget - The target name of the email.
+ * @param {object} pControl - An object containing paramters to control the generation of the email.
+ * @param {object} pParams - An object containing paramters that format the email.
+ * @returns {object} An object representing the email, containing:
+ *                   - `status` (string): The status of the function.
+ *                   - `email` (object): An object containg the email subject and body.
+ *                   - `error` (string): An error message or null.
+ */
+async function createEmail(pTarget, pControl, pParams){
   
     console.log(
       "createEmail, pTarget, Control, Params",
-      pTarget,
-      pControl,
-      pParams
-    );
+      pTarget, pControl, pParams );
 
   let wError = null;
   let wEmail = {};
-  let wParameters = {}
+  let wParameters = {};
   let wBody = "";
   let wStatus = false;
   
   switch (pTarget) {
+    case "Blank_1":
+      wStatus = true;
+      wParameters.subject = pParams.subject;
+      wParameters.toName = pControl.toName;
+      wParameters.body = pParams.body;
+      wEmail = await Blank1_Email(wParameters);
+      wError = null;
+      break;
     case "Profile_1":
       wStatus = true;
       wParameters.toName = pControl.toName;
       wParameters.member = pParams.memberFullName;
       wParameters.changeList = pParams.changeList;
-      wEmail = Profile1_Email(wParameters); //{sunject, body}
+      wEmail = await Profile1_Email(wParameters); //{sunject, body}
       wError = null;
       break;
     case "MemberRegistrationConfirmation":
@@ -505,14 +703,14 @@ function createEmail(pTarget, pControl, pParams){
       wError = "Invalid email target";
       break;
   }
-  const wSubject = (pControl.urgent) ? "URGENT: " + wEmail.subject : wEmail.subject;
+  const wSubject = (pControl.urgent === "Y") ? "URGENT [MTBC] " + wEmail.subject : "[MTBC] " + wEmail.subject;
  
-  if (pControl.sender) {
+  if (pControl.senderName) {
     wBody = `
     ${wEmail.body}
     <br><br>
     Regards,<br>
-    ${pControl.sender},<br>
+    ${pControl.senderName},<br>
     Maidenhead Town Bowls Club<br>
     `
   } else {
@@ -529,16 +727,29 @@ function createEmail(pTarget, pControl, pParams){
   return {"status": wStatus, "email": wEmail, "error": wError }
 }
 
-function createSMS(pTarget, pControl, pParams){
+async function createSMS(pTarget, pControl, pParams){
+
+  console.log(
+    "createSMS, pTarget, Control, Params",
+    pTarget, pControl, pParams);
 
   let wError = null;
   let wSMS = {};
+  let wParameters = {};
   let wStatus = false;
   
   switch (pTarget) {
+    case "Blank_1":
+      wStatus = true;
+      wParameters.subject = pParams.subject;
+      wParameters.body = pParams.body;
+      wParameters.summary = pParams.summary;
+      wSMS = await Blank1_SMS(wParameters);
+      wError = null;
+      break;
     case "Profile_1":
       wStatus = true;
-      wSMS = Profile1_SMS(pParams.memberFullName);   //{sunject, body}
+      wSMS = await Profile1_SMS(pParams.memberFullName);   //{sunject, body}
       wError = null;
       break;
     case "MemberRegistrationConfirmation":
@@ -571,8 +782,49 @@ function createSMS(pTarget, pControl, pParams){
 }
 
 //--------------------------------- Messages -----------------------------------------------------------------------------------------
+/**
+ * Generates an email object with a formatted subject and HTML body.
+ *
+ * @param {Object} pParameters - The parameters for creating the email.
+ * @param {string} pParameters.subject - The subject of the email.
+ * @param {string} pParameters.toName - The recipient's name to be included in the email body.
+ * @param {string} pParameters.body - The main content of the email body.
+ * @returns {object} An object representing the email, containing:
+ *                   - `subject` (string): The subject of the email.
+ *                   - `body` (string): The HTML-formatted email body.
+ */
+async function Blank1_Email(pParameters) {
+  console.log(
+    "Blank1_Email, Parameters",
+    pParameters);
+
+  const wSubject = pParameters.subject;
+  const wToName = pParameters.toName;
+  const wText = pParameters.body;
+  const wBody = `
+  <p>Dear ${wToName},</p>
+	${wText}<br>
+  `
+  const wEmail = { "subject": wSubject, "body": wBody };
+
+  return wEmail;
+}
+
+async function Blank1_SMS(pParameters) {
+  console.log(
+    "Blank1_SMS, Parameters",
+    pParameters);
+
+  const wSubject = pParameters.subject;
+  const wBody = pParameters.body;
+  const wSummary = pParameters.summary;
+  let wOutput = (wSummary && wSummary.length > 0)? wSummary : wBody;
+  const wSMS = { "subject": wSubject, "body": wOutput };
+  return wSMS;
+}
+
 function Profile1_Email(pParameters) {
-  const wSubject = "MTBC:Profile Update Notification";
+  const wSubject = "Profile Update Notification";
   const wToName = pParameters.toName;
   const wMember = pParameters.member;
   const wChangeList = pParameters.changeList;
@@ -596,7 +848,7 @@ function Profile1_SMS(pMember) {
 }
 
 function MemberAmendImportName_Email(pParameters) {
-  const wSubject = "MTBC: Maintain Member: Name Update";
+  const wSubject = "Maintain Member: Name Update";
   const wToName = pParameters.toName;
   const wOldName = pParameters.oldName;
   const wNewName = pParameters.newName;
@@ -618,7 +870,7 @@ function MemberAmendImportName_SMS(pMember) {
 }
 
 function MemberAmendFieldValues_Email(pParameters) {
-  const wSubject = "MTBC: Maintain Member: Field Value Update";
+  const wSubject = "Maintain Member: Field Value Update";
   const wToName = pParameters.toName;
   const wChangeList = pParameters.changeList;
   let wLines = "";
@@ -646,7 +898,7 @@ function MemberAmendFieldValues_SMS() {
 
 function MemberRegistrationConfirmation_Email(pParameters) {
   console.log("MeberRegistrationConfirmation_Email, Params", pParameters );
-  const wSubject = "MTBC: Registration Confirmation";
+  const wSubject = "Registration Confirmation";
   const pIsAudit = pParameters.isAudit;
   let wLogInMethod = "Login Email Address";
   let wLogInItem = pParameters.loginEmail;
@@ -682,7 +934,7 @@ function MemberRegistrationConfirmation_SMS(pParameters) {
 
 function OffLineRegistrationConfirmation_Email(pParameters) {
   console.log("OfflineRegistrationConfirmation_Email, Params", pParameters);
-  const wSubject = "MTBC: Offline Registration Confirmation";
+  const wSubject = "Offline Registration Confirmation";
 
   const wBody = `
   <P>Dear ${pParameters.firstName},</p>
@@ -721,6 +973,7 @@ function BookingConfirmation_Email(pParameters) {
   return wEmail;
 }
 
+
 function BookingConfirmation_SMS(pParameters) {
   //console.log("BookingConfirmation_SMS", pParameters);
   const wSubject = "Booking Confirmation";
@@ -737,21 +990,32 @@ function BookingConfirmation_SMS(pParameters) {
 //====================================================================================================================================
 export async function transmitEmail(pToList, pSubject, pMsg) {
 
-    console.log(
+  console.log(
       "transmitEmail, pToList, Subject, Msg",
-      pToList,
-      pSubject,
-      pMsg
-    );
+      pToList, pSubject, pMsg );
+  
+  //let wX = ['Jane Allen<allentrev88@gmail.com>', 'Julia Allen<allentrev88@outlook.com>', 'Trevor Allen<juliayeo3@gmail.com>'];
+	//console.log(wX);
+  //console.log(pToList.toString());
+  let wToList = [];
+  for (let x of pToList){
+    wToList.push(String(x));
+  }
+  //console.log(wToList);
+  
+  // If there are more than 12 addresses in the to list, then set the isMultiple flag so that rewcipients do not see the whole To
+  // list on their email
+  const apiKey = await getSecret("sendGrid3");
+  const wIsMultiple = (wToList.length > 12) ? true : false;
 
-	const apiKey = await getSecret("sendGrid3");
-
-	sgMail.setApiKey(apiKey);
+	await sgMail.setApiKey(apiKey);
 	const msg = {
-    to: pToList.toString(),
+    //to: pToList,
+    to: wToList,
     cc: 'maidenheadtownbc@gmail.com',
     from: 'maidenheadtownbc@gmail.com', // Change to your verified sender
     subject: pSubject,
+    isMultiple: wIsMultiple,
 		content: [
     		{
       			type: "text/html",
@@ -764,37 +1028,41 @@ export async function transmitEmail(pToList, pSubject, pMsg) {
       // @ts-ignore
       .send(msg)
       .then(() => {
-        return { status: true, error: null };
+        return { "status": true, "error": null };
       })
       .catch((error) => {
         console.error("/backend/backMsg transmitEmail catch error, err, msg");
         console.error(error || "Error undefined");
         console.log(msg);
-        return { status: false, error: error || "Error undefined" };
+        return { "status": false, "error": error || "Error undefined" };
       })
   );
 }
 
 export async function transmitSMS( pTo, pMsg) {
-  let wTo = pTo;
+  console.log(
+    "transmitSMS, pTo, Msg",
+    pTo, pMsg);
+  
+  let wTo = String(pTo[0]);
   let fromPhone = await getSecret('fromPhone');
   //let fromPhone = "MTBC";
 	const accountSID = await getSecret('accountSID');
 	const authToken = await getSecret('authToken');
-  if (pTo && !pTo.startsWith("+")) {
-    let wNo = pTo.slice(1);
-    wTo = "+44"+ wNo;
+  if (wTo && !wTo.startsWith("+")) {
+    let wNo = wTo.slice(1);
+    wTo = "+44" + wNo;
   }
   const client = twilio(accountSID, authToken);
   //client.region = 'IE1';
   //client.edge = 'dublin';
     
 	try {
-        await client.messages.create({
+      await client.messages.create({
             body: pMsg,
             from: fromPhone,
             to: wTo
-        });
+      });
       return {"status": true, "error": null}
   }
 	catch (error) {

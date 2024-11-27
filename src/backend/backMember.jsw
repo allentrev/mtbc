@@ -35,29 +35,6 @@ export const ROLES = Object.freeze({
   VISITOR: "Visitor"
 });
 
-//====== gMembers Stuff -----------------------------------------------------------------------------------------------
-//
-//  remember that by putting gMember operations into the backend, they always return a Promise when called from client
-
-let gMembers = [];  // this holds the full member record
-
-export async function initialiseMembers() {
-  if (typeof gMembers === "undefined" || gMembers.length === 0) {
-    gMembers = await getAllMembers();
-  }
-  console.log(gMembers);
-}
-
-export function getMember(pId) {
-  console.log(gMembers);
-  let wMember = gMembers.find(item => item.id === pId);
-  if (wMember) {
-    return { "status": true, "member": wMember, "error": null };
-  } else {
-    return { "status": false, "member": [], "error": "Couldn't find member" + pId };
-  }
-}
-
 //====== WIX BASED MEMBERS ------------------------------------------------------------------------------------------
 //
 

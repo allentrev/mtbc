@@ -12,7 +12,7 @@ import { saveRecord }                   from 'backend/backEvents.jsw';
 import { validateTeamLeagueDropdowns }         from 'backend/backTeam.jsw';
 import { deleteWixMembers } from 'backend/backMember.jsw';
 import { findMTBCMember } from 'backend/backMember.jsw';
-import { getMember }                from './member';
+import { findLstMember }                from '/backend/backMember.jsw';
 
 export const MODE = Object.freeze({
 	CREATE:	"C",
@@ -344,14 +344,14 @@ export async function btnDelete_click(pUserId, event) {
         wWixMembersToDelete = [];
         wMTBCMembersToDelete = [];
         for (let wId of wItemIds){
-            let wResult = await getMember(wId);
+            let wResult = await findLstMember(wId);
             if (wResult.status) {
                 let wWixMemberToDelete = wResult.member;
                 if (wWixMemberToDelete && wWixMemberToDelete.wixId && wWixMemberToDelete.wixId.length > 1) {
                     wWixMembersToDelete.push(wWixMemberToDelete.wixId);
                 }
             } else {
-                console.log(`public/objects/entity btnDelete_click by ${pUserId} error return from getMember, err`);
+                console.log(`public/objects/entity btnDelete_click by ${pUserId} error return from findLstMember, err`);
                 console.log(wResult.error);
             }
             wResult = await findMTBCMember(wId);
