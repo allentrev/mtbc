@@ -95,7 +95,7 @@ const BUTTON_SELECTED = "rgb(130,159,202)";
 const BUTTON_NORMAL = "rgb(182,243,232)";
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 let wTrev = "7e864e0b-e8b1-4150-8962-0191b2c1245e";
 let wTim = "2292e639-7c69-459b-a609-81c63202b1ac";
 let wTony = "28f0e772-9cd9-4d2e-9c6d-2aae23118552";
@@ -150,7 +150,7 @@ $w.onReady(async function () {
 
         await buildMemberCache();
         gCompetitions = await loadCompetitions(gYear);
-        if (!res || gCompetitions.length === 0){
+        if (!gCompetitions || gCompetitions.length === 0){
             $w('#secHdr').collapse();
             $w('#secSysError').expand();
             $w('#secDesktop').collapse();
@@ -874,9 +874,9 @@ export async function moveBooking() {
     toInsert.dateRequired = wStartDateTime;
     toInsert.timeRequired = wTime;
     toInsert.duration = gFromCell.duration
-    toInsert.rink = parseInt(gRink, 10);
-    toInsert.rangeId = parseInt(gRangeId, 10);
-    toInsert.slotId = parseInt(gSlot, 10);
+    toInsert.rink = gRink;
+    toInsert.rangeId = gRangeId;
+    toInsert.slotId = gSlot;
     toInsert.bookerId = gFromCell.bookerId;
     toInsert.parentId = gFromCell.parentId;
     toInsert.eventId = gFromCell.eventId;
