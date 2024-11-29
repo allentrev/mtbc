@@ -13,18 +13,21 @@ import { getAllLabels } from "backend/backNotices.web.js";
 import { getLabelObjects } from "backend/backNotices.web.js";
 import { getLabelSet } from "backend/backNotices.web.js";
 import { isLabelUnique } from "backend/backNotices.web.js";
+import { getLabelTableRows } from "backend/backNotices.web.js";
 
 import { saveRecord } from "backend/backEvents.jsw";
 import { bulkSaveRecords } from "backend/backEvents.jsw";
 import { deleteRecord } from "backend/backEvents.jsw";
+import { buildMemberCache } from 'public/objects/member';
+import { getFullNameLocally } from 'public/objects/member';
 
 //------------------------------------------ Entity Imports ---------------------------------------
 import { setEntity, getEntity } from "public/objects/entity";
 import { MODE } from "public/objects/entity";
 import { 
+  drpChoice_change,
   btnCreate_click,
   btnUpdate_click,
-  btnDelete_click,
   btnCancel_click,
   btnCancellation_click,
 } from "public/objects/entity";
@@ -39,6 +42,7 @@ import {
   resetCommands,
   resetSection,
   getSelectStackId,
+  getSelectStack
 } from "public/objects/entity";
 import { resetPagination, updatePagination } from "public/objects/entity";
 import {
@@ -49,21 +53,15 @@ import {
   getTarget,
   getTargetItem,
   configureScreen,
+  getTargetDataset,
 } from "public/objects/entity";
 import { showWait, hideWait, getMode, setMode } from "public/objects/entity";
-import { getSelectStack, getSelectedItem } from "public/objects/entity";
+import { getSelectedItem } from "public/objects/entity";
 import {
   showGoToButtons,
   hideGoToButtons,
   populateEdit,
 } from "public/objects/entity";
-
-//import { } from 'public/objects/entity';
-
-//let gFirstOption = [{
-//    "label": "",
-//    "value": "X"
-//}]
 
 const COLOUR = Object.freeze({
   FREE: "rgba(207,207,155,0.5)",
@@ -141,10 +139,12 @@ $w.onReady(async function () {
       $w("#strDesktop").expand();
       await loadNoticesDropDown();
       await populateNoticeEditDropDowns();
-      $w("#drpNoticeChoice").value = "A";
+      $w("#drpNoticeChoiceTarget").value = "A";
+      $w("#drpNoticeChoiceStatus").value = "A";
       $w("#inpNoticeListNoPerPage").value = "15";
       $w("#inpLabelListNoPerPage").value = "15";
 
+      await buildMemberCache();
       await loadListData();
       await loadLabelData();
       await loadNoticeEditLabel();
@@ -164,7 +164,9 @@ $w.onReady(async function () {
     $w("#chkNoticeListSelect").onClick((event) => chkSelect_click(event));
     $w("#chkNoticeListSelectAll").onClick((event) => chkSelectAll_click(event));
     $w("#btnNoticeListTop").onClick((event) => btnTop_click(event));
-    $w("#drpNoticeChoice").onChange((event) => drpNoticeChoiceChange(event));
+    $w("#drpNoticeChoiceTarget").onChange((event) => drpChoice_change(event));
+    $w("#drpNoticeChoiceStatus").onChange((event) => drpChoice_change(event));
+
     $w("#pgnNoticeList").onClick((event) => doPgnListClick(event));
     $w("#inpNoticeListNoPerPage").onChange((event) => doInpListNoPerPageChange(event));
 
@@ -176,6 +178,8 @@ $w.onReady(async function () {
     $w('#drpNoticeEditLabel').onClick((event) => drpNoticeEditLabel_click(event));
     $w("#btnNoticeEditSelectAdd").onClick(() => btnNoticeEditSelectAdd_click());
     $w("#btnNoticeEditSelectRemove").onClick(() => btnNoticeEditSelectRemove_click());
+    $w("#btnNoticeEditLabelExpand").onClick(() => btnNoticeEditLabelExpand_click());
+    $w("#btnNoticeEditLabelClose").onClick(() => btnNoticeEditLabelClose_click());
     //$w('#drpNoticeEditHomeAway').onChange((event) => doDrpNoticeEditRinksChange(event));
     //$w('#tpkNoticeEditStartTime').onChange((event) => doDrpNoticeEditRinksChange(event));
     //$w('#tpkNoticeEditDuration').onChange((event) => doDrpNoticeEditRinksChange(event));
@@ -316,12 +320,14 @@ function loadRptNoticeList($item, itemData, index) {
     $item("#lblNoticeListTargetType").text = "Type";
     $item("#lblNoticeListTarget").text = "Target";
     $item("#lblNoticeListTitle").text = "Title";
+    $item("#lblNoticeListStatus").text = "Sts";
     $item("#chkNoticeListSelect").hide();
   } else {
     $item("#chkNoticeListSelect").show();
     $item("#lblNoticeListTargetType").text = wTargetType;
     $item("#lblNoticeListTarget").text = wTarget;
     $item("#lblNoticeListTitle").text = itemData.title.trim();
+    $item("#lblNoticeListStatus").text = itemData.status;
     $item("#chkNoticeListSelect").checked = false;
   }
 }
@@ -359,15 +365,26 @@ async function loadNoticeEditLabel(){
 }
 
 export async function loadNoticesDropDown() {
-  let wOptions = [
-    { label: "All Members", value: "A" },
-    { label: "Test 1", value: "1" },
-    { label: "Test 2", value: "2" },
-    { label: "Test 3", value: "3" },
+  let wTargetOptions = [
+    { label: "All notices", value: "A" },
+    { label: "Web notices", value: "E" },
+    { label: "SMS/RCS notices", value: "S" },
+    { label: "WhatsApp notices", value: "W" }
   ];
 
-  $w("#drpNoticeChoice").options = wOptions;
-  $w("#drpNoticeChoice").value = "A";
+  let wStatusOptions = [
+    { label: "All", value: "A" },
+    { label: "Open", value: "O" },
+    { label: "Closed", value: "C" },
+    { label: "Deleted", value: "D" },
+  ];
+
+  $w("#drpNoticeChoiceTarget").options = wTargetOptions;
+  $w("#drpNoticeChoiceTarget").value = "A";
+
+  $w("#drpNoticeChoiceStatus").options = wStatusOptions;
+  $w("#drpNoticeChoiceStatus").value = "A";
+
   drpNoticeChoiceChange();
 }
 
@@ -391,6 +408,7 @@ export async function doBtnCreateClick(event) {
 }
 export async function doBtnUpdateClick(event) {
   btnUpdate_click(event);
+  showError("Notice", 44);
   await populateNoticeEdit();
 }
 export async function doBtnCancellationClick(event) {
@@ -440,6 +458,14 @@ async function btnNoticeEditSummary_click() {
   hideWait("Notice");
 }
 
+function btnNoticeEditLabelExpand_click() {
+  $w('#boxNoticeEditSelect').expand();
+}
+
+function btnNoticeEditLabelClose_click() {
+  $w('#boxNoticeEditSelect').collapse();
+}
+
 function doInpNoticeEditMessageChange(event){
   let wText = event.target.value;
   if (wText.length > 160) {
@@ -470,6 +496,49 @@ export function doNoticeViewChange(event) {
 export function btnNoticeAToB_click(event) {
   //$w('#strEvent').collapse();
   //$w('#cstrpKennetTeams').expand();
+}
+
+export async function btnDelete_click(pUserId, event) {
+
+  setMode(MODE.DELETE);
+
+  let wTarget = getTarget(event, "A");
+  showWait(wTarget);
+  let wItemIds = getSelectStack();
+
+  let wDataset = getTargetDataset(wTarget);
+  
+  let wNoticesToDelete = [];
+
+  let wResult = { status: true, savedRecord: {}, error: "" };
+
+  for (let wId of wItemIds) {
+    let wNotice = getTargetItem("Notice", wId);
+    if (wNotice) {
+      wNotice.status = "D";
+      let wResult = await saveRecord(wDataset, wNotice);
+      if (wResult && wResult.status) {
+        let wSavedRecord = wResult.savedRecord;
+        updateGlobalDataStore(wSavedRecord, "Notice");
+      } else {
+        console.log(
+            "/page/MaintainNotice btnNoticeADelete_click saveRecord failed, savedRecord, error"
+          );
+        console.log(wResult.error);
+      }
+    } else {
+      console.log(
+        `/page/MaintainNotice btnNoticeADelete_click couldnt find Notice [${wId}] `
+      );
+    }
+  } // for loop
+
+    //configureScreen(wTarget);
+  updatePagination(wTarget);
+  resetCommands("Notice");
+  showError(wTarget, 7);
+  resetSection(wTarget);
+  hideWait(wTarget);
 }
 
 export async function btnNoticeASave_click(event) {
@@ -506,8 +575,7 @@ export async function btnNoticeASave_click(event) {
       send: $w("#rgpNoticeEditTransmit").value
     };
 
-    let wResult;
-    wResult = { status: true, savedRecord: {}, error: "" };
+    let wResult = { status: true, savedRecord: {}, error: "" };
     switch (wNotice.targetType) {
       case "A":
         wNotice.target = ["ALL"];
@@ -558,9 +626,7 @@ export async function btnNoticeASave_click(event) {
           break;
         default:
           console.log(
-            "/page/MaintainNotice btnNoticeASave invalid mode = [" +
-              getMode() +
-              "]"
+            "/page/MaintainNotice btnNoticeASave invalid mode = [" + getMode() + "]"
           );
       }
       updateGlobalDataStore(wSavedRecord, "Notice");
@@ -585,9 +651,8 @@ export async function btnNoticeASave_click(event) {
         console.log(wResult.error);
       }
     }
-    if (wTransmit) {
+    if (wTransmit && getMode() === MODE.CREATE) {
       console.log("Transmit msg 1");
-      //let wTo = populateToList(wNotice.targetType, wNotice.target);
       let wUrgent = $w('#rgpNoticeEditUrgent').value;
 
       let wParams = {
@@ -635,30 +700,9 @@ function formTransmitToList(){
     return (
 //      `${item.name}<${item.email}>,`
       item.memberId
-)
+    )
   });
   return wList;
-}
-
-async function populateToList(pTargetType, pTarget){
-  console.log("populateToList", pTargetType);
-  console.log(pTarget);
-  let wTo = [];
-  switch (pTargetType) {
-    case "All":
-      // get all contact emails from the club      
-      break;
-    case "L":
-      // get the emails with the Label
-      break;
-    case "S":
-      // use the list given
-      break;
-    default:
-      //send error msg unknown target type  
-    break;
-  }  
-  return wTo;
 }
 
 export async function drpNoticeChoiceChange(event) {
@@ -769,6 +813,8 @@ export async function clearNoticeEdit() {
   $w('#lblNoticeEditNone').expand();
   $w('#grpNoticeEditSummary').collapse();
   $w('#btnNoticeEditSummary').collapse();
+  $w('#btnNoticeEditSelectAdd').enable();
+  $w('#btnNoticeEditSelectRemove').enable();
 
   $w('#drpNoticeEditStatus').value = "O";
   $w("#inpNoticeEditMessage").value = "";
@@ -833,12 +879,11 @@ function tblNoticeEditSelectCollapse(){
 export async function populateNoticeEdit() {
   let wSelectedRecord = getSelectedItem("Notice");
   configureBoxes(wSelectedRecord.targetType);
-  console.log("Selected record");
-  console.log(wSelectedRecord);
 
   $w('#drpNoticeEditStatus').value = wSelectedRecord.status;
   $w('#drpNoticeEditTargetType').value = wSelectedRecord.targetType;
-
+  $w('#btnNoticeEditSelectAdd').enable();
+  $w('#btnNoticeEditSelectRemove').enable();
 
   //$w('#tblNoticeEditSelect').rows = wTableData;
   loadNoticeEditSelectFromDB(wSelectedRecord);
@@ -864,42 +909,50 @@ export async function populateNoticeEdit() {
   $w("#inpNoticeEditTitle").focus();
 }
 
-function loadNoticeEditSelectFromDB(pRec){
+async function loadNoticeEditSelectFromDB(pRec){
+  // if .type = "S", then use the list of memberIds in .target" to form list of entries in tblNticeEditSelect
+  // if .type = "L", then use the <label> in .target, to form list of entries in tblNoticeEditSelect, and 
+  //                  disable +/- buttons to prevent change
   let wTableData = [];
   let name = "";
   let email = "";
-  let wTo = pRec.target;
+  let wTarget = pRec.target;
   let wTargetType = pRec.targetType;
-  if (wTo && wTo.length > 0){
-    wTableData = wTo.map( item => {
-      const start = item.indexOf('<');
-      const end = item.indexOf('>');
-      if (start !== -1 && end !== -1) {
-        name = item.slice(0, start).trim();           // "Julia Allen"
-        email = item.slice(start + 1, end).trim();
-      }   
-      return {
-        "name": name,
-        "email": email
+  let wTargetMemberList = [];
+
+  if (wTarget && wTarget.length > 0) {
+    if (wTargetType === "L"){
+      let wLabelKey = wTarget[0].slice(1,-1);
+      $w('#drpNoticeEditLabel').value = wLabelKey;
+      $w('#btnNoticeEditSelectAdd').disable();
+      $w('#btnNoticeEditSelectRemove').disable();
+      let wResult = await getLabelTableRows(wLabelKey);
+      if (wResult && wResult.status){
+        wTargetMemberList = [...wResult.rows];
+      } else {
+        console.log(`MaintainNotice loadNoticeEditSelectFrom error readinglabel ${wLabelKey}`)
       }
-    })
-  }
-  $w('#drpNoticeEditLabel').value = wTo;
-  if (wTableData && wTableData.length > 0){
-    if (pRec.targetType === "S") {
+    } else {
+      wTargetMemberList = [...wTarget];
+    }
+    let wTableRows = [];
+    if (wTargetMemberList && wTargetMemberList.length > 0) {
+      for (let wMemberId of wTargetMemberList){
+        let [status, wName] = await getFullNameLocally(wMemberId);
+        if (status) {
+          let wEntry= {"_id": wMemberId, "name": wName};
+          wTableRows.push(wEntry)
+        }        
+      }
+    }
+    if (wTableRows && wTableRows.length > 0){
+      $w('#tblNoticeEditSelect').rows = wTableRows;
       $w('#tblNoticeEditSelect').expand();
       $w('#lblNoticeEditNone').collapse();
-      $w('#tblNoticeEditSelect').rows = wTableData;
-    } /** type = L */else {
-      $w('#drpNoticeEditLabel').value = wTableData[0].email;
-    }
-  } else {
-    if (pRec.targetType === "S") {
+    } else {
+      $w('#tblNoticeEditSelect').rows = [];
       $w('#tblNoticeEditSelect').collapse();
       $w('#lblNoticeEditNone').expand();
-    } /** type = L */else {
-      console.log("SHould not get there");
-      console.log("dd");
     }
   }
 }

@@ -160,6 +160,32 @@ export const getLabelObjects = webMethod(
   }
 );
 
+export const getLabelTableRows = webMethod(Permissions.Anyone, async (pKey) => {
+  try {
+    let wLabelTableRows = [];
+    const wResults = await wixData
+      .query("lstLabels")
+      .eq("title", pKey)
+      .ascending("title")
+      .ascending(("name"))
+      .find();
+    if (wResults && wResults.items.length > 0) {
+      let wObjectList = wResults.items;
+      for (let wMember of wObjectList) {
+        wLabelTableRows.push(wMember.memberId);
+      }
+      return { status: true, rows: wLabelTableRows, error: null };
+    } else {
+      console.log(`/backend/backNotices getLabelTableRows no list objects found for ${pKey}`);
+      return { status: false, rows: null, error: err };
+    }
+  } catch (err) {
+    console.log(`/backend/backNotices getLabelTableRows Try-catch for ${pKey}, err`);
+    console.log(err);
+    return { status: false, rows: null, error: err };
+  }
+})
+
 export const getLabelSet = webMethod(Permissions.Anyone, async () => {
   try {
     let wAllLabels = [];

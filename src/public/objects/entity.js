@@ -12,7 +12,7 @@ import { saveRecord }                   from 'backend/backEvents.jsw';
 import { validateTeamLeagueDropdowns }         from 'backend/backTeam.jsw';
 import { deleteWixMembers } from 'backend/backMember.jsw';
 import { findMTBCMember } from 'backend/backMember.jsw';
-import { findLstMember }                from '/backend/backMember.jsw';
+import { findLstMember }                from 'backend/backMember.jsw';
 
 export const MODE = Object.freeze({
 	CREATE:	"C",
@@ -46,7 +46,7 @@ let gOfficers = [];
 let gBookings = [];
 let gStandingDatas = [];
 let gNotices = [];
-let gLeagues
+let gLeagues = [];
 let gLabels = [];
 
 let gSelectStack = [];
@@ -674,9 +674,9 @@ export function resetPagination(pTarget){
 
 	// eslint-disable-next-line no-unused-vars
 	let [wGlobalData, wDataToDisplay, wFirstLine, wControls, wSort, wOrder] = resetPaginationParameters(pTarget);
-    let wControlName = `#inp${pTarget}ListNoPerPage`;
-
-    let wPerPage = $w(wControlName).value;
+  
+  let wControlName = `#inp${pTarget}ListNoPerPage`;
+  let wPerPage = $w(wControlName).value;
 
 	let wItemsPerPage = parseInt(wPerPage,10);
     let total_pages = 1;
@@ -998,8 +998,8 @@ export function filterByListChoice(pTarget){
     let wDivision = 0;
     let wLeagueDivision = "";
 
-    let wChoice = "";
-    let wType = "";
+    let wFilter1 = "";
+    let wFilter2 = "";
     let wDateOn = 0;
     let wDateFrom = 0;
     let wDateTo = 0;
@@ -1012,25 +1012,25 @@ export function filterByListChoice(pTarget){
 
 	switch (pTarget) {
     case "League":
-      wChoice = $w("#rgpLeagueChoice").value;
-      if (wChoice === "A") {
+      wFilter1 = $w("#rgpLeagueChoice").value;
+      if (wFilter1 === "A") {
         wDataToDisplay = [...gLeagues];
       } else {
-        wDataToDisplay = gLeagues.filter((item) => item.gender === wChoice);
+        wDataToDisplay = gLeagues.filter((item) => item.gender === wFilter1);
       }
       break;
     case "Team":
-      wChoice = $w("#rgpTeamChoice").value;
-      if (wChoice === "A") {
+      wFilter1 = $w("#rgpTeamChoice").value;
+      if (wFilter1 === "A") {
         wDataToDisplay = [...gTeams];
       } else {
-        wDataToDisplay = gTeams.filter((item) => item.gender === wChoice);
+        wDataToDisplay = gTeams.filter((item) => item.gender === wFilter1);
       }
       break;
     case "Booking":
-      wByWho = $w("#rgpBookingChoice").value;
-      wByDate = $w("#rgpBookingChoiceDate").value;
-      if (wByWho === "A") {
+      wFilter1 = $w("#rgpBookingChoice").value;
+      wFilter2 = $w("#rgpBookingChoiceDate").value;
+      if /** By Who */ (wFilter1 === "A") {
         wDataToDisplay2 = [...gBookings];
       } else {
         wBookerId = $w("#lblBookingChoiceBookerId").text;
@@ -1038,10 +1038,10 @@ export function filterByListChoice(pTarget){
           (item) => item.bookerId === wBookerId
         );
       }
-      if (wByDate === "N") {
+      if /** By Date */ (wFilter2 === "N") {
         wDataToDisplay = [...wDataToDisplay2];
       } else {
-        switch (wByDate) {
+        switch (wFilter2) {    //By Date
           case "O":
             wDateOn = DateToOrdinal($w("#dpkBookingChoiceDateOn").value);
             wDataToDisplay = wDataToDisplay2.filter(
@@ -1067,93 +1067,112 @@ export function filterByListChoice(pTarget){
         }
       }
       break;
+    
     case "Notice":
-      wChoice = $w("#drpNoticeChoice").value;
-      if (wChoice === "A") {
+      wFilter1 = $w("#drpNoticeChoiceTarget").value;
+      wFilter2 = $w("#drpNoticeChoiceStatus").value;
+
+      if /** Target */(wFilter1 === "A" && /** status */ wFilter2 === "A") {
         wDataToDisplay = [...gNotices];
+      } else if /** Target */(wFilter1 === "A") {
+        wDataToDisplay = gNotices.filter((item) => item.status === wFilter2);
+      } else if /** Status */(wFilter2 === "A") {
+        wDataToDisplay = (wFilter1 === "E") ? gNotices.filter((item) => item.web === "Y") : gNotices.filter((item) => item.send === "Y");
       } else {
-        wDataToDisplay = gNotices.filter((item) => item.targetType === wChoice);
+          if (wFilter1 === "E"){
+            wDataToDisplay = gNotices.filter((item) => item.status === wFilter2 && item.web === "Y");
+          } else {
+            wDataToDisplay = gNotices.filter((item) => item.status === wFilter2 && item.send === "Y");
+          }
       }
       break;
+    
     case "StandingData":
-      wChoice = $w("#drpStandingDataChoice").value;
-      if (wChoice === "A") {
+      wFilter1 = $w("#drpStandingDataChoice").value;
+      if (wFilter1 === "A") {
         wDataToDisplay = [...gStandingDatas];
       } else {
         wDataToDisplay = gStandingDatas.filter(
-          (item) => item.webPage === wChoice
+          (item) => item.webPage === wFilter1
         );
       }
       break;
 
     case "Officer":
-      wChoice = $w("#drpOfficerChoice").value;
-      wDataToDisplay = gOfficers.filter((item) => item.committee === wChoice);
+      wFilter1 = $w("#drpOfficerChoice").value;
+      wDataToDisplay = gOfficers.filter((item) => item.committee === wFilter1);
       break;
+    
     case "Member":
-      wChoice = $w("#drpMemberChoiceStatus").value;
-      wType = $w("#drpMemberChoiceType").value;
-      if (wChoice === "All" && wType === "All") {
+      wFilter1 = $w("#drpMemberChoiceStatus").value;
+      wFilter2 = $w("#drpMemberChoiceType").value;
+      if /** status */ (wFilter1 === "All" && /** type */ wFilter2 === "All") {
         wDataToDisplay = [...gMembers];
-      } else if (wChoice === "All") {
-        wDataToDisplay = gMembers.filter((item) => item.type === wType);
-      } else if (wType === "All") {
-        wDataToDisplay = gMembers.filter((item) => item.status === wChoice);
+      } else if /** status */ (wFilter1 === "All") {
+        wDataToDisplay = gMembers.filter((item) => item.type === wFilter2);
+      } else if /** type */(wFilter2 === "All") {
+        wDataToDisplay = gMembers.filter((item) => item.status === wFilter1);
       } else {
         wDataToDisplay = gMembers.filter(
-          (item) => item.type === wType && item.status === wChoice
+          (item) => item.type === wFilter2 && item.status === wFilter1
         );
       }
       break;
+    
     case "Locker":
       wDataToDisplay = [...gLockers];
       break;
+    
     case "RefComp":
       wDataToDisplay = [...gRefComps];
       break;
+    
     case "LiveComp":
       wDataToDisplay = [...gLiveComps];
       break;
+    
     case "Event":
-      wChoice = $w("#drpEventChoice").value;
-      if (choices.includes(wChoice)) {
-        if (wChoice === "All") {
+      wFilter1 = $w("#drpEventChoice").value;
+      if (choices.includes(wFilter1)) {
+        if (wFilter1 === "All") {
           wDataToDisplay = [...gEvents];
         } else {
-          wDataToDisplay = gEvents.filter((item) => item.eventType === wChoice);
+          wDataToDisplay = gEvents.filter((item) => item.eventType === wFilter1);
         }
       } else {
-        wDataToDisplay = gEvents.filter((item) => item.team === wChoice);
+        wDataToDisplay = gEvents.filter((item) => item.team === wFilter1);
       }
       break;
+    
     case "Opponent":
-      wChoice = $w("#drpOpponentChoice").value;
-      if (wChoice === "All") {
+      wFilter1 = $w("#drpOpponentChoice").value;
+      if (wFilter1 === "All") {
         wDataToDisplay = [...gOpponents];
       } else {
-        wDataToDisplay = gOpponents.filter((item) => item.league === wChoice);
+        wDataToDisplay = gOpponents.filter((item) => item.league === wFilter1);
       }
       break;
+    
     case "Fixture":
-      wChoice = $w("#drpFixtureChoice").value;
+      wFilter1 = $w("#drpFixtureChoice").value;
       if (!$w("#boxFixtureChoiceTeam").collapsed) {
         wTeamName = $w("#drpFixtureChoiceTeam").value;
       }
-      wLeagueRoot = wChoice.substring(0, 2);
+      wLeagueRoot = wFilter1.substring(0, 2);
       if (wLeagueRoot === "FG") {
         wDivision = 0;
-        wLeagueBase = wChoice;
+        wLeagueBase = wFilter1;
       } else if (wLeagueRoot === "RS") {
         wDivision = 1;
         wLeagueBase = wLeagueRoot;
       } else {
-        wLeagueBase = wChoice.slice(0, -1);
-        wLeagueDivision = wChoice.slice(-1);
+        wLeagueBase = wFilter1.slice(0, -1);
+        wLeagueDivision = wFilter1.slice(-1);
         wDivision = parseInt(wLeagueDivision, 10);
       }
       //console.log(gFixtures);
-      //console.log(wChoice, wLeagueBase, wDivision, typeof wDivision);
-      if (wChoice === "All") {
+      //console.log(wFilter1, wLeagueBase, wDivision, typeof wDivision);
+      if (wFilter1 === "All") {
         wDataToDisplay = [...gFixtures];
       } else {
         if (wTeamName === "") {
@@ -1170,12 +1189,14 @@ export function filterByListChoice(pTarget){
         }
       }
       break;
+    
     case "RefEvent":
       wDataToDisplay = [...gRefEvents];
       break;
+    
     case "CanEvent":
-      wChoice = $w("#drpCanEventChoice").value;
-      switch (wChoice) {
+      wFilter1 = $w("#drpCanEventChoice").value;
+      switch (wFilter1) {
         case "All":
           wDataToDisplay = [...gCanEvents];
           break;
@@ -1191,11 +1212,11 @@ export function filterByListChoice(pTarget){
         case "HG":
         case "CE":
           wDataToDisplay = gCanEvents.filter(
-            (item) => item.eventType === wChoice
+            (item) => item.eventType === wFilter1
           );
           break;
         default:
-          wDataToDisplay = gCanEvents.filter((item) => item.team === wChoice);
+          wDataToDisplay = gCanEvents.filter((item) => item.team === wFilter1);
           break;
       }
       break;
@@ -2693,6 +2714,7 @@ export function showError(pTarget, pErrNo, pErrMsg = "") {
                     "Invalid contact email address format",
                     "A label cannot be empty",
                     "Label Title must be Unique",
+                    "A Notice update will NOT re-send that message",
                     ""
         ];
         let wControlName = `#txt${pTarget}ErrMsg`;

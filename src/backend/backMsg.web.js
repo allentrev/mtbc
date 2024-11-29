@@ -266,6 +266,9 @@ export async function processLabelList(pType, pUrgent, pFromName, pElement) {
   }
   return true;
 }
+export function expandLabelObject(){
+  
+}
 
 export async function processMemberElement(pType, pUrgent, pFromName, pMemberId){
   console.log(
