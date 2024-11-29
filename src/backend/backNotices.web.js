@@ -177,7 +177,7 @@ export const getLabelTableRows = webMethod(Permissions.Anyone, async (pKey) => {
       return { status: true, rows: wLabelTableRows, error: null };
     } else {
       console.log(`/backend/backNotices getLabelTableRows no list objects found for ${pKey}`);
-      return { status: false, rows: null, error: err };
+      return { status: false, rows: null, error: "No list objects found" };
     }
   } catch (err) {
     console.log(`/backend/backNotices getLabelTableRows Try-catch for ${pKey}, err`);
