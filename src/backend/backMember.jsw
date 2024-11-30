@@ -1263,57 +1263,81 @@ export async function buildMemberCache() {
 //
 export async function getAllImportMembers() {
   try{
-    let res = await wixData.query('lstMemberImport')
+    let wResult = await wixData.query('lstMemberImport')
       .ascending("surname")
       .ascending("name")
       .limit(1000)
       .find();
-    if (res.length !== 0) {
-      let dlist = res.items.map(item => {
-        let wLocker = [];
-        let wMobilePhone = (item.mobile === " " || item.mobile === null || item.mobile === undefined) ? null : item.mobile.trim().replace(/\s+/g, '');
-        let wHomePhone = (item.home === " " || item.home === null || item.home === undefined) ? null : item.home.trim().replace(/\s+/g, '');
-        let wLoc1 = (item.loc1 === " " || item.loc1 === null || item.loc1 === undefined) ? null : parseInt(item.loc1,10);
-        let wLoc2 = (item.loc2 === " " || item.loc2 === null || item.loc2 === undefined) ? null : parseInt(item.loc2,10);
-        if (wLoc1 && wLoc2){ wLocker = [wLoc1, wLoc2]};
-        if (wLoc1 && !wLoc2) { wLocker = [wLoc1]};
-        if (!wLoc1 && wLoc2) { wLocker = [wLoc2]}
-        let wFirstName = (item.name) ? item.name.trim() : "";
-        let wSurname = (item.surname) ? item.surname.trim() : "";
-        let wFullName = wFirstName + " " + wSurname;
-        return {
-          key: wFullName,
-          _id: item._id,
-          sal: item.sal,
-          username: null,
-          loginEmail: null,
-          firstName: item.name.trim(),
-          surname: item.surname.trim(),
-          gender: item.mF.trim(),
-          type: item.type.trim(),
-          status: null,
-          dateLeft: null,
-          player: wFullName,
-          fullName: wFullName,
-          contactpref: null,
-          allowshare: null,
-          contactEmail: (item.email) ? item.email.toLowerCase() : null,
-          altEmail: null,
-          mobilePhone: wMobilePhone || null,
-          homePhone: wHomePhone	|| null,
-          locker: wLocker,
-          addrLine1: (item.add1) ? item.add1.trim() : "",
-          addrLine2: (item.add2) ? item.add2.trim() : "",
-          town: (item.add3) ? item.add3.trim() : "",
-          postCode: (item.postcode) ? item.postcode.trim() : "",
-          wixId: null,
-          photo: null
+      const wRecords = wResult.items;
+      if (wRecords.length > 0) {
+        let wCouples = wRecords.filter( item => item.name.includes("&"));
+        let wImportSet = wRecords.filter ( item => !item.name.includes("&"));
+        if (wCouples.length > 0){
+          // create 2 records from the 1 imported
+          for (let wCouple of wCouples) {
+            let wNewRecord1 = {...wCouple};
+            let wNewRecord2 = {...wCouple};
+            const [wFirstPerson, wSecondPerson] = wCouple.name.split(" & ");
+            wNewRecord1.name = wFirstPerson;
+            wImportSet.push(wNewRecord1);
+            wNewRecord2.name = wSecondPerson;
+            wImportSet.push(wNewRecord2);
+          }
+        
+          let dlist = wImportSet.map(item => {
+            let wLocker = [];
+            let wMobilePhone = (item.mobile === " " || item.mobile === null || item.mobile === undefined) ? null : item.mobile.trim().replace(/\s+/g, '');
+            let wHomePhone = (item.home === " " || item.home === null || item.home === undefined) ? null : item.home.trim().replace(/\s+/g, '');
+            let wLoc1 = (item.loc1 === " " || item.loc1 === null || item.loc1 === undefined) ? null : parseInt(item.loc1,10);
+            let wLoc2 = (item.loc2 === " " || item.loc2 === null || item.loc2 === undefined) ? null : parseInt(item.loc2,10);
+            if (wLoc1 && wLoc2){ wLocker = [wLoc1, wLoc2]};
+            if (wLoc1 && !wLoc2) { wLocker = [wLoc1]};
+            if (!wLoc1 && wLoc2) { wLocker = [wLoc2]};
+            let wFirstName = (item.name) ? item.name.trim() : "";
+            let wSurname = (item.surname) ? item.surname.trim() : "";
+            let wGender = (item.gender) ? item.gender.trim() : "";
+            let wType = (item.type) ? item.type.trim() : "";
+            let wFullName = wFirstName + " " + wSurname;
+            let wLabels = [];
+            if (item.labels && item.labels.length > 0) {
+              wLabels = item.labels.split(" ::: ");
+              wLabels.pop();
+            }
+            return {
+              key: wFullName,
+              _id: item._id,
+              sal: item.sal,
+              username: null,
+              loginEmail: null,
+              firstName: wFirstName,
+              surname: wSurname,
+              gender: wGender,
+              type: wType,
+              status: null,
+              dateLeft: null,
+              player: wFullName,
+              fullName: wFullName,
+              contactpref: null,
+              allowshare: null,
+              contactEmail: (item.email) ? item.email.toLowerCase() : null,
+              altEmail: (item.altEmail) ? item.altEmail.toLowerCase() : null,
+              mobilePhone: wMobilePhone || null,
+              homePhone: wHomePhone	|| null,
+              locker: wLocker,
+              addrLine1: (item.add1) ? item.add1.trim() : "",
+              addrLine2: (item.add2) ? item.add2.trim() : "",
+              town: (item.add3) ? item.add3.trim() : "",
+              postCode: (item.postcode) ? item.postcode.trim() : "",
+              wixId: null,
+              photo: null,
+              labels: wLabels
+            }
+          });
+          return dlist;
+        } else {
+          return [];
         }
-      });
-      return dlist;
-    } else {
-      return [];
-    }
+      } // wRecords > 0
   }
   catch (err) {
     console.log("/backend/BackMember getAllImportMembers Try-catch err");
@@ -1345,6 +1369,8 @@ export async function saveImportMemberRecord(pRec) {
       "home": pRec.homePhone,
       "mobile": pRec.mobilePhone,
       "email": pRec.contactEmail,
+      "altEmail": pRec.altEmail,
+      "labels": pRec.labels,
       "loc1": "",
       "loc2": ""
     }
