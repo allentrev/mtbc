@@ -6,9 +6,12 @@ import wixLocation from "wix-location";
 import { saveRecord } from "backend/backEvents.jsw";
 
 import { deleteWixMembers } from "backend/backMember.jsw";
+import { deleteGoogleImportRecord } from "backend/backMember.jsw";
 import { deleteImportMemberRecord } from "backend/backMember.jsw";
 
 import { saveImportMemberRecord } from "backend/backMember.jsw";
+import { findLstMemberByFullName } from "backend/backMember.jsw";
+
 import { createMember } from "backend/backMember.jsw";
 import { deleteLstMember } from "backend/backMember.jsw";
 import { getAllMembers } from "backend/backMember.jsw";
@@ -1241,11 +1244,9 @@ export async function doStage4(){
   });
 }
 
-
 export function boxRpt_click(p2or3, pEvent) {
   let wControl = $w.at(pEvent.context);
   let wId = pEvent.context.itemId;
-  console.log("boxRpt ,2or3, eventId", p2or3, wId);
   let wItem = getSyncTargetItem(p2or3, wId);
   // @ts-ignore
   if (wControl(`#chk${p2or3}`).checked) {
@@ -1593,7 +1594,6 @@ function configureStage2Commands(p2or3, pLeftCount, pRightCount) {
 }
 
 function configureStage4Commands(p2or3, pLeftCount, pRightCount) {
-  console.log("Conf S4 ", pLeftCount, pRightCount);
   if (pLeftCount === 1 && pRightCount === 1) {
     $w('#btnGGLStage4Update').show();
   } else {
@@ -1709,24 +1709,19 @@ export function pushToSelectStack(pControl, pRec, pId, p2or3) {
     if (x === -1) {
       gSelectLeftStack.push(pId);
     } else {
-      console.log(
-        "MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
-        pId,
-        p2or3
-      );
+        console.log("MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ", p2or3);
     }
   } else {
     let x = gSelectRightStack.findIndex((item) => item === pId);
     if (x === -1) {
       gSelectRightStack.push(pId);
     } else {
-      console.log(
-        "MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
+        console.log("MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
         pId,
         p2or3
       );
     }
-  }
+  }// p2or3
 }
 
 export function pullFromSelectStack(pControl, pRec, pId, p2or3) {
@@ -1740,8 +1735,7 @@ export function pullFromSelectStack(pControl, pRec, pId, p2or3) {
     if (x > -1) {
       gSelectLeftStack.splice(x, 1);
     } else {
-      console.log(
-        "MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
+        console.log("MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
         pId,
         p2or3
       );
@@ -1751,8 +1745,7 @@ export function pullFromSelectStack(pControl, pRec, pId, p2or3) {
     if (x > -1) {
       gSelectRightStack.splice(x, 1);
     } else {
-      console.log(
-        "MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
+        console.log("MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
         pId,
         p2or3
       );
@@ -1950,6 +1943,7 @@ export async function btnImpStage1Past_click(){
   }
   gSelectRightStack.length = 0;
   $w(`#chk${p2or3}`).checked = false;
+  hideStageWait(p2or3);
 }
 
 export async function btnImpStage1New_click(pType) {
@@ -2053,6 +2047,7 @@ async function updateLstMembers(pSource, p2or3, pStatus) {
     );
     showMsg(1, 0, "Nothing to update");
   }
+  hideStageWait(1)
 }
 
 async function createNewMember(pIsAudit, pMember) {
@@ -2213,6 +2208,7 @@ export async function btnNameAmend3Save() {
       showMsg(1, 0, `Import name ${wTargetMember.firstName} ${wTargetMember.surname} update failed`
       );
     }
+    hideStageWait(1);
   } else if (gStage === "Lst-Wix") {
     showStageWait(2);
     //  Update the Wix record
@@ -2228,8 +2224,9 @@ export async function btnNameAmend3Save() {
     removeFromSet("3", wMember3._id);
     $w("#boxNameAmend").collapse();
     showMsg(2, 0, `Wix name ${wFirstName} ${wSurname} updated`);
+    hideStageWait(2)
   } else if (gStage === "Lst-Google") {
-    showStageWait(2);
+    showStageWait(4);
     //  Update the Google Import record
     let wFirstName = $w("#inpNameAmend2FirstName").value.trim();
     let wSurname = $w("#inpNameAmend2Surname").value.trim();
@@ -2243,6 +2240,7 @@ export async function btnNameAmend3Save() {
     removeFromSet("3", wMember3._id);
     $w("#boxNameAmend").collapse();
     showMsg(2, 0, `Google name ${wFirstName} ${wSurname} updated`);
+    hideStageWait(4);
   } else {
     console.log("MaintainMember btnNameAmend3Save wrong state", gStage);
   }
@@ -2306,6 +2304,7 @@ export async function btnLstStage2Register_click() {
       console.log("/MaintainMember btnLstStage2Register Member Not found", wMemberId);
       showMsg(2, 0, `New Wix member: not found`);
     }
+    hideStageWait(2);
   }
   if (wErrMsg.length > 1) {
     $w("#lblErrMsg").text = wErrMsg;
@@ -2333,6 +2332,7 @@ export async function btnWixStage2Delete_click() {
       );
       showMsg(2, 0, `Wix member not found`);
     }
+    hideStageWait(2);
   }
   gSelectRightStack.length = 0;
   $w(`#chk${p2or3}`).checked = false;
@@ -2345,6 +2345,7 @@ export async function btnGGLStage4Guest_click() {
   // have passed away. So, change the Past status to a new Guest status.
   $w("#btnGGLStage4Guest").disable();
   console.log("Do STge 4 guest");
+  let wToday = new Date();
 
   showStageWait(4);
   let wUpdateStack = [];
@@ -2352,42 +2353,50 @@ export async function btnGGLStage4Guest_click() {
     let wGGLEntry = gGGLMembers.find((item) => item._id === wMemberId);
     if (wGGLEntry) {
       // find Lst record, if any
-      console.log(wGGLEntry);
-
-      /**
-      if (pSource === "btnLstPast") {
-        wMember.status = pStatus;
+      let wFirstName = wGGLEntry.firstName;
+      let wSurname = wGGLEntry.surname;
+      let wResult = await findLstMemberByFullName(wFirstName, wSurname);
+      if (wResult && wResult.status){
+        let wMembers = wResult.members;
+        if (wMembers.length > 1) {
+          console.log(`/Page/MaintainMember btnGGLStage4Guest multiple LSt records for ${wFirstName} ${wSurname}`);
+        }
+        let wMember = wMembers[0];
+        if (wMember.status !== "Past") {
+          console.log(`/Page/MaintainMember btnGGLStage4Guest Member is a ${wMember.status} member, not a Past member`);
+          //showError("");
+          return;
+        }
+        wMember.status = "Guest";
         wMember.dateLeft = wToday;
-      } else {
-        wMember.type = "Test";
-      }
-      wUpdateStack.push(wMember);
-      removeFromSet(p2or3, wMemberId);
-      */
-    } else {
-      console.log("/MaintainMember Lst Not found", wMemberId);
-    }
-  }
+        wUpdateStack.push(wMember)
+        removeFromSet("3", wMemberId);
+      } /** wResult */else {
+        console.log("/MaintainMember GGL Not found", wMemberId);
+        await deleteGoogleImportRecord(wMemberId);
+        removeFromSet("3", wMemberId);
+      }  
+    } // GGLEntry
+  }  //for loop
+
   if (wUpdateStack && wUpdateStack.length > 0) {
     let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
     let wUpdateArray = wResult.results.updatedItemIds;
     let wUpdates = wUpdateArray.toString();
     let wErrors = wResult.results.errors.length;
     console.log(
-      `/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
+      `/MaintainMember Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
     );
     clearSelectStacks();
-    showMsg(1, 0, `${pSource} Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`);
+    showMsg(1, 0, `Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`);
   } else {
     console.log(
-      `/MaintainMember ${pSource} Bulk Members Save: Nothing to update`
+      `/MaintainMember Bulk Members Save: Nothing to update`
     );
     showMsg(1, 0, "Nothing to update");
   }
-
-  
-  //await updateLstMembers("btnLstStage1Past", "2", "Past");
   $w("#btnGGLStage4Guest").enable();
+  hideStageWait(4);
 }
 
 //====== Locker Handling ========================================================================================
@@ -2829,6 +2838,13 @@ export function showStageWait(pStage) {
   // @ts-ignore
   let wImg = $w(wImgName);
   wImg.show();
+}
+
+export function hideStageWait(pStage) {
+  let wImgName = `#imgStage${pStage}Wait`;
+  // @ts-ignore
+  let wImg = $w(wImgName);
+  wImg.hide();
 }
 
 export function showMsg(pStage, pNo, pMsg = "") {

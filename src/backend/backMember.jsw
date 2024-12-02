@@ -1474,6 +1474,31 @@ export async function deleteImportMemberRecord(pId){
       return false;
     });
 }
+
+export async function deleteGoogleImportRecord(pId) {
+
+  let wOptions = {
+    "suppressAuth": true,
+    "suppressHooks": true,
+    "consistentRead": true
+  }
+
+  return wixData.remove("lstGoogleImport", pId, wOptions)
+    .then((item) => {
+      console.log(item);
+      if (item) {
+        console.log("/backend/backMember deleteGoogleImportRecord deleted member", pId);
+      } else {
+        console.log("/backend/backMember deleteGoogleImportRecord null return ");
+      }
+      return true;
+    })
+    .catch((err) => {
+      console.log("/backend/backMember deleteGoogleImportRecord catch err");
+      console.log(err);
+      return false;
+    });
+}
 //------------------------------------- MTBC MEMBER ---------------------------------------------------------
 //
 
