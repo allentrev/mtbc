@@ -6,11 +6,14 @@ import wixLocation from "wix-location";
 import { saveRecord } from "backend/backEvents.jsw";
 
 import { deleteWixMembers } from "backend/backMember.jsw";
+import { deleteImportMemberRecord } from "backend/backMember.jsw";
+
 import { saveImportMemberRecord } from "backend/backMember.jsw";
 import { createMember } from "backend/backMember.jsw";
 import { deleteLstMember } from "backend/backMember.jsw";
 import { getAllMembers } from "backend/backMember.jsw";
 import { getAllImportMembers } from "backend/backMember.jsw";
+import { getAllGoogleMembers } from "backend/backMember.jsw";
 import { isUnique } from "backend/backMember.jsw";
 
 import { sendMsgToJob } from "backend/backMsg.web.js";
@@ -63,7 +66,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = gTest ? true : authentication.loggedIn();
@@ -129,6 +132,8 @@ $w.onReady(async function () {
       $w("#strMember").scrollTo();
       $w("#inpMemberListNoPerPage").value = "20";
       $w("#inpLockerListNoPerPage").value = "20";
+      $w('#boxRpt2').style.backgroundColor = COLOUR.FREE;
+      $w('#boxRpt3').style.backgroundColor = COLOUR.FREE;
 
       //ensure these are set before loadtabledata
 
@@ -177,21 +182,25 @@ $w.onReady(async function () {
     $w("#btnLstImp").onClick(() => doStage1());
     $w("#btnFieldValue").onClick(() => doStage2());
     $w("#btnLstVWix").onClick(() => doStage3());
+    $w("#btnLstVGGL").onClick(() => doStage4());
     $w("#btnSyncClose").onClick(() => processCustomClose());
-    $w("#btnLstAmend").onClick(() => btnLstAmend_click());
-    $w("#btn2AmendSave").onClick(() => btn2AmendSave_click());
-    $w("#btn3AmendSave").onClick(() => btn3AmendSave_click());
-    $w("#btnAmendCancel").onClick(() => btnAmendCancel_click());
-    $w("#btnLstPast").onClick(() => btnLstPast_click());
-    $w("#btnLstTest").onClick(() => btnLstTest_click());
-    $w("#btnImpNewFull").onClick(() => btnImpNew_click("F"));
-    $w("#btnImpNewSocial").onClick(() => btnImpNew_click("S"));
-    $w("#btnLstRegister").onClick(() => btnLstRegister_click());
-    $w("#btnWixUpdate").onClick(() => btnLstAmend_click());
-    $w("#btnWixDelete").onClick(() => btnWixDelete_click());
+    $w("#btnLstStage1Amend").onClick(() => btnLstAmend_click(1));
+    $w("#btnNameAmend2Save").onClick(() => btnNameAmend2Save_click());
+    $w("#btnNameAmend3Save").onClick(() => btnNameAmend3Save());
+    $w("#btnNameAmendCancel").onClick(() => btnNameAmendCancel_click());
+    $w("#btnLstStage1Past").onClick(() => btnLstStage1Past_click());
+    $w("#btnLstStage1Test").onClick(() => btnLstStage1Test_click());
+    $w("#btnImpStage1NewFull").onClick(() => btnImpStage1New_click("F"));
+    $w("#btnImpStage1NewSocial").onClick(() => btnImpStage1New_click("S"));
+    $w("#btnLstStage2Register").onClick(() => btnLstStage2Register_click());
+    $w("#btnWixStage2Update").onClick(() => btnLstAmend_click(2));
+    $w("#btnWixStage2Delete").onClick(() => btnWixStage2Delete_click());
+    $w("#btnLstStage4Amend").onClick(() => btnLstAmend_click(3));
+    $w("#btnGGLStage4Guest").onClick(() => btnGGLStage4Guest_click());
+    $w("#btnImpStage1Past").onClick(() => btnImpStage1Past_click());
 
-    $w("#chk2").onClick((event) => chkSyncSelect_click("2", event));
-    $w("#chk3").onClick((event) => chkSyncSelect_click("3", event));
+    //$w("#chk2").onClick((event) => chkSyncSelect_click("2", event));
+    //$w("#chk3").onClick((event) => chkSyncSelect_click("3", event));
     $w("#boxRpt2").onClick((event) => boxRpt_click("2", event));
     $w("#boxRpt3").onClick((event) => boxRpt_click("3", event));
 
@@ -514,6 +523,11 @@ export function btnMemberAToSync_click() {
   $w("#secLocker").collapse();
   $w("#secSync").expand();
   $w("#ancSyncStart").scrollTo();
+  gWixMembers = [];
+  gLstMembers = [];
+  gImpMembers = [];
+  gGGLMembers = [];
+  $w('#tblProgress').rows = [];
 }
 
 export function btnMemberAToLocker_click() {
@@ -1104,16 +1118,19 @@ function hyphenatePhoneNumber(pPhoneNumber) {
 import { getActiveWixMembers } from "backend/backMember.jsw";
 import { updateWixMember } from "backend/backMember.jsw";
 import { updateLstMember } from "backend/backMember.jsw";
+import { updateGGLMember } from "backend/backMember.jsw";
 import { convertNull } from "backend/backMember.jsw";
 import { formPhoneString } from "backend/backMember.jsw";
 
 let gWixMembers = [];
 let gLstMembers = [];
 let gImpMembers = [];
+let gGGLMembers = [];
 let gStage = "Lst-Import";
 
 let gMessages = [];
-
+//====== SYNC Event Handlers ----------------------------------------------------------------------------
+//
 export async function doStage1() {
   //  A = LSt B = Import  C = Wix
   // Arrays containing elements common to A, B, and C
@@ -1132,9 +1149,9 @@ export async function doStage1() {
       messageDone(0);
       const onlyA = unique(gLstMembers, gImpMembers);
       const onlyB = unique(gImpMembers, gLstMembers);
-      //console.log("gLst, gImp,onlyB, onlyC");
-      //console.log(onlyB);
-      //console.log(onlyC);
+      console.log("Stage 1 onlyA, onlyB");
+      console.log(onlyA);
+      console.log(onlyB);
       if (onlyA.length > 0 || onlyB.length > 0) {
         showMessage("Reconcile Lst with Import");
         reconcileDatasets(onlyA, onlyB);
@@ -1181,15 +1198,68 @@ export async function doStage3() {
     showMessage("Reconcile Lst with Wix");
     const onlyC = unique(gWixMembers, gLstMembers);
     const onlyD = unique(gLstMembers, gWixMembers);
+    console.log("Stage 3 onlyD, onlyC");
+    console.log(onlyD);
+    console.log(onlyC);
+    if (onlyC.length > 0 || onlyD.length > 0) {
+      reconcileDatasets(onlyD, onlyC);
+    } else {
+      gStage = "Lst-GGL";
+      messageDone(4);
+    }
+  });
+}
+
+export async function doStage4(){
+  gMessages.length = 0;
+  showMessage(gStage);
+  $w("#tblProgress").rows = gMessages;
+  showMessage("Loading Lst Members"); //B
+  let promiseA = loadLstMembersData();
+  showMessage("Loading Google Members"); //C
+  let promiseC = loadGGLMembersData();
+
+  Promise.all([promiseA, promiseC]).then(() => {
+    gStage = "Lst-Google";
+    clearSelectStacks();
+    //console.log(gLstMembers);
+    //console.log(gGGLMembers);
+    messageDone(3);
+    showMessage("Reconcile Lst with Google");
+    const onlyC = unique(gGGLMembers, gLstMembers);
+    const onlyD = unique(gLstMembers, gGGLMembers);
+    //console.log("Stage 4 onlyD, onlyC");
+    //console.log(onlyD);
+    //console.log(onlyC);
     if (onlyC.length > 0 || onlyD.length > 0) {
       reconcileDatasets(onlyD, onlyC);
     } else {
       gStage = "End";
       messageDone(4);
     }
+
   });
 }
 
+
+export function boxRpt_click(p2or3, pEvent) {
+  let wControl = $w.at(pEvent.context);
+  let wId = pEvent.context.itemId;
+  console.log("boxRpt ,2or3, eventId", p2or3, wId);
+  let wItem = getSyncTargetItem(p2or3, wId);
+  // @ts-ignore
+  if (wControl(`#chk${p2or3}`).checked) {
+    pullFromSelectStack(wControl, wItem, wId, p2or3);
+  } else {
+    pushToSelectStack(wControl, wItem, wId, p2or3);
+  }
+  configureSyncCommands(p2or3);
+}
+
+//EVENT
+
+//====== SYNC Event Handler Supporting functions ----------------------------------------------------------------
+//
 function reconcileMTBCValues() {
   showMessage("Reconcile MTBC values");
   if (gLstMembers) {
@@ -1202,9 +1272,7 @@ function reconcileMTBCValues() {
         messageDone(5);
         return true;
       } else {
-        showMessage(
-          `Lst Max Value = ${wLstMaxValue} Wix Max Value = ${wWixMaxValue}`
-        );
+        showMessage(`Lst Max Value = ${wLstMaxValue} Wix Max Value = ${wWixMaxValue}`);
         return false;
       }
     } else {
@@ -1218,33 +1286,62 @@ function reconcileMTBCValues() {
 }
 
 function reconcileDatasets(pA, pB) {
+  //console.log("ReconDs", pA.length, pB.length);
   $w("#boxLstCompare").expand();
-  $w("#txtRightHdr").text =
-    gStage === "Lst-Import"
-      ? "The following members are in Import only"
-      : "The following members are in Wix only";
+  switch (gStage) {
+    case "Lst-Import":
+      $w("#txtRightHdr").text = "The following members are in Import only";
+      break;
+    case "Lst-Wix":
+      $w("#txtRightHdr").text = "The following members are in Wix only";
+      break;
+    case "Lst-Google":
+      $w("#txtRightHdr").text = "The following members are in the Google Account only";
+      break;
+    default:
+      $w("#txtRightHdr").text = "Cant find gStage";
+      break;
+  }
+  if (pA && pA.length === 0 && pB && pB.length === 0){
+    $w('#rpt2').collapse();
+    $w('#rpt3').collapse();
+    $w('#txt2None').collapse();
+    $w('#txt3None').collapse();
+    $w('#txtRefresh').expand();
+    return;
+  } 
   if (gStage === "Lst-Import") {
     $w("#boxStage1Commands").expand();
     $w("#boxStage2Commands").collapse();
-  } else {
+    $w("#boxStage4Commands").collapse();
+  } else if (gStage === "Lst-Wix") {
     $w("#boxStage1Commands").collapse();
     $w("#boxStage2Commands").expand();
+    $w("#boxStage4Commands").collapse();
+  } else if (gStage === "Lst-Google") {
+    $w("#boxStage1Commands").collapse();
+    $w("#boxStage2Commands").collapse();
+    $w("#boxStage4Commands").expand();
   }
   if (pA && pA.length > 0) {
-    $w("#rpt2").show();
-    $w("#txt2None").hide();
+    //console.log("pA = ", pA.length);
+    $w("#rpt2").expand();
+    $w("#txt2None").collapse();
     $w("#rpt2").data = pA;
   } else {
-    $w("#rpt2").hide();
-    $w("#txt2None").show();
+    //console.log("pA = 0");
+    $w("#rpt2").collapse();
+    $w("#txt2None").expand();
   }
   if (pB && pB.length > 0) {
-    $w("#rpt3").show();
-    $w("#txt3None").hide();
+    //console.log("pB = ", pB.length);
+    $w("#rpt3").expand();
+    $w("#txt3None").collapse();
     $w("#rpt3").data = pB;
   } else {
-    $w("#rpt3").hide();
-    $w("#txt3None").show();
+    //console.log("pB = 0");
+    $w("#rpt3").collapse();
+    $w("#txt3None").expand();
   }
 }
 
@@ -1376,112 +1473,330 @@ async function synchroniseFieldValues() {
   }
   return true;
 }
-/**
-//------------------------------------------------------------
-// Example arrays
-const A = [{ id: 1 }, { id: 2 }, { id: 3 }];
-const B = [{ id: 2 }, { id: 3 }, { id: 4 }];
-const C = [{ id: 3 }, { id: 4 }, { id: 5 }];
-*/
 
-// Helper function to find unique elements in an array
-const unique = (array, ...excludeArrays) => {
-  return array.filter(
-    (item) =>
-      !excludeArrays.some((excludeArray) =>
-        excludeArray.some((excludeItem) => excludeItem.key === item.key)
-      )
-  );
-};
-/**
- * ------------------------------Array function examples --------------------------------
-    // Arrays containing elements from A and B, not C
-    const AandBnotC = gWixMembers.filter(a => 
-        gLstMembers.some(b => b.key === a.key) && 
-        !gImpMembers.some(c => c.key === a.key)
-    );
-    console.log("Only Wix and Lst, not Imp");
-    console.log(AandBnotC);
 
-    // Arrays containing elements from B and C, not A
-    const BandCnotA = gLstMembers.filter(b => 
-        gImpMembers.some(c => c.key === b.key) && 
-        !gWixMembers.some(a => a.key === b.key)
-    );
-    console.log("Only Lst and Imp, not Wix");
-    console.log(BandCnotA);
+function clearSelectStacks() {
+  clearSelectStack("2");
+  clearSelectStack("3");
+  configureSyncCommands("2");
+  configureSyncCommands("3");
+}
 
-    // Arrays containing elements from A and C, not B
-    const AandCnotB = gWixMembers.filter(a => 
-        gImpMembers.some(c => c.key === a.key) && 
-        !gLstMembers.some(b => b.key === a.key)
-    );
-    console.log("Only Wix and Imp, not LSt");
-    console.log(AandCnotB);
+function clearSelectStack(p2or3) {
+  if (p2or3 === "2") {
+    gSelectLeftStack.length = 0;
+    $w("#chk2").checked = false;
+    $w('#boxRpt2').style.backgroundColor = COLOUR.FREE;
+  } else {
+    gSelectRightStack.length = 0;
+    $w("#chk3").checked = false;
+    $w('#boxRpt3').style.backgroundColor = COLOUR.FREE;
+  }
+}
 
-    // Arrays containing elements common to A, B, and C
-    const AandBandC = gWixMembers.filter(a => 
-        gLstMembers.some(b => b.key === a.key) && 
-        gImpMembers.some(c => c.key === a.key)
-    );
-*/
-/**
-    if (onlyA.length > 0) {
-        $w('#rpt1'). show()    
-        $w('#txt1None').hide();
-        $w('#rpt1').data = onlyA;
-    } else {
-        $w('#rpt1'). hide()    
-        $w('#txt1None').show();
+export function clearAllSelection(pN) {
+  // @ts-ignore
+  $w(`#rpt${pN}`).forEachItem(($item) => {
+    $item(`#boxRpt${pN}`).style.backgroundColor = COLOUR.FREE;
+  });
+}
+
+function configureSyncCommands(p2or3) {
+
+  let wLeftSelectedStackCount = gSelectLeftStack.length;
+  let wRightSelectedStackCount = gSelectRightStack.length;
+
+  if (gStage === "Lst-Import") {
+    configureStage1Commands(p2or3, wLeftSelectedStackCount, wRightSelectedStackCount);
+  } else if (gStage === "Lst-Wix") {
+    configureStage2Commands(p2or3, wLeftSelectedStackCount, wRightSelectedStackCount);
+  } /** gSTage === "Lst-Google" */ else {
+    configureStage4Commands(p2or3, wLeftSelectedStackCount, wRightSelectedStackCount);
+  }
+}
+
+function configureStage1Commands(p2or3, pLeftCount, pRightCount) {
+  if (pLeftCount === 1 && pRightCount === 1) {
+    $w('#btnLstStage1Amend').show();
+  } else {
+    $w('#btnLstStage1Amend').hide();
+    $w('#boxNameAmend').collapse();
+  }
+  if (p2or3 === "2") {
+    switch (pLeftCount) {
+      case 0:
+        $w("#btnLstStage1Past").hide();
+        $w("#btnLstStage1Test").hide();
+        break;
+      case 1:
+        $w("#btnLstStage1Past").show();
+        $w("#btnLstStage1Test").show();
+        break;
+      default:
+        $w("#btnLstStage1Past").show();
+        $w("#btnLstStage1Test").show();
+        break;
+    }
+  } /** p2or3 = 3 */ else {
+    switch (pRightCount) {
+      case 0:
+        $w("#btnImpStage1Past").hide();
+        $w("#btnImpStage1NewFull").hide();
+        $w("#btnImpStage1NewSocial").hide();
+        break;
+      case 1:
+        $w("#btnImpStage1Past").show();
+        $w("#btnImpStage1NewFull").show();
+        $w("#btnImpStage1NewSocial").show();
+        break;
+      default:
+        $w("#btnImpStage1Past").show();
+        $w("#btnImpStage1NewFull").show();
+        $w("#btnImpStage1NewSocial").show();
+        break;
+    }
+  } // if p2or3 === 2
+}
+
+function configureStage2Commands(p2or3, pLeftCount, pRightCount) {
+  if (pLeftCount === 1 && pRightCount === 1) {
+    $w('#btnWixStage2Update').show();
+  } else {
+    $w('#btnWixStage2Update').hide();
+    $w('#boxNameAmend').collapse();
+  }
+  if (p2or3 === "2") {
+    switch (pLeftCount) {
+      case 0:
+        $w("#btnLstStage2Register").hide();
+        break;
+      case 1:
+        $w("#btnLstStage2Register").show();
+        break;
+      default:
+        $w("#btnLstStage2Register").show();
+        break;
+    }
+  } /** p2or3 === 3 */ else {
+    switch (pRightCount) {
+      case 0:
+        $w("#btnWixStage2Delete").hide();
+        break;
+      case 1:
+        $w("#btnWixStage2Delete").show();
+        break;
+      default:
+        $w("#btnWixStage2Delete").show();
+        break;
+    }
+  } // if p2or3 === 2
+}
+
+function configureStage4Commands(p2or3, pLeftCount, pRightCount) {
+  console.log("Conf S4 ", pLeftCount, pRightCount);
+  if (pLeftCount === 1 && pRightCount === 1) {
+    $w('#btnGGLStage4Update').show();
+  } else {
+    $w('#btnGGLStage4Update').hide();
+    $w('#boxNameAmend').collapse();
+  }
+  if (p2or3 === "2") {
+    /** do nothing
+    switch (pSelectedStackCount) {
+      case 0:
+        $w("#btnGGLStage4Guest").hide();
+        $w("#btnGGLStage4Update").hide();
+        break;
+      case 1:
+        $w("#btnGGLStage4Guest").show();
+        $w("#btnGGLStage4Update").show();
+        break;
+      default:
+        $w("#btnLstStage4Guest").show();
+        $w("#btnLstStage4Update").hide();
+        break;
     }
     */
+  } /** p2or3 = 3 */ else {
+    switch (pRightCount) {
+      case 0:
+        $w("#btnGGLStage4Guest").hide();
+        break;
+      case 1:
+        $w("#btnGGLStage4Guest").show();
+        break;
+      default:
+        $w("#btnGGLStage4Guest").show();
+        break;
+    }
+  } // if p2or3 === 2
+}
+
+function removeFromSet(p2or3, pId) {
+  // @ts-ignore
+  let wRpt = $w(`#rpt${p2or3}`);
+  // @ts-ignore
+  let wTxtNone = $w(`#txt${p2or3}None`);
+  let wOnlyLeft = [];
+  let wOnlyRight = [];
+  if (p2or3 === "2") {
+    wOnlyLeft = wRpt.data;
+    let x = wOnlyLeft.findIndex((item) => item.id === pId || item._id === pId);
+    if (x > -1) {
+      wOnlyLeft.splice(x, 1);
+      if (wOnlyLeft.length === 0) {
+        wRpt.collapse();
+        wTxtNone.expand();
+      } else {
+        wRpt.expand();
+        wTxtNone.collapse();
+        wRpt.data = wOnlyLeft;
+      }
+    } else {
+      console.log(
+        "MaintainMember removeFromSet cant find member, id, p2or3 ",
+        pId,
+        p2or3
+      );
+    }
+  } else {
+    wOnlyRight = wRpt.data;
+    let x = wOnlyRight.findIndex((item) => item.id === pId || item._id === pId);
+    if (x > -1) {
+      wOnlyRight.splice(x, 1);
+      if (wOnlyRight.length === 0) {
+        wRpt.collapse();
+        wTxtNone.expand();
+      } else {
+        wRpt.expand();
+        wTxtNone.collapse();
+        wRpt.data = wOnlyRight;
+      }
+    } else {
+      console.log(
+        "MaintainMember removeFromSet cant find member, id, p2or3 ", pId, p2or3);
+    }
+  }
+
+  if (wOnlyLeft.length === 0 && wOnlyRight.length === 0) {
+    $w("#txtRefresh").expand();
+    $w('#txt2None').collapse();
+    $w('#txt3None').collaspe();
+    $w('#boxStage1Commands').collapse();
+    messageDone(3);
+  } else {
+    $w("#txtRefresh").collapse();
+  }
+}
+
 /**
-    if (AandBnotC.length > 0) {
-        $w('#rpt4'). show()    
-        $w('#txt4None').hide();
-        $w('#rpt4').data = AandBnotC;
-    } else {
-        $w('#rpt4'). hide()    
-        $w('#txt4None').show();
-    }
-    if (BandCnotA.length > 0) {
-        $w('#rpt5'). show()    
-        $w('#txt5None').hide();
-        $w('#rpt5').data = BandCnotA;
-    } else {
-        $w('#rpt5'). hide()    
-        $w('#txt5None').show();
-    }
-    if (AandCnotB.length > 0) {
-        $w('#rpt6'). show()    
-        $w('#txt6None').hide();
-        $w('#rpt6').data = AandCnotB;
-    } else {
-        $w('#rpt6'). hide()    
-        $w('#txt6None').show();
-    }
+ * Summary:	Adds the specified ID from the selection stack and updates the list counter.
+ *
+ * @function
+ * @param {string} pId - The ID to be removed from the selection stack.
+ *
+ * @returns {void}
+ */
+export function pushToSelectStack(pControl, pRec, pId, p2or3) {
+  //console.log("Push to Select Stack");
+  //	Updates the gEntities record
+  pControl(`#boxRpt${p2or3}`).style.backgroundColor = COLOUR.SELECTED;
+  pRec.selected = true;
+  pControl(`#chk${p2or3}`).checked = true;
 
-    if (BandC.length > 0) {
-        $w('#rpt7'). show()    
-        $w('#txt7None').hide();
-        $w('#rpt7').data = BandC;
+  if (p2or3 === "2") {
+    let x = gSelectLeftStack.findIndex((item) => item === pId);
+    if (x === -1) {
+      gSelectLeftStack.push(pId);
     } else {
-        $w('#rpt7'). hide()    
-        $w('#txt7None').show();
+      console.log(
+        "MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
+        pId,
+        p2or3
+      );
     }
-    */
+  } else {
+    let x = gSelectRightStack.findIndex((item) => item === pId);
+    if (x === -1) {
+      gSelectRightStack.push(pId);
+    } else {
+      console.log(
+        "MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
+        pId,
+        p2or3
+      );
+    }
+  }
+}
 
-//====== continue ===============================================
-function loadRptN(pN, pItem, pRec) {
-  let wControl1 = `#txt${pN}Player`;
-  let wControl2 = `#chk${pN}`;
-  if (pN === "2") {
+export function pullFromSelectStack(pControl, pRec, pId, p2or3) {
+  //console.log("Pull from Select Stack");
+  //	Updates the gEntities record
+  pControl(`#boxRpt${p2or3}`).style.backgroundColor = COLOUR.FREE;
+  pRec.selected = false;
+  pControl(`#chk${p2or3}`).checked = false;
+  if (p2or3 === "2") {
+    let x = gSelectLeftStack.findIndex((item) => item === pId);
+    if (x > -1) {
+      gSelectLeftStack.splice(x, 1);
+    } else {
+      console.log(
+        "MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
+        pId,
+        p2or3
+      );
+    }
+  } else {
+    let x = gSelectRightStack.findIndex((item) => item === pId);
+    if (x > -1) {
+      gSelectRightStack.splice(x, 1);
+    } else {
+      console.log(
+        "MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
+        pId,
+        p2or3
+      );
+    }
+  }
+}
+
+export function getSyncTargetItem(p2or3, pId) {
+  if (gStage === "Lst-Import") {
+    if (p2or3 === "2") {
+      return gLstMembers.find((wItem) => wItem._id === pId);
+    } else {
+      return gImpMembers.find((wItem) => wItem._id === pId);
+    }
+  } else if (gStage === "Lst-Wix") {
+    if (p2or3 === "2") {
+      return gLstMembers.find((wItem) => wItem._id === pId);
+    } else {
+      return gWixMembers.find((wItem) => wItem._id === pId);
+    }
+  } else if (gStage === "Lst-Google") {
+    if (p2or3 === "2") {
+      return gLstMembers.find((wItem) => wItem._id === pId);
+    } else {
+      return gGGLMembers.find((wItem) => wItem._id === pId);
+    }
+  }
+}
+
+//FUNCTION
+//====== SYNC Load Repeaters  ---------------------------------------------------------------------------------------
+//
+function loadRptN(p2or3, pItem, pRec) {
+  let wControl1 = `#txt${p2or3}Player`;
+  let wControl2 = `#chk${p2or3}`;
+  if (p2or3 === "2") {
     pItem(`#lbl2Status`).text = pRec.status;
   }
+  pItem(`#boxRpt${p2or3}`).style.backgroundColor = COLOUR.FREE;
   pItem(wControl1).text = pRec.key;
   pItem(wControl2).checked = false;
 }
-
+//====== SYNC Load Data ---------------------------------------------------------------------------------------
+//
 async function loadWixMembersData() {
   //console.log("loadWix`MembersData", gTest);
 
@@ -1514,6 +1829,23 @@ async function loadImpMembersData() {
   messageDone(2);
 }
 
+async function loadGGLMembersData() {
+  gGGLMembers = await getAllGoogleMembers();
+  messageDone(2);
+}
+//====== SYNC Helper functions -------------------------------------------------------------------------------
+//
+
+// Helper function to find unique elements in an array
+const unique = (array, ...excludeArrays) => {
+  return array.filter(
+    (item) =>
+      !excludeArrays.some((excludeArray) =>
+        excludeArray.some((excludeItem) => excludeItem.key === item.key)
+      )
+  );
+};
+
 function showMessage(pMsg) {
   let wMsg = { idx: "", msg: "", status: "" };
   wMsg.msg = pMsg;
@@ -1522,528 +1854,105 @@ function showMessage(pMsg) {
   $w("#tblProgress").rows = gMessages;
 }
 
-function messageDone(pN) {
+function messageDone(p2or3) {
   //let wMsgCount = gMessages.length;
   ///let wMsg = gMessages[wMsgCount - 1];
-  let wMsg = gMessages[pN];
+  let wMsg = gMessages[p2or3];
   if (wMsg) {
     wMsg.status = "Done";
     $w("#tblProgress").rows = gMessages;
   }
 }
 
-let wLast2Id = null;
-let wLast3Id = null;
-let wMember2 = {};
-let wMember3 = {};
-
-export function boxRpt_click(pN, event) {
-  let wItem = $w.at(event.context);
-  let wId = event.context.itemId;
-  let wLast = pN === "2" ? wLast2Id : wLast3Id;
-  if (wId === wLast) {
-    return;
-  }
-  // @ts-ignore
-  const data = $w(`#rpt${pN}`).data;
-
-  let wMember = data.find((item) => item._id === wId);
-  makeSelection(pN, wItem);
-  if (wLast) {
-    clearSelection(pN, wLast);
-  }
-  if (pN === "2") {
-    wLast2Id = wId;
-    wMember2 = { ...wMember };
-  } else {
-    wLast3Id = wId;
-    wMember3 = { ...wMember };
-  }
-  function makeSelection(pN, pItem) {
-    pItem(`#boxRpt${pN}`).style.backgroundColor = COLOUR.SELECTED;
-    switch (gStage) {
-      case "Lst-Import":
-        $w("#btnLstAmend").show();
-        break;
-      case "Lst-Wix":
-        $w("#btnWixUpdate").show();
-        break;
-    }
-  }
-
-  function clearSelection(pN, pId) {
-    // @ts-ignore
-    $w(`#rpt${pN}`).forItems([pId], ($item) => {
-      $item(`#boxRpt${pN}`).style.backgroundColor = COLOUR.FREE;
-    });
-  }
-}
-
-export function clearAllSelection(pN) {
-  // @ts-ignore
-  $w(`#rpt${pN}`).forEachItem(($item) => {
-    $item(`#boxRpt${pN}`).style.backgroundColor = COLOUR.FREE;
-  });
-}
-
-export function chkSyncSelect_click(pN, pEvent) {
-  let wControl = $w.at(pEvent.context);
-  let wId = pEvent.context.itemId;
-  let wItem = getSyncTargetItem(pN, wId);
-  // @ts-ignore
-  if (wControl(`#chk${pN}`).checked) {
-    pushToSelectStack(wItem, wId, pN);
-  } else {
-    pullFromSelectStack(wItem, wId, pN);
-  }
-  configureSyncCommands(pN);
-}
-
-function configureSyncCommands(pN) {
-  let wSelectedStack = [];
-  if (pN === "2") {
-    wSelectedStack = [...gSelectLeftStack];
-  } else {
-    wSelectedStack = [...gSelectRightStack];
-  }
-  let wSelectedStackCount = wSelectedStack.length;
-  if (gStage === "Lst-Import") {
-    if (pN === "2") {
-      switch (wSelectedStackCount) {
-        case 0:
-          $w("#btnLstPast").hide();
-          $w("#btnLstTest").hide();
-          break;
-        case 1:
-          $w("#btnLstPast").show();
-          $w("#btnLstTest").show();
-          break;
-        default:
-          $w("#btnLstPast").show();
-          $w("#btnLstTest").show();
-          break;
-      }
-    } /** pN = 3 */ else {
-      switch (wSelectedStackCount) {
-        case 0:
-          $w("#btnImpNewFull").hide();
-          $w("#btnImpNewSocial").hide();
-          break;
-        case 1:
-          $w("#btnImpNewFull").show();
-          $w("#btnImpNewSocial").show();
-          break;
-        default:
-          $w("#btnImpNewFull").show();
-          $w("#btnImpNewSocial").show();
-          break;
-      }
-    } //else
-  } else if (gStage === "Lst-Wix") {
-    if (pN === "2") {
-      switch (wSelectedStackCount) {
-        case 0:
-          $w("#btnLstRegister").hide();
-          break;
-        case 1:
-          $w("#btnLstRegister").show();
-          break;
-        default:
-          $w("#btnLstRegister").show();
-          break;
-      }
-    } /** pN === 3 */ else {
-      switch (wSelectedStackCount) {
-        case 0:
-          $w("#btnWixUpdate").hide();
-          $w("#btnWixDelete").hide();
-          break;
-        case 1:
-          $w("#btnWixUpdate").show();
-          $w("#btnWixDelete").show();
-          break;
-        default:
-          $w("#btnWixUpdate").hide();
-          $w("#btnWixDelete").show();
-          break;
-      }
-    }
-  } // gStage = Lst-Wix
-}
-
-export function pullFromSelectStack(pRec, pId, pN) {
-  //console.log("Pull from Select Stack");
-  //	Updates the gEntities record
-  pRec.selected = false;
-  if (pN === "2") {
-    let x = gSelectLeftStack.findIndex((item) => item === pId);
-    if (x > -1) {
-      gSelectLeftStack.splice(x, 1);
-    } else {
-      console.log(
-        "MaintainMember pullFromSelectStack cant find member, id, pN ",
-        pId,
-        pN
-      );
-    }
-  } else {
-    let x = gSelectRightStack.findIndex((item) => item === pId);
-    if (x > -1) {
-      gSelectRightStack.splice(x, 1);
-    } else {
-      console.log(
-        "MaintainMember pullFromSelectStack cant find member, id, pN ",
-        pId,
-        pN
-      );
-    }
-  }
-}
-
-function removeFromSet(pN, pId) {
-  // @ts-ignore
-  let wRpt = $w(`#rpt${pN}`);
-  // @ts-ignore
-  let wTxtNone = $w(`#txt${pN}None`);
-  let wOnlyLeft = [];
-  let wOnlyRight = [];
-  if (pN === "2") {
-    wOnlyLeft = wRpt.data;
-    let x = wOnlyLeft.findIndex((item) => item.id === pId);
-    if (x > -1) {
-      wOnlyLeft.splice(x, 1);
-      if (wOnlyLeft.length === 0) {
-        wRpt.collapse();
-        wTxtNone.expand();
-      } else {
-        wRpt.expand();
-        wTxtNone.collapse();
-        wRpt.data = wOnlyLeft;
-      }
-    } else {
-      console.log(
-        "MaintainMember removeFromSet cant find member, id, pN ",
-        pId,
-        pN
-      );
-    }
-  } else {
-    wOnlyRight = wRpt.data;
-    let x = wOnlyRight.findIndex((item) => item.id === pId);
-    if (x > -1) {
-      wOnlyRight.splice(x, 1);
-      if (wOnlyRight.length === 0) {
-        wRpt.collapse();
-        wTxtNone.expand();
-      } else {
-        wRpt.expand();
-        wTxtNone.collapse();
-        wRpt.data = wOnlyRight;
-      }
-    } else {
-      console.log(
-        "MaintainMember removeFromSet cant find member, id, pN ",
-        pId,
-        pN
-      );
-    }
-  }
-
-  if (wOnlyLeft.length === 0 && wOnlyRight.length === 0) {
-    $w("#txtRefresh").expand();
-    messageDone(3);
-  } else {
-    $w("#txtRefresh").collapse();
-  }
-}
-
-/**
- * Summary:	Adds the specified ID from the selection stack and updates the list counter.
- *
- * @function
- * @param {string} pId - The ID to be removed from the selection stack.
- *
- * @returns {void}
- */
-export function pushToSelectStack(pRec, pId, pN) {
-  //console.log("Push to Select Stack");
-  //	Updates the gEntities record
-  pRec.selected = true;
-  if (pN === "2") {
-    let x = gSelectLeftStack.findIndex((item) => item === pId);
-    if (x === -1) {
-      gSelectLeftStack.push(pId);
-    } else {
-      console.log(
-        "MaintainMember pushToSelectStack member already exists in stack, id, pN ",
-        pId,
-        pN
-      );
-    }
-  } else {
-    let x = gSelectRightStack.findIndex((item) => item === pId);
-    if (x === -1) {
-      gSelectRightStack.push(pId);
-    } else {
-      console.log(
-        "MaintainMember pushToSelectStack member already exists in stack, id, pN ",
-        pId,
-        pN
-      );
-    }
-  }
-}
-
-export function getSyncTargetItem(pTarget, pId) {
-  if (gStage === "Lst-Import") {
-    if (pTarget === "2") {
-        return gLstMembers.find((wItem) => wItem._id === pId);
-    } else {
-        return gImpMembers.find((wItem) => wItem._id === pId);
-    }
-  } else {
-    if (pTarget === "2"){
-        return gLstMembers.find((wItem) => wItem._id === pId);
-    } else {
-        return gWixMembers.find((wItem) => wItem._id === pId);
-    }
-  }
-}
 //====== Stage 1: Lst v Import ===========================================================================
 //
 // @ts-ignore
-export async function btnLstAmend_click() {
+export async function btnLstAmend_click(pStage) {
   //  This is where we have corresponding entries in each side, but they differ only in name.
-  //  It ban be entered by pressing btnLstAMend in Stage 1, or by btnWixUpdate in Stage2;
+  //  It can be entered by pressing btnLstStage1AMend in Stage 1, or by btnWixStage2Update in Stage2, or btnGGLStage4Update in Stage 4;
   //  For Lst-Import reconciliation, either the Lst value or the Import value can be amended.
-  //  For Lst-Wix reconciliation, then the Lst value is immutable.
-  //  So, action is to update the Wix record with the Lst values.
+  //  For Lst-Wix and Lst-Google reconciliations, then the Lst value is immutable.
+  //  So, action is to update the Wix or Google record with the Lst values.
   console.log("Btn Lst Update click", gStage);
-  $w("#inpLstAmendWebFirstName").value = wMember2.firstName;
-  $w("#inpLstAmendWebSurname").value = wMember2.surname;
-  $w("#inpLstAmendMasterFirstName").value = wMember3.firstName;
-  $w("#inpLstAmendMasterSurname").value =
-    gStage === "Lst-Import" ? wMember3.surname : wMember3.lastName;
-  if (gStage === "Lst-Import") {
-    $w("#btn2AmendSave").enable();
-    $w("#boxLstAmend").expand();
-    $w("#txt2Caption").text = "Web data";
-    $w("#txt3Caption").text = "Master data";
-    $w("#btn2AmendSave").label = "Update Web Data";
-    $w("#btn3AmendSave").label = "Update Import Data";
-  } else {
-    $w("#btn2AmendSave").enable();
-    $w("#boxLstAmend").expand();
-    $w("#txt2Caption").text = "Lst data";
-    $w("#txt3Caption").text = "Wix data";
-    $w("#btn2AmendSave").disable();
-    $w("#btn3AmendSave").label = "Update Wix Data";
+  
+  let wMember2 = {};
+  let wMember3 = {};
+
+  let wItemId2 = gSelectLeftStack[0];
+  let wItemId3 = gSelectRightStack[0];
+  wMember2 = gLstMembers.find((item) => item._id === wItemId2);
+  switch (pStage) {
+    case 1:
+      wMember3 = gImpMembers.find((item) => item._id === wItemId3);
+      break;
+    case 2:
+      wMember3 = gWixMembers.find((item) => item._id === wItemId3);
+      break;
+    case 4:
+      wMember3 = gGGLMembers.find((item) => item._id === wItemId3);
+      break;
   }
-}
 
-// @ts-ignore
-export async function btn2AmendSave_click() {
-  // Set up from btnLstAmend
-  // Update the Lst value with the Import values
-  console.log("Btn Lst Amend Save click", gStage);
-  showStageWait(1);
-  let wMember = getSyncTargetItem("2", wMember2._id);
+  $w("#inpNameAmend2FirstName").value = wMember2.firstName;
+  $w("#inpNameAmend2Surname").value = wMember2.surname;
+  $w("#inpNameAmend3FirstName").value = wMember3.firstName;
+  $w("#inpNameAmend3Surname").value = (gStage === "Lst-Import") ? wMember3.surname : wMember3.lastName;
+  $w("#boxNameAmend").expand();
   if (gStage === "Lst-Import") {
-    wMember.firstName = $w("#inpLstAmendMasterFirstName").value;
-    wMember.surname = $w("#inpLstAmendMasterSurname").value;
-    let wResult = await saveRecord("lstMembers", wMember);
-    if (wResult && wResult.status) {
-      let wSavedRecord = wResult.savedRecord;
-      updateGlobalDataStore(wSavedRecord, "Member");
-      updatePagination("Member");
-      $w("#btnLstAmend").hide();
-      removeFromSet("2", wMember2._id);
-      removeFromSet("3", wMember3._id);
-      $w("#boxLstAmend").collapse();
-      showMsg(1, 0, `LST name ${wMember.firstName} ${wMember.surname} updated`);
-    } else {
-      console.log("MaintainMember btn2AmendSave saverecord fail");
-      console.log(wResult.error);
-      showMsg(
-        1,
-        0,
-        `LST name ${wMember.firstName} ${wMember.surname} update failed`
-      );
-    }
-  } else {
-    console.log("MaintainMember btn2AmendSave wrong state", gStage);
-    showMsg(
-      1,
-      0,
-      `LST name ${wMember.firstName} ${wMember.surname} wrong stage`
-    );
-  }
-}
-
-// @ts-ignore
-export async function btn3AmendSave_click() {
-  // Set up from btnLstAmend
-  // Update the Wix value with the ImportLst values
-  console.log("Btn Imp Amend Save click", gStage);
-  let wTargetMember = getSyncTargetItem("3", wMember3._id);
-  if (gStage === "Lst-Import") {
-    showStageWait(1);
-    //  Update the IMport record and send Email to Membership secretary to update Master membership spreadsheet
-    let wOldName = wTargetMember.firstName + " " + wTargetMember.surname;
-    wTargetMember.firstName = $w("#inpLstAmendWebFirstName").value;
-    wTargetMember.surname = $w("#inpLstAmendWebSurname").value;
-    let wResult = await saveImportMemberRecord(wTargetMember);
-    //  Send message to Membership secreatry
-        if (wResult && wResult.status) {
-      let wParams = {
-        oldName: wOldName,
-        newName: wTargetMember.firstName + " " + wTargetMember.surname,
-      };
-
-      wResult = await sendMsgToJob("E", ["WEB"], null, false, "MemberAmendImportName", wParams);
-      //let wResult.status = true;
-      if (wResult && wResult.status) {
-        console.log(
-          "/MaintainMember btn3AmendSave sendMsgToJob OK for ",
-          wTargetMember._id
-        );
-        $w("#btnLstAmend").hide();
-        removeFromSet("2", wMember2._id);
-        removeFromSet("3", wMember3._id);
-        $w("#boxLstAmend").collapse();
-        showMsg(
-          1,
-          0,
-          `Import name ${wTargetMember.firstName} ${wTargetMember.surname} updated`
-        );
-      } else {
-        console.log("/MaintainMember btn3AmendSave sendMsgToJob failed, error");
-        console.log(wResult.error);
-      }
-    } else {
-      console.log("MaintainMember btn3AmendSave saverecord fail");
-      console.log(wResult.error);
-      showMsg(
-        1,
-        0,
-        `Import name ${wTargetMember.firstName} ${wTargetMember.surname} update failed`
-      );
-    }
+    $w("#txtNameAmend2Caption").text = "Web data";
+    $w("#txtNameAmend3Caption").text = "Master data";
+    $w("#btnNameAmend2Save").enable();
+    $w("#btnNameAmend3Save").enable();
+    $w("#btnNameAmend2Save").label = "Update Web Data";
+    $w("#btnNameAmend3Save").label = "Update Import Data";
   } else if (gStage === "Lst-Wix") {
-    showStageWait(2);
-    //  Update the Wix record
-    let wFirstName = $w("#inpLstAmendWebFirstName").value.trim();
-    let wSurname = $w("#inpLstAmendWebSurname").value.trim();
-    wTargetMember.firstName = wFirstName;
-    wTargetMember.lastName = wSurname;
-    wTargetMember._id = wMember3._id;
-    // eslint-disable-next-line no-unused-vars
-    let wResult = await updateWixMember(wTargetMember);
-    $w("#btnLstAmend").hide();
-    removeFromSet("2", wMember2._id);
-    removeFromSet("3", wMember3._id);
-    $w("#boxLstAmend").collapse();
-    showMsg(2, 0, `Wix name ${wFirstName} ${wSurname} updated`);
+    $w("#txtNameAmend2Caption").text = "Lst data";
+    $w("#txtNameAmend3Caption").text = "Wix data";
+    $w("#btnNameAmend2Save").disable();
+    $w("#btnNameAmend3Save").enable();
+    $w("#btnNameAmend3Save").label = "Update Wix Data";
   } else {
-    console.log("MaintainMember btn3AmendSave wrong state", gStage);
-    showMsg(
-      2,
-      0,
-      `Wix name ${wTargetMember.firstName} ${wTargetMember.lastName} updated`
-    );
+    $w("#txtNameAmend2Caption").text = "Lst data";
+    $w("#txtNameAmend3Caption").text = "Google data";
+    $w("#btnNameAmend2Save").disable();
+    $w("#btnNameAmend3Save").enable();
+    $w("#btnNameAmend3Save").label = "Update Google Data";
   }
 }
 
-export function btnAmendCancel_click() {
-  $w("#inpLstAmendWebFirstName").value = "";
-  $w("#inpLstAmendWebSurname").value = "";
-  $w("#inpLstAmendMasterFirstName").value = "";
-  $w("#inpLstAmendMasterSurname").value = "";
-  $w("#btnLstAmend").hide();
-  $w("#btnWixUpdate").hide();
-  $w("#btnWixDelete").hide();
-  $w("#btnLstRegister").hide();
-
-  wLast2Id = null;
-  wLast3Id = null;
-  clearAllSelection(2);
-  clearAllSelection(3);
-  $w("#boxLstAmend").collapse();
-}
-
-export async function btnLstPast_click() {
+export async function btnLstStage1Past_click() {
   // There is an entry in Lst but not in Import. This is the case for members who have left the club or who
   // have passed away.
-  $w("#btnLstPast").disable();
-  await updateLstMembers("btnLstPast", "2", "Past");
-  $w("#btnLstPast").enable();
+  $w("#btnLstStage1Past").disable();
+  await updateLstMembers("btnLstStage1Past", "2", "Past");
+  $w("#btnLstStage1Past").enable();
 }
 
-export async function btnLstTest_click() {
-  // There is an entry in Lst but not in Import. This is the case for decvelopment members used in local testing
-  $w("#btnLstTest").disable();
-  await updateLstMembers("btnLstTest", "2", "");
-  $w("#btnLstTest").enable();
+export async function btnLstStage1Test_click() {
+  // There is an entry in Lst but not in Import. This is the case for development members used in local testing
+  $w("#btnLstStage1Test").disable();
+  await updateLstMembers("btnLstStage1Test", "2", "Test");
+  $w("#btnLstStage1Test").enable();
 }
 
-/**
- *
- *
- * @param {string} pSource
- * @param {string} pN
- * @param {string} pStatus
- *
- */
-async function updateLstMembers(pSource, pN, pStatus) {
-  showStageWait(1);
-  let wUpdateStack = [];
-  let wToday = new Date();
-  for (let wMemberId of gSelectLeftStack) {
-    let wMember = gLstMembers.find((item) => item._id === wMemberId);
-    if (wMember) {
-      if (pSource === "btnLstPast") {
-        wMember.status = pStatus;
-        wMember.dateLeft = wToday;
-      } else {
-        wMember.type = "Test";
-      }
-      wUpdateStack.push(wMember);
-      removeFromSet(pN, wMemberId);
-    } else {
-      console.log("/MaintainMember ${pSource} Lst Not found", wMemberId);
-    }
+export async function btnImpStage1Past_click(){
+//  You can end up with situations where a record exists in Import but has a status Past in Lst, therefore
+//  it will not show up in the left repeater. Simply, remove the import entry.
+  console.log("btnImpStage1Past", gStage);
+  const p2or3 = "3";
+  console.log(gImpMembers);
+  for (let wMemberId of gSelectRightStack) {
+    console.log(wMemberId);
+    showStageWait(2);
+    await deleteImportMemberRecord(wMemberId);
+    removeFromSet(p2or3, wMemberId);
+    showMsg(2, 0, `Imp member ${wMemberId} deleted`);
   }
-  if (wUpdateStack && wUpdateStack.length > 0) {
-    let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
-    let wUpdateArray = wResult.results.updatedItemIds;
-    let wUpdates = wUpdateArray.toString();
-    let wErrors = wResult.results.errors.length;
-    console.log(
-      `/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
-    );
-    if (pN === "2") {
-      gSelectLeftStack.length = 0;
-      $w("#chk2").checked = false;
-    } else {
-      gSelectRightStack.length = 0;
-      $w("#chk3").checked = false;
-    }
-    showMsg(
-      1,
-      0,
-      `${pSource} Bulk Members Save: ${String(
-        wUpdateArray.length
-      )} updated, ${wErrors} errors`
-    );
-  } else {
-    console.log(
-      `/MaintainMember ${pSource} Bulk Members Save: Nothing to update`
-    );
-    showMsg(1, 0, "Nothing to update");
-  }
+  gSelectRightStack.length = 0;
+  $w(`#chk${p2or3}`).checked = false;
 }
 
-export async function btnImpNew_click(pType) {
+export async function btnImpStage1New_click(pType) {
   //  These are entries in Import but not in Lst. These are the new members joined this year.
   //  pType shows which button was pressed: F = Full member, S = Soceial member
 
@@ -2091,6 +2000,58 @@ export async function btnImpNew_click(pType) {
   }
   if (wErrMsg.length > 1) {
     $w("#lblErrMsg").text = wErrMsg;
+  }
+}
+//====== Stage 1: Helpers -------------------------------------------------------------------------------------
+
+/**
+ *
+ *
+ * @param {string} pSource
+ * @param {string} p2or3
+ * @param {string} pStatus
+ *
+ */
+async function updateLstMembers(pSource, p2or3, pStatus) {
+  showStageWait(1);
+  let wUpdateStack = [];
+  let wToday = new Date();
+  for (let wMemberId of gSelectLeftStack) {
+    let wMember = gLstMembers.find((item) => item._id === wMemberId);
+    if (wMember) {
+      if (pSource === "btnLstPast") {
+        wMember.status = pStatus;
+        wMember.dateLeft = wToday;
+      } else {
+        wMember.type = "Test";
+      }
+      wUpdateStack.push(wMember);
+      removeFromSet(p2or3, wMemberId);
+    } else {
+      console.log("/MaintainMember ${pSource} Lst Not found", wMemberId);
+    }
+  }
+  if (wUpdateStack && wUpdateStack.length > 0) {
+    let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
+    let wUpdateArray = wResult.results.updatedItemIds;
+    let wUpdates = wUpdateArray.toString();
+    let wErrors = wResult.results.errors.length;
+    console.log(
+      `/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
+    );
+    clearSelectStacks();
+    showMsg(
+      1,
+      0,
+      `${pSource} Bulk Members Save: ${String(
+        wUpdateArray.length
+      )} updated, ${wErrors} errors`
+    );
+  } else {
+    console.log(
+      `/MaintainMember ${pSource} Bulk Members Save: Nothing to update`
+    );
+    showMsg(1, 0, "Nothing to update");
   }
 }
 
@@ -2170,10 +2131,143 @@ async function createNewMember(pIsAudit, pMember) {
   }
   return wResult;
 }
-//====== from LST & Wix compare --------------------------------------------------------------------------
+//====== Name Amend Box =======================================================================================
 //
-export async function btnLstRegister_click() {
-  console.log("btnLstRegister", gStage);
+
+// @ts-ignore
+export async function btnNameAmend2Save_click() {
+  // Set up from btnLstStage1Amend, btnWixStage2Update or btnGGLStage4Update
+  // Update the Lst value with the Import values
+  console.log("Btn Lst Amend Save click", gStage);
+  showStageWait(1);
+
+  let wId2 = gSelectLeftStack[0];
+  let wMember = getSyncTargetItem("2", wId2);
+
+  if (gStage === "Lst-Import") {
+    wMember.firstName = $w("#inpNameAmend3FirstName").value;
+    wMember.surname = $w("#inpNameAmend3Surname").value;
+    let wResult = await saveRecord("lstMembers", wMember);
+    if (wResult && wResult.status) {
+      let wSavedRecord = wResult.savedRecord;
+      updateGlobalDataStore(wSavedRecord, "Member");
+      updatePagination("Member");
+      $w("#btnLstStage1Amend").hide();
+      removeFromSet("2", wMember2._id);
+      removeFromSet("3", wMember3._id);
+      $w("#boxNameAmend").collapse();
+      showMsg(1, 0, `LST name ${wMember.firstName} ${wMember.surname} updated`);
+    } else {
+      console.log("MaintainMember btnNameAmend2Save saverecord fail");
+      console.log(wResult.error);
+      showMsg(1, 0, `LST name ${wMember.firstName} ${wMember.surname} update failed`);
+    }
+  } else {
+    console.log("MaintainMember btnNameAmend2Save wrong state", gStage);
+    showMsg(1, 0, `LST name ${wMember.firstName} ${wMember.surname} wrong stage`);
+  }
+}
+
+// @ts-ignore
+export async function btnNameAmend3Save() {
+  // Set up from btnLstAmend
+  // Update the Wix or Google value with the Import/Lst values
+  console.log("Btn Name Amend 3 Save click", gStage);
+
+  let wId3 = gSelectRightStack[0];
+  let wTargetMember = getSyncTargetItem("3", wId3);
+
+  if (gStage === "Lst-Import") {
+    showStageWait(1);
+    //  Update the IMport record and send Email to Membership secretary to update Master membership spreadsheet
+    let wOldName = wTargetMember.firstName + " " + wTargetMember.surname;
+    wTargetMember.firstName = $w("#inpNameAmend2FirstName").value;
+    wTargetMember.surname = $w("#inpNameAmend2Surname").value;
+    let wResult = await saveImportMemberRecord(wTargetMember);
+    //  Send message to Membership secreatry
+    if (wResult && wResult.status) {
+      let wParams = {
+        oldName: wOldName,
+        newName: wTargetMember.firstName + " " + wTargetMember.surname,
+      };
+
+      wResult = await sendMsgToJob("E", ["WEB"], null, false, "MemberAmendImportName", wParams);
+      //let wResult.status = true;
+      if (wResult && wResult.status) {
+        console.log(
+          "/MaintainMember btnNameAmend3Save sendMsgToJob OK for ",
+          wTargetMember._id
+        );
+        $w("#btnLstStage1Amend").hide();
+        removeFromSet("2", wMember2._id);
+        removeFromSet("3", wMember3._id);
+        $w("#boxNameAmend").collapse();
+        showMsg(1, 0, `Import name ${wTargetMember.firstName} ${wTargetMember.surname} updated`);
+      } else {
+        console.log("/MaintainMember btnNameAmend3Save sendMsgToJob failed, error");
+        console.log(wResult.error);
+      }
+    } else {
+      console.log("MaintainMember btnNameAmend3Save saverecord fail");
+      console.log(wResult.error);
+      showMsg(1, 0, `Import name ${wTargetMember.firstName} ${wTargetMember.surname} update failed`
+      );
+    }
+  } else if (gStage === "Lst-Wix") {
+    showStageWait(2);
+    //  Update the Wix record
+    let wFirstName = $w("#inpNameAmend2FirstName").value.trim();
+    let wSurname = $w("#inpNameAmend2Surname").value.trim();
+    wTargetMember.firstName = wFirstName;
+    wTargetMember.lastName = wSurname;
+    wTargetMember._id = wMember3._id;
+    // eslint-disable-next-line no-unused-vars
+    let wResult = await updateWixMember(wTargetMember);
+    $w("#btnWixStage2Update").hide();
+    removeFromSet("2", wMember2._id);
+    removeFromSet("3", wMember3._id);
+    $w("#boxNameAmend").collapse();
+    showMsg(2, 0, `Wix name ${wFirstName} ${wSurname} updated`);
+  } else if (gStage === "Lst-Google") {
+    showStageWait(2);
+    //  Update the Google Import record
+    let wFirstName = $w("#inpNameAmend2FirstName").value.trim();
+    let wSurname = $w("#inpNameAmend2Surname").value.trim();
+    wTargetMember.firstName = wFirstName;
+    wTargetMember.lastName = wSurname;
+    wTargetMember._id = wMember3._id;
+    // eslint-disable-next-line no-unused-vars
+    let wResult = await updateGGLMember(wTargetMember);
+    $w("#btnGGLStage4Update").hide();
+    removeFromSet("2", wMember2._id);
+    removeFromSet("3", wMember3._id);
+    $w("#boxNameAmend").collapse();
+    showMsg(2, 0, `Google name ${wFirstName} ${wSurname} updated`);
+  } else {
+    console.log("MaintainMember btnNameAmend3Save wrong state", gStage);
+  }
+}
+
+export function btnNameAmendCancel_click() {
+  $w("#inpNameAmend2FirstName").value = "";
+  $w("#inpNameAmend2Surname").value = "";
+  $w("#inpNameAmend3FirstName").value = "";
+  $w("#inpNameAmend3Surname").value = "";
+  $w("#btnLstStage1Amend").hide();
+  $w("#btnWixStage2Update").hide();
+  $w("#btnWixStage2Delete").hide();
+  $w("#btnLstStage2Register").hide();
+  $w("#btnGGLStage4Update").hide();
+
+  clearAllSelection(2);
+  clearAllSelection(3);
+  $w("#boxNameAmend").collapse();
+}
+
+//====== Stage 2: Lst v Wix Compare ===========================================================================
+//
+export async function btnLstStage2Register_click() {
+  console.log("btnLstStage2Register", gStage);
   //  These are LST entries that are in both LST and Import, but not in Wix. This covers old LST
   //  members who were in the club, but they never registered.
   //
@@ -2186,7 +2280,7 @@ export async function btnLstRegister_click() {
   $w("#lblErrMsg").text = "";
   let wErrMsg = "";
   for (let wMemberId of gSelectLeftStack) {
-    $w("#btnLstRegister").hide();
+    $w("#btnLstStage2Register").hide();
     showStageWait(2);
     let wLstMember = gLstMembers.find((item) => item._id === wMemberId);
     if (wLstMember) {
@@ -2209,7 +2303,7 @@ export async function btnLstRegister_click() {
         showMsg(2, 0, `New Wix member ${wLstMember.firstName} ${wLstMember.surname} creation errors`);
       }
     } else {
-      console.log("/MaintainMember btnLstRegister Member Not found", wMemberId);
+      console.log("/MaintainMember btnLstStage2Register Member Not found", wMemberId);
       showMsg(2, 0, `New Wix member: not found`);
     }
   }
@@ -2218,37 +2312,85 @@ export async function btnLstRegister_click() {
   }
 }
 
-export async function btnWixDelete_click() {
+export async function btnWixStage2Delete_click() {
   //  This is a Wix member that no longer exists in LST (and hence in Import). It is probably the relic
   //  of a once regsitered member, where the Lst record has been deleted and the Wix member left dangling.
   //  Therefore, the only action to take is to delete the Wix record to keep everything aligned.
   //
-  console.log("btnWixDelete", gStage);
-  const pN = "3";
+  console.log("btnWixStage2Delete", gStage);
+  const p2or3 = "3";
   for (let wMemberId of gSelectRightStack) {
     showStageWait(2);
     let wMember = gWixMembers.find((item) => item._id === wMemberId);
     if (wMember) {
       await deleteWixMembers([wMemberId]);
-      removeFromSet(pN, wMemberId);
-      showMsg(
-        2,
-        0,
-        `Wix member ${wMember.firstName} ${wMember.lastName} deletedd`
-      );
+      removeFromSet(p2or3, wMemberId);
+      showMsg(2, 0, `Wix member ${wMember.firstName} ${wMember.lastName} deletedd` );
     } else {
       console.log(
-        "/MaintainMember btnWixDelete Wix member Not found",
+        "/MaintainMember btnWixStage2Delete Wix member Not found",
         wMemberId
       );
       showMsg(2, 0, `Wix member not found`);
     }
   }
   gSelectRightStack.length = 0;
-  $w(`#chk${pN}`).checked = false;
+  $w(`#chk${p2or3}`).checked = false;
+}
+//====== Stage 4: Lst v Google Import ===========================================================================
+//
+
+export async function btnGGLStage4Guest_click() {
+  // There is an entry in Import but not in Import. This is the case for members who have left the club or who
+  // have passed away. So, change the Past status to a new Guest status.
+  $w("#btnGGLStage4Guest").disable();
+  console.log("Do STge 4 guest");
+
+  showStageWait(4);
+  let wUpdateStack = [];
+  for (let wMemberId of gSelectRightStack) {
+    let wGGLEntry = gGGLMembers.find((item) => item._id === wMemberId);
+    if (wGGLEntry) {
+      // find Lst record, if any
+      console.log(wGGLEntry);
+
+      /**
+      if (pSource === "btnLstPast") {
+        wMember.status = pStatus;
+        wMember.dateLeft = wToday;
+      } else {
+        wMember.type = "Test";
+      }
+      wUpdateStack.push(wMember);
+      removeFromSet(p2or3, wMemberId);
+      */
+    } else {
+      console.log("/MaintainMember Lst Not found", wMemberId);
+    }
+  }
+  if (wUpdateStack && wUpdateStack.length > 0) {
+    let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
+    let wUpdateArray = wResult.results.updatedItemIds;
+    let wUpdates = wUpdateArray.toString();
+    let wErrors = wResult.results.errors.length;
+    console.log(
+      `/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
+    );
+    clearSelectStacks();
+    showMsg(1, 0, `${pSource} Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`);
+  } else {
+    console.log(
+      `/MaintainMember ${pSource} Bulk Members Save: Nothing to update`
+    );
+    showMsg(1, 0, "Nothing to update");
+  }
+
+  
+  //await updateLstMembers("btnLstStage1Past", "2", "Past");
+  $w("#btnGGLStage4Guest").enable();
 }
 
-//====== Locker Handling ----------------------------------------------------------
+//====== Locker Handling ========================================================================================
 //
 export async function doBtnLockerEditHolderAdd() {
   let member = await wixWindow.openLightbox("lbxSelectMember");
@@ -2265,7 +2407,8 @@ export async function doBtnLockerEditHolderClear() {
   $w("#inpLockerEditHolder").value = "";
   $w("#lblLockerEditHolderId").text = "";
 }
-
+//====== Locker Load Data ---------------------------------------------------------------------------------------
+//
 export async function loadLockers() {
   try {
     showWait("Locker");
@@ -2345,6 +2488,7 @@ export async function loadLockers() {
 
       return denseArray;
     }
+
     if (wDuplicateLockers && wDuplicateLockers.length > 0) {
       $w("#lblLockerListDuplicateHdr").text =
         "The following lockers are duplicated";
@@ -2432,7 +2576,8 @@ export async function btnLockerASave_click() {
     }
   }
 }
-
+//====== Locker Other functions ------------------------------------------------------------------------
+//
 async function addLockerToMember(pMember, pLockerNo, pLocker) {
   //  Update locker record
   //
@@ -2476,7 +2621,7 @@ async function removeLockerFromMember(pMember, pLockerNo, pLocker) {
   return {};
 }
 
-//====== Custom Processing --------------------------------------------------------------------------
+//====== Custom Processing =============================================================================================
 //
 let gSet = [];
 
@@ -2514,6 +2659,8 @@ function processCustomClose() {
   $w("#secSync").collapse();
   $w("#secCustom").collapse();
   $w("#secMember").scrollTo();
+  $w('#boxLstCompare').collapse();
+
 }
 
 async function processCustomGo() {
@@ -2537,7 +2684,8 @@ async function processCustomGo() {
   console.log("/page/MaintainMember processCustomOpen, result, gSet", wResult);
   console.log(gSet);
 }
-
+//====== Store of custom processes used in the past --------------------------------------------------------------------
+//
 /**
  * Used: 28 Jan 24
  * The Live collection still had a number of records in the Wait state. This routing changes the state
@@ -2714,3 +2862,80 @@ export function showMsg(pStage, pNo, pMsg = "") {
     console.log(err);
   }
 }
+/**
+ * ------------------------------Array function examples --------------------------------
+    // Arrays containing elements from A and B, not C
+    const AandBnotC = gWixMembers.filter(a => 
+        gLstMembers.some(b => b.key === a.key) && 
+        !gImpMembers.some(c => c.key === a.key)
+    );
+    console.log("Only Wix and Lst, not Imp");
+    console.log(AandBnotC);
+
+    // Arrays containing elements from B and C, not A
+    const BandCnotA = gLstMembers.filter(b => 
+        gImpMembers.some(c => c.key === b.key) && 
+        !gWixMembers.some(a => a.key === b.key)
+    );
+    console.log("Only Lst and Imp, not Wix");
+    console.log(BandCnotA);
+
+    // Arrays containing elements from A and C, not B
+    const AandCnotB = gWixMembers.filter(a => 
+        gImpMembers.some(c => c.key === a.key) && 
+        !gLstMembers.some(b => b.key === a.key)
+    );
+    console.log("Only Wix and Imp, not LSt");
+    console.log(AandCnotB);
+
+    // Arrays containing elements common to A, B, and C
+    const AandBandC = gWixMembers.filter(a => 
+        gLstMembers.some(b => b.key === a.key) && 
+        gImpMembers.some(c => c.key === a.key)
+    );
+*/
+/**
+    if (onlyA.length > 0) {
+        $w('#rpt1'). show()    
+        $w('#txt1None').hide();
+        $w('#rpt1').data = onlyA;
+    } else {
+        $w('#rpt1'). hide()    
+        $w('#txt1None').show();
+    }
+    */
+/**
+    if (AandBnotC.length > 0) {
+        $w('#rpt4'). show()    
+        $w('#txt4None').hide();
+        $w('#rpt4').data = AandBnotC;
+    } else {
+        $w('#rpt4'). hide()    
+        $w('#txt4None').show();
+    }
+    if (BandCnotA.length > 0) {
+        $w('#rpt5'). show()    
+        $w('#txt5None').hide();
+        $w('#rpt5').data = BandCnotA;
+    } else {
+        $w('#rpt5'). hide()    
+        $w('#txt5None').show();
+    }
+    if (AandCnotB.length > 0) {
+        $w('#rpt6'). show()    
+        $w('#txt6None').hide();
+        $w('#rpt6').data = AandCnotB;
+    } else {
+        $w('#rpt6'). hide()    
+        $w('#txt6None').show();
+    }
+
+    if (BandC.length > 0) {
+        $w('#rpt7'). show()    
+        $w('#txt7None').hide();
+        $w('#rpt7').data = BandC;
+    } else {
+        $w('#rpt7'). hide()    
+        $w('#txt7None').show();
+    }
+    */
