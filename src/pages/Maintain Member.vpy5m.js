@@ -196,9 +196,9 @@ $w.onReady(async function () {
     $w("#btnImpStage1NewFull").onClick(() => btnImpStage1New_click("F"));
     $w("#btnImpStage1NewSocial").onClick(() => btnImpStage1New_click("S"));
     $w("#btnLstStage2Register").onClick(() => btnLstStage2Register_click());
-    $w("#btnWixStage2Update").onClick(() => btnLstAmend_click(2));
+    $w("#btnWixStage2Update").onClick(() => btnLstAmend_click(3));
     $w("#btnWixStage2Delete").onClick(() => btnWixStage2Delete_click());
-    $w("#btnLstStage4Amend").onClick(() => btnLstAmend_click(3));
+    $w("#btnLstStage4Amend").onClick(() => btnLstAmend_click(4));
     $w("#btnGGLStage4Guest").onClick(() => btnGGLStage4Guest_click());
     $w("#btnImpStage1Past").onClick(() => btnImpStage1Past_click());
 
@@ -1201,9 +1201,6 @@ export async function doStage3() {
     showMessage("Reconcile Lst with Wix");
     const onlyC = unique(gWixMembers, gLstMembers);
     const onlyD = unique(gLstMembers, gWixMembers);
-    console.log("Stage 3 onlyD, onlyC");
-    console.log(onlyD);
-    console.log(onlyC);
     if (onlyC.length > 0 || onlyD.length > 0) {
       reconcileDatasets(onlyD, onlyC);
     } else {
@@ -1803,6 +1800,7 @@ async function loadWixMembersData() {
     gWixMembers.push(wTempMember);
   }
   (gStage === "Lst-Import") ? messageDone(2) : messageDone(3);
+  console.log(gWixMembers);
 }
 
 async function loadLstMembersData() {
@@ -1860,17 +1858,17 @@ function messageDone(p2or3) {
 //====== Stage 1: Lst v Import ===========================================================================
 //
 // @ts-ignore
+let wMember2 = {};
+let wMember3 = {};
+
 export async function btnLstAmend_click(pStage) {
   //  This is where we have corresponding entries in each side, but they differ only in name.
   //  It can be entered by pressing btnLstStage1AMend in Stage 1, or by btnWixStage2Update in Stage2, or btnGGLStage4Update in Stage 4;
   //  For Lst-Import reconciliation, either the Lst value or the Import value can be amended.
   //  For Lst-Wix and Lst-Google reconciliations, then the Lst value is immutable.
   //  So, action is to update the Wix or Google record with the Lst values.
-  console.log("Btn Lst Update click", gStage);
+  console.log("Btn Lst Update click", pStage, gStage);
   
-  let wMember2 = {};
-  let wMember3 = {};
-
   let wItemId2 = gSelectLeftStack[0];
   let wItemId3 = gSelectRightStack[0];
   wMember2 = gLstMembers.find((item) => item._id === wItemId2);
@@ -1878,14 +1876,15 @@ export async function btnLstAmend_click(pStage) {
     case 1:
       wMember3 = gImpMembers.find((item) => item._id === wItemId3);
       break;
-    case 2:
+    case 3:
       wMember3 = gWixMembers.find((item) => item._id === wItemId3);
       break;
     case 4:
       wMember3 = gGGLMembers.find((item) => item._id === wItemId3);
       break;
   }
-
+  console.log("wMember3");
+  console.log(wMember3);
   $w("#inpNameAmend2FirstName").value = wMember2.firstName;
   $w("#inpNameAmend2Surname").value = wMember2.surname;
   $w("#inpNameAmend3FirstName").value = wMember3.firstName;
@@ -2218,6 +2217,8 @@ export async function btnNameAmend3Save() {
     wTargetMember.lastName = wSurname;
     wTargetMember._id = wMember3._id;
     // eslint-disable-next-line no-unused-vars
+    console.log("targetmember");
+    console.log(wTargetMember);
     let wResult = await updateWixMember(wTargetMember);
     $w("#btnWixStage2Update").hide();
     removeFromSet("2", wMember2._id);

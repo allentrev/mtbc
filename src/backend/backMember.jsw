@@ -39,67 +39,6 @@ export const ROLES = Object.freeze({
 //====== WIX BASED MEMBERS ------------------------------------------------------------------------------------------
 //
 
-export function myUpdateMemberFunction(id, pRec) {
-  let wMember = {
-      "contactDetails": {
-        "firstName": pRec.firstName,
-        "lastName": pRec.lastName,
-        "phones": pRec.phones,
-        "emails": pRec.emails,
-        "addresses": pRec.addresses,
-        "customFields":
-         {
-          "custom.gender": {
-            "name": "gender",
-            "value": pRec.gender
-          },
-          "custom.contactpref": {
-            "name": "contactpref",
-            "value": pRec.contactpref
-          }
-        }
-      }
-}
-  return members.updateMember(id, wMember)
-    .then((member) => {
-      return member;
-    })
-    .catch((error) => {
-      console.error("/backend/backMember myUpdateMemberFunction updateMember catch, error ")
-      console.error(error);
-    });
-}
-
-export function myGetMemberFunction(id) {
-let options = {
-  fieldsets: [ 'FULL' ]
-}
-  return members.getMember(id, options)
-    .then((member) => {
-      const slug = member.profile.slug;
-      const name = `${member.contactDetails.firstName} ${member.contactDetails.lastName}`;
-      const contactId = member.contactId;
-      return member;
-    })
-    .catch((error) => {
-      console.error("/backend/backMember myGetMemberFunction getMember catch, error ");
-      console.error(error);
-    });
-}
-
-export async function listCustomFieldKeys() {
-
-let options = {
-  suppressAuth: true
-}
-
-  const queryResults = await contacts.queryExtendedFields().find(options);
-  // Filters for custom fields (where fieldType is USER_DEFINED), then converts to an array of keys
-  return queryResults.items
-    .filter(field => field.fieldType === 'USER_DEFINED')
-    .map(field => field.key);
-}
-
 export async function getActiveWixMembers() {
 	
 	let wWixMembers = await wixData.query('Members/PrivateMembersData')
@@ -112,187 +51,9 @@ export async function getActiveWixMembers() {
 	return wWixMembers.items;
 }
 
-export async function getFlattenedWixMember(pMemberId) {
-//-------------------------------- test data -----------------------------------
-// 88f9e943-ae7d-4039-9026-ccdf26676a2b	Me
-// ab308621-7664-4e93-a7aa-a255a9ee6867	Sarah
-// 51e6946d-6ef8-4da6-acf3-8896a1b3db6e Tom Brash
-// 6e5b5de1-214f-4b03-badf-4ae9a6918f77 Tim
-// 5c759fef-91f6-4ca9-ac83-f1fe2ff2f9b9 Tony
-
-// 0b331007-0dde-43b5-a06e-16794fd291c0 Julia
-// 15909692-9e75-4e26-a277-5506c3dda84d	betty
-
-//contact Ids
-//  ab308621-7664-4e93-a7aa-a255a9ee6867
-//  a1578089-266e-45fe-a6c7-e025a9278381
-//------------------------------------------------------------------------------
-	try {
-  
-    let wFlattenedMember = {
-      "_id": "",
-      "loginEmail": "",
-      "status": "",
-      "contactId": "",
-      "privacyStatus": "",
-      "activityStatus": "",
-      "lastLoginDate": null,
-      "contactDetails": null,
-      "profile": null,
-      "firstName": "",
-      "lastName": "",
-      "phones": [],
-      "emails": [],
-      "addresses": [],
-      "birthdate": "",
-      "company": "",
-      "jobTitle": "",
-      "gender": "",
-      "contactpref": "",
-      "homePhone": "",
-      "mobilePhone": "",
-      "otherPhones": [],
-      "contactEmail": "",
-      "altEmail": "",
-      "wixId": ""
-    }
-    let member = {};
-    
-    member = await readMember(pMemberId);
-
-    if (member) {
-      let contactDetails = member.contactDetails;
-      //console.log(contactDetails);
-      let customFields = contactDetails.customFields;
-      let customFieldValues = Object.values(customFields);
-      let wContactPrefIn = customFieldValues.filter ( item => item.name === "contactpref")[0];0
-      let wContactPref = (wContactPrefIn === undefined) ? null : wContactPrefIn.value;
-      let wGenderRec = customFieldValues.filter ( item => item.name === "gender")[0];
-      let wGender = (wGenderRec === undefined) ? null : wGenderRec.value;
-      //console.log(contactDetails);
-      //console.log(test);
-      //console.log(wGender, wcontactpref);
-      wFlattenedMember._id = member._id;
-      wFlattenedMember.loginEmail = (member.loginEmail) ? member.loginEmail.toLowerCase() : null;
-      wFlattenedMember.status = member.status;
-      wFlattenedMember.privacyStatus = member.privacyStatus;
-      wFlattenedMember.activityStatus = member.activityStatus;
-      wFlattenedMember.lastLoginDate = member.lastLoginDate;
-      wFlattenedMember.contactDetails = member.contactDetails;
-      wFlattenedMember.profile = member.profile;
-
-      wFlattenedMember.wixId = member._id;
-      wFlattenedMember.contactId = member.contactId;
-      wFlattenedMember.firstName = contactDetails.firstName;
-      wFlattenedMember.lastName = contactDetails.lastName;
-      wFlattenedMember.phones = contactDetails.phones;
-      wFlattenedMember.emails = contactDetails.emails;
-      wFlattenedMember.addresses = contactDetails.addresses;
-      wFlattenedMember.birthdate = contactDetails.birthdate;
-      wFlattenedMember.company = contactDetails.company;
-      wFlattenedMember.jobTitle = contactDetails.jobTitle;
-
-      let [wMobilePhone, wHomePhone, wOtherPhones]  = await getContactPhones(member.contactId);
-      wFlattenedMember.mobilePhone = String(wMobilePhone);
-      wFlattenedMember.homePhone = String(wHomePhone);
-      wFlattenedMember.otherPhones = [...wOtherPhones];
-      wFlattenedMember.contactpref = wContactPref;
-      wFlattenedMember.gender = wGender;													// only set in lstMembers record
-
-      let wEmails = wFlattenedMember.emails;
-      switch (wEmails.length) {
-        case 0:
-          wFlattenedMember.contactEmail = null;      
-          wFlattenedMember.altEmail = null;
-          break;
-        case 1:
-          wFlattenedMember.contactEmail = wEmails[0];      
-          wFlattenedMember.altEmail = null;
-          break;
-        default:
-          wFlattenedMember.contactEmail = wEmails[0];      
-          wFlattenedMember.altEmail = wEmails[1];
-          break;
-
-      //		const slug = member.profile.slug;
-      //		const name = `${member.contactDetails.firstName} ${member.contactDetails.lastName}`;
-      //		const contactId = member.contactId;
-        //	return member;
-
-    //console.timeEnd();
-    //console.log("Finish");
-      }
-    } else {
-      console.log("/backend/backMember getFlattenedWixMember Read member failed");
-    }                                               
-    return wFlattenedMember;
-  }
-  catch (error) {
-	  console.log("/backend/backMember getFlattenedWixMember TryCatch " + error, pMemberId);
-		return false;
-	}
-}
-//contact Ids
-//  ab308621-7664-4e93-a7aa-a255a9ee6867
-//  a1578089-266e-45fe-a6c7-e025a9278381  me
-//  5c759fef-91f6-4ca9-ac83-f1fe2ff2f9b9  Tony S
-//  51e6946d-6ef8-4da6-acf3-8896a1b3db6e  Tom Brash
-//  1470f30e-987b-4ca0-8224-be8456b7dd7f  Carol Williams  1470f30e-987b-4ca0-8224-be8456b7dd7f
-//  675acb68-f297-4ea5-a630-19ec1963e4ae  Nancy Scott 675acb68-f297-4ea5-a630-19ec1963e4ae
-
-export async function getContactPhones(pId) {
-  
-  let wContactPhones = [];
-  let wContactPhoneNumbers = [];
-  let wMobile = "";
-  let wHome = "";
-  let wOthers = [];
-  let wOthersOut = [];
-
-  function getNumber (pType) {
-    let wIdx = wContactPhones.findIndex(item => item.tag === pType);
-    let wNumber = "";
-    if (wIdx > -1) {
-      wNumber  = wContactPhoneNumbers[wIdx];
-      wContactPhones.splice(wIdx,1);
-      wContactPhoneNumbers.splice(wIdx,1);
-    }
-    return wNumber;
-  }
-
-  let wContact = await contacts.getContact(pId);
-  if (wContact) {
-    wContactPhones = wContact.info.phones;
-    if (!wContactPhones) { return ["","",[]]};
-    if (wContactPhones.length === 0){ return ["","",[]]};
-
-    wContactPhoneNumbers = wContactPhones.map (item => {
-        return (item.countryCode) ? item.e164Phone || item.formattedPhone : item.phone;
-    })
-    wMobile = getNumber("MOBILE");
-    wHome = getNumber("HOME");
-    if (wMobile === "" && wHome === "" && wContactPhoneNumbers.length > 0) {
-      wMobile = getNumber("UNTAGGED");
-      wHome = getNumber("UNTAGGED");
-    }
-    wOthers = [...wContactPhoneNumbers];
-    wOthersOut = wOthers.filter( item => item !== null && item !== undefined && item !== "null") 
-  }
-  return [wMobile, wHome, wOthersOut];
-}
-
-export function getFromArray(pArray, pIdx){
-	if (pArray.length === 0) {
-		return null;
-	} else if (pIdx <= pArray.length) {
-		return pArray[pIdx];
-	} else {
-		return pArray[0]
-	}
-}
-
 export async function readMember(pId){
-	let options = {
+
+  let options = {
 		fieldsets: [ 'FULL' ]
 	}
 
@@ -310,27 +71,14 @@ export async function readMember(pId){
 
 export async function updateWixMember(pRec){
 
-  let wCustomFields = {         
-          "custom.gender": {
-            "name": "gender",
-            "value": `${pRec.gender}`
-          },
-          "custom.contactpref": {
-            "name": "contactpref",
-            "value": `${pRec.contactpref}`
-          }
-  }
-	let wPhones = updateWixMemberPhones(pRec);
-  let wEmails = updateWixMemberEmails(pRec);
-	
 	let member = {
 		contactDetails: {
 			"firstName": pRec.firstName,
-			"lastName": pRec.lastName,
-			"phones": wPhones,
-			"emails": wEmails,
-			"addresses": pRec.addresses,
-			"customFields": wCustomFields
+			"lastName": pRec.lastName
+			//"phones": wPhones,
+			//"emails": wEmails,
+			//"addresses": pRec.addresses
+			//"customFields": wCustomFields
 		}
 	}
   return members.updateMember(pRec._id, member)
@@ -343,25 +91,6 @@ export async function updateWixMember(pRec){
     	})
 }
 
-export async function updateWixMemberNames(pRec){
-
-  let member = {
-		contactDetails: {
-			"firstName": pRec.firstName,
-			"lastName": pRec.lastName,
-		}
-	}
-  return members.updateMember(pRec._id, member)
-    	.then((member) => {
-        console.error("/backend/backMember UpdateWixMemberNames update ", pRec.firstName + " " + pRec.lastName);
-        return true;
-    	})
-    	.catch((error) => {
-      		console.error("/backend/backMember UpdateWixMemberNamesr catch error", error);
-          return false;
-    	})
-}
-
 /**
  * UNFORTUNATELY THIS REQUIRES QA BETA LIBRARY THATS NOT AVAILABLE TO ME AT THIS TIME
  * 
@@ -369,27 +98,14 @@ export async function updateWixMemberNames(pRec){
  */
 export async function createWixMember(pRec){
 
-  let wCustomFields = {         
-          "custom.gender": {
-            "name": "gender",
-            "value": `${pRec.gender}`
-          },
-          "custom.contactpref": {
-            "name": "contactpref",
-            "value": `${pRec.contactpref}`
-          }
-  }
-	let wPhones = updateWixMemberPhones(pRec);
-  let wEmails = updateWixMemberEmails(pRec);
-	
 	let member = {
 		contactDetails: {
 			"firstName": pRec.firstName,
-			"lastName": pRec.lastName,
-			"phones": wPhones,
-			"emails": wEmails,
-			"addresses": pRec.addresses,
-			"customFields": wCustomFields
+			"lastName": pRec.lastName
+			//"phones": wPhones,
+			//"emails": wEmails,
+			//"addresses": pRec.addresses,
+			//"customFields": wCustomFields
 		},
     loginEmail: (pRec.loginEmail) ? pRec.loginEmail.toLowerCase() : null,
     privacyString: "PUBLIC"
@@ -419,47 +135,6 @@ export async function deleteWixMembers(pIds){
     return false;
   }
 }
-
-
-export function myGetContactFunction(pId) {
-  //const pId = "a1578089-266e-45fe-a6c7-e025a9278381";
-  const options = {
-    suppressAuth: false
-  };
-
-  return contacts.getContact(pId, options)
-    .then((contact) => {
-      return contact;
-    })
-    .catch((error) => {
-      console.error("/backend/backMember myGetContactFunction getContact catch, error ");
-      console.error(error);
-    });
-}
-
-/**
- * The order of phone numbers is:
- *    
- */
-export function updateWixMemberPhones(pRec) {
-	return [pRec.mobilePhone, pRec.homePhone, ...pRec.otherPhones]
-  /**
-  let wInputList = [...pRec.phones];
-  let wOthers = [];
-  let wPhones =[];
-  if (wInputList){
-    if (wInputList.length > 2) {
-      wOthers = wInputList.slice(2);
-    }
-  }
-	let wHome = (pRec.homePhone) ? "" : convertNull(pRec.homePhone);
-	let wMobile = convertNull(pRec.mobilePhone);
-	wPhones.push(...wOthers);
-  wPhones.unshift(wHome);
-  wPhones.unshift(wMobile);
-  return wPhones;
-	*/
-}
 /**
  * This routine removes whitespace and all "-" characters from the number string.
  */
@@ -471,62 +146,6 @@ export function formPhoneString(pType, pPhoneNumber){
 	let wNum = wTemp.replace(/\s+/g, '');
 	return wNum;
 }
-
-export function removeFieldFromList(pList, pField){
-	let wIdx = pList.indexOf(pField);
-	if (wIdx === -1) { return pList};
-	let wList = pList.splice(wIdx,1);
-	return pList;
-}
-/**
- * Wix seems to use the following rules when handling lists of emails:
- * 1) if contactEmail doesnt exist, then emails[0] = loginEMail
- * 2) if the user has a number of emails then they are listed in emails[] overwriting any that were in there
- * 
- * My rule: 
- * 1) On adding an email, if email[0] = loginEmail, then overwrite emails[]
- * 2) Otherwiseemail[0] is contactEmail, email[1] is altEmail
- * 3) If there are more Wix emails, just append to emails[2+]. We dont use them in the web site
- */
-export function updateWixMemberEmails(pRec) {
-	let wEmails = [];
-  let wContactEmail = null;
-  let wAltEmail = null;
-  if (pRec.contactEmail) {
-    wContactEmail = (pRec.contactEmail) ? pRec.contactEmail.toLowerCase() : null;
-  } else {
-    wContactEmail = "";
-  }
-  if (pRec.altEMail) {
-    wAltEmail = (pRec.altEmail) ? pRec.altEmail.toLowerCase() : null;
-  } else {
-    wAltEmail = "";
-  }
-  if (wContactEmail === "" && wAltEmail === "") {
-    wEmails.push(pRec.loginEmail.toLowerCase());
-  } else {
-    if (wContactEmail === "") {
-      wEmails.push(pRec.AltEmail.toLowerCase());
-    } else {
-      wEmails.push(pRec.contactEmail.toLowerCase());
-      if (wAltEmail !== "") {
-        wEmails.push(pRec.altEmail.toLowerCase());
-      }
-    }
-  }
-	return wEmails;
-}
-
-export async function getApplicants() {
-	let res = await wixData.query('Members/PrivateMembersData')
-		.eq("status", "APPLICANT")
-		.ascending("lastName")
-		.ascending("firstName")
-		.limit(32)
-		.find();
-	return res.items;
-}
-
 
 //====== GENERAL WIX MEMBER -----------------------------------------------------------------------------
 //
@@ -1267,16 +886,6 @@ export async function getEmailAddress(pUserId) {
   }
 
 }
-
-
-export async function buildMemberCache() {
-  gMembers = await getAllMembers();
-  return true;
-}
-
-
-
-
 
 //====== Import MEMBER ----------==========================-----------------------------------------------
 //

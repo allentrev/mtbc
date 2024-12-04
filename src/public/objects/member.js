@@ -20,7 +20,8 @@ export const STATUS = Object.freeze({
 	PENDING:		"Pending",
 	ACTIVE:			"Active",
 	WAIT:			"Wait",
-	PAST:			"Past"
+	PAST:			"Past",
+	GUEST:			"Guest"
 });
 
 export const TYPE = Object.freeze({
