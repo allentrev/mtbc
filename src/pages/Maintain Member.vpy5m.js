@@ -2073,9 +2073,10 @@ export async function btnImpStage1Past_click() {
     console.log(gImpMembers);
     for (let wMemberId of gSelectRightStack) {
         console.log(wMemberId);
-        showStageWait(2);
+        showStageWait(1);
         await deleteImportMemberRecord(wMemberId);
         removeFromSet(p2or3, wMemberId);
+        await deleteGlobalStore(p2or3, wMemberId);
         showMsg(1, 0, `Imp member ${wMemberId} deleted`);
     }
     gSelectRightStack.length = 0;
@@ -2187,6 +2188,34 @@ async function updateLstMembers(pSource, p2or3, pStatus) {
         showMsg(1, 0, "Nothing to update");
     }
     hideStageWait(1);
+}
+
+function updateGlobalStore(p2or3, pRec) {}
+
+async function deleteGlobalStore(p2or3, pId) {
+    let wGlobalData = [];
+    if (/** left side repeater */ p2or3 === "2") {
+        wGlobalData = gLstMembers;
+    } /** right side repeater */ else {
+        if (gStage === "Lst-Wix") {
+            wGlobalData = gWixMembers;
+        }
+        if (gStage === "Lst-Google") {
+            wGlobalData = gGGLMembers;
+        }
+    }
+    if (!wGlobalData) {
+        console.log(`deleteGlobalStore wrong stage ${gStage}`);
+    }
+
+    let wIdx = wGlobalData.findIndex((item) => item._id === pId);
+    if (wIdx > -1) {
+        wGlobalData.splice(wIdx, 1);
+    } else {
+        console.log(
+            `deleteGlobalStore couldnt find ${pId} in ${gStage} global data store`
+        );
+    }
 }
 
 function resetCommand() {
