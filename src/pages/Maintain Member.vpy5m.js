@@ -2738,16 +2738,16 @@ export async function btnGGLStage4Guest_click() {
         );
         clearSelectStacks();
         showMsg(
-            1,
+            4,
             0,
             `Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`
         );
     } else {
         console.log(`/MaintainMember Bulk Members Save: Nothing to update`);
-        showMsg(1, 0, "Nothing to update");
+        showMsg(4, 0, "Nothing to update");
     }
     $w("#btnGGLStage4Guest").enable();
-    hideStageWait(4);
+    hideStageWait(4));
 }
 
 //====== Locker Handling ========================================================================================
