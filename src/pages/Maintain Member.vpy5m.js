@@ -2,11 +2,11 @@
 import wixWindow from "wix-window";
 import { authentication } from "wix-members";
 import wixLocation from "wix-location";
-
+import _ from "lodash";
 import { saveRecord } from "backend/backEvents.jsw";
 
 import { deleteWixMembers } from "backend/backMember.jsw";
-import { deleteGoogleImportRecord } from "backend/backMember.jsw";
+//import { deleteGoogleImportRecord } from "backend/backMember.jsw";
 import { deleteImportMemberRecord } from "backend/backMember.jsw";
 
 import { saveImportMemberRecord } from "backend/backMember.jsw";
@@ -58,9 +58,6 @@ import {
 } from "public/objects/entity";
 import { showWait, hideWait, getMode, setMode } from "public/objects/entity";
 import { getSelectedItem } from "public/objects/entity";
-
-let gWixUpdates = [];
-let gSkipped = [];
 
 const COLOUR = Object.freeze({
     FREE: "rgba(207,207,155,0.5)",
@@ -1192,9 +1189,9 @@ function hyphenatePhoneNumber(pPhoneNumber) {
 
 import { getActiveWixMembers } from "backend/backMember.jsw";
 import { updateWixMember } from "backend/backMember.jsw";
-import { updateLstMember } from "backend/backMember.jsw";
+//import { updateLstMember } from "backend/backMember.jsw";
 import { saveGoogleMemberRecord } from "backend/backMember.jsw";
-import { convertNull } from "backend/backMember.jsw";
+//import { convertNull } from "backend/backMember.jsw";
 import { formPhoneString } from "backend/backMember.jsw";
 
 let gWixRecords = [];
@@ -2218,9 +2215,9 @@ function updateRecordStore(p2or3, pRec) {
                         ]);
                         gLstRecords = [...wSortedData];
                     } else {
-                        wGlobalItem.firstName = pRec.firstName;
-                        wGlobalItem.lastName = pRec.lastName;
-                        wGlobalItem.status = pRec.status;
+                        wRecordItem.firstName = pRec.firstName;
+                        wRecordItem.lastName = pRec.lastName;
+                        wRecordItem.status = pRec.status;
                         wSortedData = _.orderBy(wRecordData, [
                             "surname",
                             "firstName",
@@ -2229,32 +2226,38 @@ function updateRecordStore(p2or3, pRec) {
                     }
                     break;
                 case "Lst-Wix":
-                    wGlobalItem.firstName = pRec.firstName;
-                    wGlobalItem.lastName = pRec.lastName;
-                    wGlobalItem.status = pRec.status;
-                    wSortedData = _.orderBy(["lastName", "firstName"]);
+                    wRecordItem.firstName = pRec.firstName;
+                    wRecordItem.lastName = pRec.lastName;
+                    wRecordItem.status = pRec.status;
+                    wSortedData = _.orderBy(wRecordData, [
+                        "lastName",
+                        "firstName",
+                    ]);
                     gWixRecords = [...wSortedData];
                     break;
                 case "Lst-GGL":
-                    wGlobalItem.firstName = pRec.firstName;
-                    wGlobalItem.lastName = pRec.lastName;
-                    wGlobalItem.status = pRec.status;
-                    wSortedData = _.orderBy(["lastName", "firstName"]);
+                    wRecordItem.firstName = pRec.firstName;
+                    wRecordItem.lastName = pRec.lastName;
+                    wRecordItem.status = pRec.status;
+                    wSortedData = _.orderBy(wRecordData, [
+                        "lastName",
+                        "firstName",
+                    ]);
                     gGGLRecords = [...wSortedData];
                     break;
             }
         } /** this is an addition */ else {
-            wGlobalData.push(pRec);
+            wRecordData.push(pRec);
             switch (gStage) {
                 case "Lst-Imp":
                     if (p2or3 === "2") {
-                        wSortedData = _.orderBy(wGlobalData, [
+                        wSortedData = _.orderBy(wRecordData, [
                             "surname",
                             "firstName",
                         ]);
                         gLstRecords = [...wSortedData];
                     } else {
-                        wSortedData = _.orderBy(wGlobalData, [
+                        wSortedData = _.orderBy(wRecordData, [
                             "surname",
                             "firstName",
                         ]);
@@ -2262,17 +2265,23 @@ function updateRecordStore(p2or3, pRec) {
                     }
                     break;
                 case "Lst-Wix":
-                    wGlobalItem.firstName = pRec.firstName;
-                    wGlobalItem.lastName = pRec.lastName;
-                    wGlobalItem.status = pRec.status;
-                    wSortedData = _.orderBy(["lastName", "firstName"]);
+                    wRecordItem.firstName = pRec.firstName;
+                    wRecordItem.lastName = pRec.lastName;
+                    wRecordItem.status = pRec.status;
+                    wSortedData = _.orderBy(wRecordData, [
+                        "lastName",
+                        "firstName",
+                    ]);
                     gWixRecords = [...wSortedData];
                     break;
                 case "Lst-GGL":
-                    wGlobalItem.firstName = pRec.firstName;
-                    wGlobalItem.lastName = pRec.lastName;
-                    wGlobalItem.status = pRec.status;
-                    wSortedData = _.orderBy(["lastName", "firstName"]);
+                    wRecordItem.firstName = pRec.firstName;
+                    wRecordItem.lastName = pRec.lastName;
+                    wRecordItem.status = pRec.status;
+                    wSortedData = _.orderBy(wRecordData, [
+                        "lastName",
+                        "firstName",
+                    ]);
                     gGGLRecords = [...wSortedData];
                     break;
             }
@@ -2281,13 +2290,13 @@ function updateRecordStore(p2or3, pRec) {
 }
 
 function deleteGlobalStore(p2or3, pId) {
-    let wGlobalData = getRecordStore(p2or3);
-    if (!wGlobalData) {
+    let wRecordData = getRecordStore(p2or3);
+    if (!wRecordData) {
         console.log(`deleteGlobalStore wrong stage ${gStage}`);
     } else {
-        let wIdx = wGlobalData.findIndex((item) => item._id === pId);
+        let wIdx = wRecordData.findIndex((item) => item._id === pId);
         if (wIdx > -1) {
-            wGlobalData.splice(wIdx, 1);
+            wRecordData.splice(wIdx, 1);
         } else {
             console.log(
                 `deleteGlobalStore couldnt find ${pId} in ${gStage} global data store`
@@ -2297,21 +2306,21 @@ function deleteGlobalStore(p2or3, pId) {
 }
 
 function getRecordStore(p2or3) {
-    let wGlobalData = [];
+    let wRecordData = [];
     if (/** left side repeater */ p2or3 === "2") {
-        wGlobalData = gLstRecords;
+        wRecordData = gLstRecords;
     } /** right side repeater */ else {
         if (gStage === "Lst-Imp") {
-            wGlobalData = gImpRecords;
+            wRecordData = gImpRecords;
         }
         if (gStage === "Lst-Wix") {
-            wGlobalData = gWixRecords;
+            wRecordData = gWixRecords;
         }
         if (gStage === "Lst-Google") {
-            wGlobalData = gGGLRecords;
+            wRecordData = gGGLRecords;
         }
     }
-    return wGlobalData;
+    return wRecordData;
 }
 
 function resetCommand() {
@@ -2427,7 +2436,7 @@ export async function btnNameAmend2Save_click() {
             $w("#btnLstStage1Amend").hide();
             removeFromSet("2", wMember2._id);
             removeFromSet("3", wMember3._id);
-            updateRecordStore("2", savedRecord);
+            updateRecordStore("2", wSavedRecord);
             clearSelectStacks();
             $w("#boxNameAmend").collapse();
             showMsg(
@@ -2548,6 +2557,7 @@ export async function btnNameAmend3Save() {
         wTargetMember._id = wMember3._id;
         // eslint-disable-next-line no-unused-vars
         let wResult = await saveGoogleMemberRecord(wTargetMember);
+        let wSavedRecord = wResult.savedRecord;
         $w("#btnGGLStage4Update").hide();
         removeFromSet("2", wMember2._id);
         removeFromSet("3", wMember3._id);
