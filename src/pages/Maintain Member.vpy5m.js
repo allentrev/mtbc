@@ -1603,12 +1603,6 @@ export function clearAllSelection(pN) {
 function configureSyncCommands(p2or3) {
     let wLeftSelectedStackCount = gSelectLeftStack.length;
     let wRightSelectedStackCount = gSelectRightStack.length;
-    console.log(
-        "CSC left = ",
-        wLeftSelectedStackCount,
-        " Right = ",
-        wRightSelectedStackCount
-    );
 
     if (gStage === "Lst-Import") {
         configureStage1Commands(
@@ -1830,7 +1824,6 @@ export function pushToSelectStack(pControl, pRec, pId, p2or3) {
         let x = gSelectLeftStack.findIndex((item) => item === pId);
         if (x === -1) {
             gSelectLeftStack.push(pId);
-            console.log("push to left", p2or3, gSelectLeftStack.length);
         } else {
             console.log(
                 "MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
@@ -1841,7 +1834,6 @@ export function pushToSelectStack(pControl, pRec, pId, p2or3) {
         let x = gSelectRightStack.findIndex((item) => item === pId);
         if (x === -1) {
             gSelectRightStack.push(pId);
-            console.log("push to right", p2or3, gSelectRightStack.length);
         } else {
             console.log(
                 "MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
@@ -1862,7 +1854,6 @@ export function pullFromSelectStack(pControl, pRec, pId, p2or3) {
         let x = gSelectLeftStack.findIndex((item) => item === pId);
         if (x > -1) {
             gSelectLeftStack.splice(x, 1);
-            console.log("pullFrom LEFT", p2or3, gSelectLeftStack.length);
         } else {
             console.log(
                 "MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
@@ -1874,7 +1865,6 @@ export function pullFromSelectStack(pControl, pRec, pId, p2or3) {
         let x = gSelectRightStack.findIndex((item) => item === pId);
         if (x > -1) {
             gSelectRightStack.splice(x, 1);
-            console.log("pullFrom Right", p2or3, gSelectRightStack.length);
         } else {
             console.log(
                 "MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
@@ -2683,7 +2673,7 @@ export async function btnWixStage3Delete_click() {
             );
             showMsg(3, 0, `Wix member not found`);
         }
-        hideStageWait(2);
+        hideStageWait(3);
     }
     gSelectRightStack.length = 0;
     $w(`#chk${p2or3}`).checked = false;
