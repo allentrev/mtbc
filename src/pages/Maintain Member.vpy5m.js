@@ -28,7 +28,7 @@ import { buildMemberCache } from "public/objects/member";
 
 //======= Entity Imports --------------------------------------------------------------------------------
 //
-import { setEntity, getEntity } from "public/objects/entity";
+import { setEntity, getEntity, alreadyExists } from "public/objects/entity";
 import { MODE } from "public/objects/entity";
 import {
     drpChoice_change,
@@ -83,14 +83,11 @@ const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
 
 let gMode = MODE.CLEAR;
 
-let gSelectLeftStack = [];
-let gSelectRightStack = [];
-
 let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = true;
+let gTest = false;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = gTest ? true : authentication.loggedIn();
@@ -359,7 +356,9 @@ function loadRptLockerListDuplicates($item, itemData) {
 
 //====== Load Data ---------------------------------------------------------------------------------------
 //
-
+//  This first Entity based section operates against the gLstRecords held in public/objects/entity. It includes all
+//  lstMembers without any filtering
+//
 export async function loadMembers() {
     //console.log("load Members");
     try {
@@ -590,10 +589,10 @@ export function btnMemberAToSync_click() {
     $w("#secLocker").collapse();
     $w("#secSync").expand();
     $w("#ancSyncStart").scrollTo();
-    gWixMembers = [];
-    gLstMembers = [];
-    gImpMembers = [];
-    gGGLMembers = [];
+    gWixRecords = [];
+    gLstRecords = [];
+    gImpRecords = [];
+    gGGLRecords = [];
     $w("#tblProgress").rows = [];
 }
 
@@ -1014,13 +1013,6 @@ export function getMTBCMaxValue(pDataset) {
     return String(wMTBCMaxValue);
 }
 
-export function alreadyExists(pLoginEmail) {
-    let wRec = gLstMembers.filter((item) => item.loginEmail === pLoginEmail);
-    if (wRec.length > 0) {
-        return true;
-    }
-    return false;
-}
 export async function validateLoginEmail(value, reject) {
     // @ts-ignore
     if (gMode === MODE.UPDATE) {
@@ -1194,19 +1186,25 @@ function hyphenatePhoneNumber(pPhoneNumber) {
 //  Stage 1 compares Lst against Import, and ensures Lst is in step with Import. Import is the master dataset.
 //  Stage 2 compares Wix against Lst , and ensures they are in step. Lst is taken as the master dataset.
 //
+//  Note that the gLstRecords array here is NOT THE SAME as that used above. When control passes back to the CRUD section,
+//  its gLstMember is refreshed from this one. Hence, during the changes in this section, there are no references to
+//  updating GlobalDataStore nor any repaginations. This is done purely on the handover
 
 import { getActiveWixMembers } from "backend/backMember.jsw";
 import { updateWixMember } from "backend/backMember.jsw";
 import { updateLstMember } from "backend/backMember.jsw";
-import { updateGGLMember } from "backend/backMember.jsw";
+import { saveGoogleMemberRecord } from "backend/backMember.jsw";
 import { convertNull } from "backend/backMember.jsw";
 import { formPhoneString } from "backend/backMember.jsw";
 
-let gWixMembers = [];
-let gLstMembers = [];
-let gImpMembers = [];
-let gGGLMembers = [];
+let gWixRecords = [];
+let gLstRecords = [];
+let gImpRecords = [];
+let gGGLRecords = [];
 let gStage = "Lst-Import";
+
+let gSelectLeftStack = [];
+let gSelectRightStack = [];
 
 let gMessages = [];
 //====== SYNC Event Handlers ----------------------------------------------------------------------------
@@ -1219,17 +1217,17 @@ export async function doStage1() {
     gMessages.length = 0;
     showMessage(gStage);
     $w("#tblProgress").rows = gMessages;
-    showMessage("Loading Lst Members"); //B
+    showMessage("Loading Lst Members"); //A
     let promiseA = loadLstMembersData();
     showMessage("Loading Wix Members"); //C
     let promiseC = loadWixMembersData();
-    showMessage("Loading Import Members"); //C
+    showMessage("Loading Import Members"); //B
     let promiseB = loadImpMembersData();
     Promise.all([promiseA, promiseB, promiseC]).then(async () => {
         if (reconcileMTBCValues()) {
             messageDone(0);
-            const onlyA = unique(gLstMembers, gImpMembers);
-            const onlyB = unique(gImpMembers, gLstMembers);
+            const onlyA = unique(gLstRecords, gImpRecords);
+            const onlyB = unique(gImpRecords, gLstRecords);
             //console.log("Stage 1 onlyA, onlyB");
             //console.log(onlyA);
             //console.log(onlyB);
@@ -1254,9 +1252,9 @@ export async function doStage2() {
     gMessages.length = 0;
     showMessage(gStage);
     $w("#tblProgress").rows = gMessages;
-    showMessage("Loading Lst Members"); //B
+    showMessage("Loading Lst Members"); //A
     let promiseA = loadLstMembersData();
-    showMessage("Loading Import Members"); //C
+    showMessage("Loading Import Members"); //B
     let promiseB = loadImpMembersData();
     Promise.all([promiseA, promiseB]).then(async () => {
         showMessage("Synchronise Lst field values");
@@ -1272,7 +1270,7 @@ export async function doStage3() {
     gMessages.length = 0;
     showMessage(gStage);
     $w("#tblProgress").rows = gMessages;
-    showMessage("Loading Lst Members"); //B
+    showMessage("Loading Lst Members"); //A
     let promiseA = loadLstMembersData();
     showMessage("Loading Wix Members"); //C
     let promiseC = loadWixMembersData();
@@ -1282,8 +1280,8 @@ export async function doStage3() {
         messageDone(3);
         clearSelectStacks();
         showMessage("Reconcile Lst with Wix");
-        const onlyC = unique(gWixMembers, gLstMembers);
-        const onlyD = unique(gLstMembers, gWixMembers);
+        const onlyC = unique(gWixRecords, gLstRecords);
+        const onlyD = unique(gLstRecords, gWixRecords);
         if (onlyC.length > 0 || onlyD.length > 0) {
             reconcileDatasets(onlyD, onlyC);
         } else {
@@ -1298,20 +1296,20 @@ export async function doStage4() {
     gMessages.length = 0;
     showMessage(gStage);
     $w("#tblProgress").rows = gMessages;
-    showMessage("Loading Lst Members"); //B
+    showMessage("Loading Lst Members"); //A
     let promiseA = loadLstMembersData();
-    showMessage("Loading Google Members"); //C
+    showMessage("Loading Google Members"); //E
     let promiseC = loadGGLMembersData();
 
     Promise.all([promiseA, promiseC]).then(() => {
         gStage = "Lst-Google";
         clearSelectStacks();
-        //console.log(gLstMembers);
-        //console.log(gGGLMembers);
+        //console.log(gLstRecords);
+        //console.log(gGGLRecords);
         messageDone(3);
         showMessage("Reconcile Lst with Google");
-        const onlyC = unique(gGGLMembers, gLstMembers);
-        const onlyD = unique(gLstMembers, gGGLMembers);
+        const onlyC = unique(gGGLRecords, gLstRecords);
+        const onlyD = unique(gLstRecords, gGGLRecords);
         //console.log("Stage 4 onlyD, onlyC");
         //console.log(onlyD);
         //console.log(onlyC);
@@ -1343,10 +1341,10 @@ export function boxRpt_click(p2or3, pEvent) {
 //
 function reconcileMTBCValues() {
     showMessage("Reconcile MTBC values");
-    if (gLstMembers) {
-        if (gWixMembers) {
-            let wLstMaxValue = getMTBCMaxValue(gLstMembers);
-            let wWixMaxValue = getMTBCMaxValue(gWixMembers);
+    if (gLstRecords) {
+        if (gWixRecords) {
+            let wLstMaxValue = getMTBCMaxValue(gLstRecords);
+            let wWixMaxValue = getMTBCMaxValue(gWixRecords);
             if (wLstMaxValue === wWixMaxValue) {
                 showMessage("MTBC values agree");
                 messageDone(4);
@@ -1437,7 +1435,7 @@ async function synchroniseFieldValues() {
     // through their Profile Edit. This does generate an update email to the Membership Officer, so it is assumed that
     // these changes will be in the spreadsheet). The fields comapred are address fields and telephone fields. Lockers
     // dealt with seperately in its own section.
-    //for (let wMember of gLstMembers){
+    //for (let wMember of gLstRecords){
 
     //
     let wFieldNames = [
@@ -1451,15 +1449,15 @@ async function synchroniseFieldValues() {
     ];
 
     let wChangeList = [];
-    //let wLstMember = gLstMembers[1];
-    for (let wLstMember of gLstMembers) {
+    //let wLstMember = gLstRecords[1];
+    for (let wLstMember of gLstRecords) {
         let wLstIn;
         let wImpIn;
         let wLst = "";
         let wImp = "";
         let wChanged = false;
         let wMsg = "";
-        let wImpMember = gImpMembers.find(
+        let wImpMember = gImpRecords.find(
             (item) => item.key === wLstMember.key
         );
         if (wImpMember) {
@@ -1549,7 +1547,7 @@ async function synchroniseFieldValues() {
                 `/MaintainMember synchroniseFieldValues Cant find member ${wLstMember.key}`
             );
         }
-    } // for of gLstMembers
+    } // for of gLstRecords
     if (wChangeList && wChangeList.length > 0) {
         let wParams = {
             changeList: wChangeList,
@@ -1808,7 +1806,7 @@ function removeFromSet(p2or3, pId) {
     if (wOnlyLeft.length === 0 && wOnlyRight.length === 0) {
         $w("#txtRefresh").expand();
         $w("#txt2None").collapse();
-        $w("#txt3None").collaspe();
+        $w("#txt3None").collapse();
         $w("#boxStage1Commands").collapse();
         messageDone(3);
     } else {
@@ -1893,21 +1891,21 @@ export function pullFromSelectStack(pControl, pRec, pId, p2or3) {
 export function getSyncTargetItem(p2or3, pId) {
     if (gStage === "Lst-Import") {
         if (p2or3 === "2") {
-            return gLstMembers.find((wItem) => wItem._id === pId);
+            return gLstRecords.find((wItem) => wItem._id === pId);
         } else {
-            return gImpMembers.find((wItem) => wItem._id === pId);
+            return gImpRecords.find((wItem) => wItem._id === pId);
         }
     } else if (gStage === "Lst-Wix") {
         if (p2or3 === "2") {
-            return gLstMembers.find((wItem) => wItem._id === pId);
+            return gLstRecords.find((wItem) => wItem._id === pId);
         } else {
-            return gWixMembers.find((wItem) => wItem._id === pId);
+            return gWixRecords.find((wItem) => wItem._id === pId);
         }
     } else if (gStage === "Lst-Google") {
         if (p2or3 === "2") {
-            return gLstMembers.find((wItem) => wItem._id === pId);
+            return gLstRecords.find((wItem) => wItem._id === pId);
         } else {
-            return gGGLMembers.find((wItem) => wItem._id === pId);
+            return gGGLRecords.find((wItem) => wItem._id === pId);
         }
     }
 }
@@ -1927,40 +1925,47 @@ function loadRptN(p2or3, pItem, pRec) {
 }
 //====== SYNC Load Data ---------------------------------------------------------------------------------------
 //
-async function loadWixMembersData() {
-    //console.log("loadWix`MembersData", gTest);
 
-    //if (gTest) {
-    //    wWixMembers = await getWixMembersTestData();
-    //} else {
+async function loadWixMembersData() {
+    //  Record key is _id
+
+    // console.log("loadWix`MembersData", gTest);
+
     let wWixContactsMembers = await getActiveWixMembers();
     for (let wMember of wWixContactsMembers) {
         let wTempMember = wMember;
         wTempMember.key = wTempMember.name;
-        gWixMembers.push(wTempMember);
+        gWixRecords.push(wTempMember);
     }
     gStage === "Lst-Import" ? messageDone(2) : messageDone(3);
 }
 
 async function loadLstMembersData() {
+    //  Record key is _id or id
+
     let wAll = await getAllMembers();
-    gLstMembers = wAll
+    gLstRecords = wAll
         .filter((item) => item.username !== "ClubHouse")
         .filter((item) => item.status !== "Past")
+        .filter((item) => item.status !== "Guest")
         .filter((item) => item.type !== "Test");
-    for (let wMember of gLstMembers) {
+    for (let wMember of gLstRecords) {
         wMember.key = wMember.fullName;
     }
     messageDone(1);
 }
 
 async function loadImpMembersData() {
-    gImpMembers = await getAllImportMembers();
+    //  Record key is _id
+
+    gImpRecords = await getAllImportMembers();
     messageDone(2);
 }
 
 async function loadGGLMembersData() {
-    gGGLMembers = await getAllGoogleMembers();
+    //  Record key is _id
+
+    gGGLRecords = await getAllGoogleMembers();
     messageDone(2);
 }
 //====== SYNC Helper functions -------------------------------------------------------------------------------
@@ -2010,16 +2015,16 @@ export async function btnLstAmend_click(pStage) {
 
     let wItemId2 = gSelectLeftStack[0];
     let wItemId3 = gSelectRightStack[0];
-    wMember2 = gLstMembers.find((item) => item._id === wItemId2);
+    wMember2 = gLstRecords.find((item) => item._id === wItemId2);
     switch (pStage) {
         case 1:
-            wMember3 = gImpMembers.find((item) => item._id === wItemId3);
+            wMember3 = gImpRecords.find((item) => item._id === wItemId3);
             break;
         case 3:
-            wMember3 = gWixMembers.find((item) => item._id === wItemId3);
+            wMember3 = gWixRecords.find((item) => item._id === wItemId3);
             break;
         case 4:
-            wMember3 = gGGLMembers.find((item) => item._id === wItemId3);
+            wMember3 = gGGLRecords.find((item) => item._id === wItemId3);
             break;
     }
     $w("#inpNameAmend2FirstName").value = wMember2.firstName;
@@ -2070,7 +2075,7 @@ export async function btnImpStage1Past_click() {
     //  it will not show up in the left repeater. Simply, remove the import entry.
     console.log("btnImpStage1Past", gStage);
     const p2or3 = "3";
-    console.log(gImpMembers);
+    console.log(gImpRecords);
     for (let wMemberId of gSelectRightStack) {
         console.log(wMemberId);
         showStageWait(1);
@@ -2095,13 +2100,15 @@ export async function btnImpStage1New_click(pType) {
     let wItemIds = [...gSelectRightStack];
     for (let wItemId of wItemIds) {
         showStageWait(1);
-        let wImportMember = gImpMembers.find((item) => item._id === wItemId);
+        let wImportMember = gImpRecords.find((item) => item._id === wItemId);
         if (wImportMember) {
             wImportMember.loginEmail = setMTBCUsername();
             wImportMember.type = wType;
-            let wResult = await createNewMember(false, wImportMember);
+            let wResult = await createNewMember(false, wImportMember); // this updates entity globalDataStore
             if (wResult && wResult.status) {
+                let wSavedRecord = wResult.savedRecord;
                 removeFromSet("3", wMember3._id);
+                updateRecordStore("2", wSavedRecord);
                 clearSelectStack(3);
                 $w("#lblMTBCCount").text = updateMTBCUsernameCount();
                 showMsg(
@@ -2150,7 +2157,8 @@ async function updateLstMembers(pSource, p2or3, pStatus) {
     let wUpdateStack = [];
     let wToday = new Date();
     for (let wMemberId of gSelectLeftStack) {
-        let wMember = gLstMembers.find((item) => item._id === wMemberId);
+        let wMember = gLstRecords.find((item) => item._id === wMemberId);
+        // using .find updates gLst directly
         if (wMember) {
             if (pSource === "btnLstPast") {
                 wMember.status = pStatus;
@@ -2160,11 +2168,11 @@ async function updateLstMembers(pSource, p2or3, pStatus) {
             }
             wUpdateStack.push(wMember);
             removeFromSet(p2or3, wMemberId);
-            clearSelectStack(p2or3);
         } else {
             console.log("/MaintainMember ${pSource} Lst Not found", wMemberId);
         }
     }
+    clearSelectStack(p2or3);
     if (wUpdateStack && wUpdateStack.length > 0) {
         let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
         let wUpdateArray = wResult.results.updatedItemIds;
@@ -2190,32 +2198,120 @@ async function updateLstMembers(pSource, p2or3, pStatus) {
     hideStageWait(1);
 }
 
-function updateGlobalStore(p2or3, pRec) {}
-
-async function deleteGlobalStore(p2or3, pId) {
-    let wGlobalData = [];
-    if (/** left side repeater */ p2or3 === "2") {
-        wGlobalData = gLstMembers;
-    } /** right side repeater */ else {
-        if (gStage === "Lst-Wix") {
-            wGlobalData = gWixMembers;
-        }
-        if (gStage === "Lst-Google") {
-            wGlobalData = gGGLMembers;
+function updateRecordStore(p2or3, pRec) {
+    let wRecordData = getRecordStore(p2or3);
+    let wSortedData = [];
+    if (!wRecordData) {
+        console.log(`updateRecordStore wrong stage ${gStage}`);
+    } else {
+        let wRecordItem = wRecordData.find((item) => item._id === pRec._id);
+        if (/** this is an update */ wRecordItem) {
+            switch (gStage) {
+                case "Lst-Imp":
+                    if (p2or3 === "2") {
+                        wRecordItem.firstName = pRec.firstName;
+                        wRecordItem.lastName = pRec.lastName;
+                        wRecordItem.status = pRec.status;
+                        wSortedData = _.orderBy(wRecordData, [
+                            "surname",
+                            "firstName",
+                        ]);
+                        gLstRecords = [...wSortedData];
+                    } else {
+                        wGlobalItem.firstName = pRec.firstName;
+                        wGlobalItem.lastName = pRec.lastName;
+                        wGlobalItem.status = pRec.status;
+                        wSortedData = _.orderBy(wRecordData, [
+                            "surname",
+                            "firstName",
+                        ]);
+                        gImpRecords = [...wSortedData];
+                    }
+                    break;
+                case "Lst-Wix":
+                    wGlobalItem.firstName = pRec.firstName;
+                    wGlobalItem.lastName = pRec.lastName;
+                    wGlobalItem.status = pRec.status;
+                    wSortedData = _.orderBy(["lastName", "firstName"]);
+                    gWixRecords = [...wSortedData];
+                    break;
+                case "Lst-GGL":
+                    wGlobalItem.firstName = pRec.firstName;
+                    wGlobalItem.lastName = pRec.lastName;
+                    wGlobalItem.status = pRec.status;
+                    wSortedData = _.orderBy(["lastName", "firstName"]);
+                    gGGLRecords = [...wSortedData];
+                    break;
+            }
+        } /** this is an addition */ else {
+            wGlobalData.push(pRec);
+            switch (gStage) {
+                case "Lst-Imp":
+                    if (p2or3 === "2") {
+                        wSortedData = _.orderBy(wGlobalData, [
+                            "surname",
+                            "firstName",
+                        ]);
+                        gLstRecords = [...wSortedData];
+                    } else {
+                        wSortedData = _.orderBy(wGlobalData, [
+                            "surname",
+                            "firstName",
+                        ]);
+                        gImpRecords = [...wSortedData];
+                    }
+                    break;
+                case "Lst-Wix":
+                    wGlobalItem.firstName = pRec.firstName;
+                    wGlobalItem.lastName = pRec.lastName;
+                    wGlobalItem.status = pRec.status;
+                    wSortedData = _.orderBy(["lastName", "firstName"]);
+                    gWixRecords = [...wSortedData];
+                    break;
+                case "Lst-GGL":
+                    wGlobalItem.firstName = pRec.firstName;
+                    wGlobalItem.lastName = pRec.lastName;
+                    wGlobalItem.status = pRec.status;
+                    wSortedData = _.orderBy(["lastName", "firstName"]);
+                    gGGLRecords = [...wSortedData];
+                    break;
+            }
         }
     }
+}
+
+function deleteGlobalStore(p2or3, pId) {
+    let wGlobalData = getRecordStore(p2or3);
     if (!wGlobalData) {
         console.log(`deleteGlobalStore wrong stage ${gStage}`);
-    }
-
-    let wIdx = wGlobalData.findIndex((item) => item._id === pId);
-    if (wIdx > -1) {
-        wGlobalData.splice(wIdx, 1);
     } else {
-        console.log(
-            `deleteGlobalStore couldnt find ${pId} in ${gStage} global data store`
-        );
+        let wIdx = wGlobalData.findIndex((item) => item._id === pId);
+        if (wIdx > -1) {
+            wGlobalData.splice(wIdx, 1);
+        } else {
+            console.log(
+                `deleteGlobalStore couldnt find ${pId} in ${gStage} global data store`
+            );
+        }
     }
+}
+
+function getRecordStore(p2or3) {
+    let wGlobalData = [];
+    if (/** left side repeater */ p2or3 === "2") {
+        wGlobalData = gLstRecords;
+    } /** right side repeater */ else {
+        if (gStage === "Lst-Imp") {
+            wGlobalData = gImpRecords;
+        }
+        if (gStage === "Lst-Wix") {
+            wGlobalData = gWixRecords;
+        }
+        if (gStage === "Lst-Google") {
+            wGlobalData = gGGLRecords;
+        }
+    }
+    return wGlobalData;
 }
 
 function resetCommand() {
@@ -2331,6 +2427,7 @@ export async function btnNameAmend2Save_click() {
             $w("#btnLstStage1Amend").hide();
             removeFromSet("2", wMember2._id);
             removeFromSet("3", wMember3._id);
+            updateRecordStore("2", savedRecord);
             clearSelectStacks();
             $w("#boxNameAmend").collapse();
             showMsg(
@@ -2375,6 +2472,7 @@ export async function btnNameAmend3Save() {
         let wResult = await saveImportMemberRecord(wTargetMember);
         //  Send message to Membership secreatry
         if (wResult && wResult.status) {
+            let wSavedRecord = wResult.savedRecord;
             let wParams = {
                 oldName: wOldName,
                 newName: wTargetMember.firstName + " " + wTargetMember.surname,
@@ -2397,6 +2495,8 @@ export async function btnNameAmend3Save() {
                 $w("#btnLstStage1Amend").hide();
                 removeFromSet("2", wMember2._id);
                 removeFromSet("3", wMember3._id);
+                updateRecordStore("3", wSavedRecord);
+
                 clearSelectStacks();
                 $w("#boxNameAmend").collapse();
                 showMsg(
@@ -2429,10 +2529,11 @@ export async function btnNameAmend3Save() {
         wTargetMember.lastName = wSurname;
         wTargetMember._id = wMember3._id;
         // eslint-disable-next-line no-unused-vars
-        let wResult = await updateWixMember(wTargetMember);
+        let wSavedRecord = await updateWixMember(wTargetMember);
         $w("#btnWixStage3Update").hide();
         removeFromSet("2", wMember2._id);
         removeFromSet("3", wMember3._id);
+        updateRecordStore("3", wSavedRecord);
         clearSelectStacks();
         $w("#boxNameAmend").collapse();
         showMsg(3, 0, `Wix name ${wFirstName} ${wSurname} updated`);
@@ -2446,10 +2547,11 @@ export async function btnNameAmend3Save() {
         wTargetMember.lastName = wSurname;
         wTargetMember._id = wMember3._id;
         // eslint-disable-next-line no-unused-vars
-        let wResult = await updateGGLMember(wTargetMember);
+        let wResult = await saveGoogleMemberRecord(wTargetMember);
         $w("#btnGGLStage4Update").hide();
         removeFromSet("2", wMember2._id);
         removeFromSet("3", wMember3._id);
+        updateRecordStore("3", wSavedRecord);
         clearSelectStacks();
         $w("#boxNameAmend").collapse();
         showMsg(4, 0, `Google name ${wFirstName} ${wSurname} updated`);
@@ -2476,7 +2578,7 @@ export function btnNameAmendCancel_click() {
     $w("#boxNameAmend").collapse();
 }
 
-//====== Stage 2: Lst v Wix Compare ===========================================================================
+//====== Stage 3: Lst v Wix Compare ===========================================================================
 //
 export async function btnLstStage3Register_click() {
     console.log("btnLstStage3Register", gStage);
@@ -2494,16 +2596,19 @@ export async function btnLstStage3Register_click() {
     for (let wMemberId of gSelectLeftStack) {
         $w("#btnLstStage3Register").hide();
         showStageWait(3);
-        let wLstMember = gLstMembers.find((item) => item._id === wMemberId);
+        let wLstMember = gLstRecords.find((item) => item._id === wMemberId);
         if (wLstMember) {
             wLstMember.loginEmail = setMTBCUsername();
             let wOldLstId = wLstMember._id;
             wLstMember._id = undefined;
-            let wResult = await createNewMember(true, wLstMember);
+            let wResult = await createNewMember(true, wLstMember); //includes updateGlobalDataStore
             if (wResult && wResult.status) {
+                let wSavedRecord = wResult.savedRecord;
                 removeFromSet("2", wMemberId);
-                clearSelectStack(2);
+                updateRecordStore("2", wSavedRecord);
+                updateRecordStore("3", wSavedRecord);
                 await deleteLstMember(wOldLstId);
+                deleteGlobalStore("2", wOldLstId);
                 $w("#lblMTBCCount").text = updateMTBCUsernameCount();
                 showMsg(
                     3,
@@ -2535,6 +2640,7 @@ export async function btnLstStage3Register_click() {
     if (wErrMsg.length > 1) {
         $w("#lblErrMsg").text = wErrMsg;
     }
+    clearSelectStack(2);
 }
 
 export async function btnWixStage3Delete_click() {
@@ -2546,11 +2652,11 @@ export async function btnWixStage3Delete_click() {
     const p2or3 = "3";
     for (let wMemberId of gSelectRightStack) {
         showStageWait(3);
-        let wMember = gWixMembers.find((item) => item._id === wMemberId);
+        let wMember = gWixRecords.find((item) => item._id === wMemberId);
         if (wMember) {
             await deleteWixMembers([wMemberId]);
             removeFromSet(p2or3, wMemberId);
-            clearSelectStack(3);
+            deleteGlobalStore(p2or3, pMemberId);
             showMsg(
                 3,
                 0,
@@ -2567,13 +2673,14 @@ export async function btnWixStage3Delete_click() {
     }
     gSelectRightStack.length = 0;
     $w(`#chk${p2or3}`).checked = false;
+    clearSelectStack(3);
 }
 //====== Stage 4: Lst v Google Import ===========================================================================
 //
 
 export async function btnGGLStage4Guest_click() {
-    // There is an entry in Import but not in Import. This is the case for members who have left the club or who
-    // have passed away. So, change the Past status to a new Guest status.
+    // There is an entry in Google Import but not in Lst. This is the case for members who have left the club
+    // but is added to Message Labels so they get Notifications, Needs tochange the Past status to a new Guest status.
     $w("#btnGGLStage4Guest").disable();
     console.log("Do STge 4 guest");
     let wToday = new Date();
@@ -2581,20 +2688,20 @@ export async function btnGGLStage4Guest_click() {
     showStageWait(4);
     let wUpdateStack = [];
     for (let wMemberId of gSelectRightStack) {
-        let wGGLEntry = gGGLMembers.find((item) => item._id === wMemberId);
+        let wGGLEntry = gGGLRecords.find((item) => item._id === wMemberId);
         if (wGGLEntry) {
             // find Lst record, if any
             let wFirstName = wGGLEntry.firstName;
-            let wSurname = wGGLEntry.surname;
+            let wSurname = wGGLEntry.lastName;
             let wResult = await findLstMemberByFullName(wFirstName, wSurname);
             if (wResult && wResult.status) {
-                let wMembers = wResult.members;
+                let wLstEntrys = wResult.members;
                 if (wMembers.length > 1) {
                     console.log(
                         `/Page/MaintainMember btnGGLStage4Guest multiple LSt records for ${wFirstName} ${wSurname}`
                     );
                 }
-                let wMember = wMembers[0];
+                let wMember = wLstEntrys[0];
                 if (wMember.status !== "Past") {
                     console.log(
                         `/Page/MaintainMember btnGGLStage4Guest Member is a ${wMember.status} member, not a Past member`
@@ -2602,19 +2709,20 @@ export async function btnGGLStage4Guest_click() {
                     //showError("");
                     return;
                 }
-                wMember.status = "Guest";
+                wMember.status = "Active";
+                wMember.type = "Guest";
                 wMember.dateLeft = wToday;
                 wUpdateStack.push(wMember);
                 removeFromSet("3", wMemberId);
-                clearSelectStack(3);
+                updateRecordStore(2, wMember);
             } /** wResult */ else {
                 console.log("/MaintainMember GGL Not found", wMemberId);
-                await deleteGoogleImportRecord(wMemberId);
-                removeFromSet("3", wMemberId);
-                clearSelectStack(3);
+                console.log(wResult);
             }
         } // GGLEntry
     } //for loop
+
+    clearSelectStack(3);
 
     if (wUpdateStack && wUpdateStack.length > 0) {
         let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
@@ -2919,6 +3027,12 @@ async function processCustomOpen() {
 }
 
 function processCustomClose() {
+    // copy gLstRecords into GlobalDataStore and reset pagination
+    setEntity("Member", [...gLstRecords]);
+    resetPagination("Member");
+    console.log(
+        "/pages/MaintainMember processCustomClose Member entity reset from sync"
+    );
     $w("#secDesktop").expand();
     $w("#secMobile").collapse();
     $w("#secMember").expand();
@@ -3146,33 +3260,33 @@ export function showMsg(pStage, pNo, pMsg = "") {
 /**
  * ------------------------------Array function examples --------------------------------
     // Arrays containing elements from A and B, not C
-    const AandBnotC = gWixMembers.filter(a => 
-        gLstMembers.some(b => b.key === a.key) && 
-        !gImpMembers.some(c => c.key === a.key)
+    const AandBnotC = gWixRecords.filter(a => 
+        gLstRecords.some(b => b.key === a.key) && 
+        !gImpRecords.some(c => c.key === a.key)
     );
     console.log("Only Wix and Lst, not Imp");
     console.log(AandBnotC);
 
     // Arrays containing elements from B and C, not A
-    const BandCnotA = gLstMembers.filter(b => 
-        gImpMembers.some(c => c.key === b.key) && 
-        !gWixMembers.some(a => a.key === b.key)
+    const BandCnotA = gLstRecords.filter(b => 
+        gImpRecords.some(c => c.key === b.key) && 
+        !gWixRecords.some(a => a.key === b.key)
     );
     console.log("Only Lst and Imp, not Wix");
     console.log(BandCnotA);
 
     // Arrays containing elements from A and C, not B
-    const AandCnotB = gWixMembers.filter(a => 
-        gImpMembers.some(c => c.key === a.key) && 
-        !gLstMembers.some(b => b.key === a.key)
+    const AandCnotB = gWixRecords.filter(a => 
+        gImpRecords.some(c => c.key === a.key) && 
+        !gLstRecords.some(b => b.key === a.key)
     );
     console.log("Only Wix and Imp, not LSt");
     console.log(AandCnotB);
 
     // Arrays containing elements common to A, B, and C
-    const AandBandC = gWixMembers.filter(a => 
-        gLstMembers.some(b => b.key === a.key) && 
-        gImpMembers.some(c => c.key === a.key)
+    const AandBandC = gWixRecords.filter(a => 
+        gLstRecords.some(b => b.key === a.key) && 
+        gImpRecords.some(c => c.key === a.key)
     );
 */
 /**

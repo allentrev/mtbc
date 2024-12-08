@@ -191,6 +191,14 @@ export function getEntity(pTarget) {
     return wRec;
 }
 
+export function alreadyExists(pLoginEmail) {
+    let wRec = gMembers.filter((item) => item.loginEmail === pLoginEmail);
+    if (wRec.length > 0) {
+        return true;
+    }
+    return false;
+}
+
 /**
  *
  * @param {string} pMode
