@@ -2747,7 +2747,7 @@ export async function btnGGLStage4Guest_click() {
         showMsg(4, 0, "Nothing to update");
     }
     $w("#btnGGLStage4Guest").enable();
-    hideStageWait(4));
+    hideStageWait(4);
 }
 
 //====== Locker Handling ========================================================================================
