@@ -2670,7 +2670,7 @@ export async function btnWixStage3Delete_click() {
         if (wMember) {
             await deleteWixMembers([wMemberId]);
             removeFromSet(p2or3, wMemberId);
-            deleteGlobalStore(p2or3, pMemberId);
+            deleteGlobalStore(p2or3, wMemberId);
             showMsg(
                 3,
                 0,
