@@ -84,7 +84,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = gTest ? true : authentication.loggedIn();
@@ -1928,7 +1928,11 @@ async function loadWixMembersData() {
 
     // console.log("loadWix`MembersData", gTest);
 
-    let wWixContactsMembers = await getActiveWixMembers();
+    const wAll = await getActiveWixMembers();
+    let wWixContactsMembers = wAll.filter(
+        (item) => item.name !== "Maidenhead Town"
+    );
+
     for (let wMember of wWixContactsMembers) {
         let wTempMember = wMember;
         wTempMember.key = wTempMember.name;
@@ -1944,7 +1948,7 @@ async function loadLstMembersData() {
     gLstRecords = wAll
         .filter((item) => item.username !== "ClubHouse")
         .filter((item) => item.status !== "Past")
-        .filter((item) => item.status !== "Guest")
+        .filter((item) => item.type !== "Guest")
         .filter((item) => item.type !== "Test");
     for (let wMember of gLstRecords) {
         wMember.key = wMember.fullName;

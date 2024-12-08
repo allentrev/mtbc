@@ -1208,24 +1208,24 @@ export function filterByListChoice(pTarget) {
             break;
 
         case "Member":
-            wFilter1 = $w("#drpMemberChoiceStatus").value;
-            wFilter2 = $w("#drpMemberChoiceType").value;
+            wFilter2 = $w("#drpMemberChoiceStatus").value;
+            wFilter1 = $w("#drpMemberChoiceType").value;
             if (
                 /** status */ wFilter1 === "All" &&
                 /** type */ wFilter2 === "All"
             ) {
                 wDataToDisplay = [...gMembers];
-            } else if (/** status */ wFilter1 === "All") {
+            } else if (/** status */ wFilter2 === "All") {
                 wDataToDisplay = gMembers.filter(
-                    (item) => item.type === wFilter2
+                    (item) => item.type === wFilter1
                 );
-            } else if (/** type */ wFilter2 === "All") {
+            } else if (/** type */ wFilter1 === "All") {
                 wDataToDisplay = gMembers.filter(
-                    (item) => item.status === wFilter1
+                    (item) => item.status === wFilter2
                 );
             } else {
                 wDataToDisplay = gMembers.filter(
-                    (item) => item.type === wFilter2 && item.status === wFilter1
+                    (item) => item.type === wFilter1 && item.status === wFilter2
                 );
             }
             break;
