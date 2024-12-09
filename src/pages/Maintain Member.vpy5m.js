@@ -84,7 +84,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = gTest ? true : authentication.loggedIn();
@@ -941,54 +941,79 @@ export function updateDashboard() {
         year: "numeric",
     };
 
-    let wYearStart = new Date(gYear - 1, 8, 1);
-    let wMembers = getEntity("Member");
-    let wNoSocial = wMembers.filter(
-        (item) => item.type === "Social" && item.status === "Active"
+    const wYearStart = new Date(gYear - 1, 8, 1);
+    const wMembers = getEntity("Member");
+
+    const wActiveMembers = wMembers.filter(
+        (item) => item.status === "Active" || item.status === "Pending"
+    );
+
+    const wNoSocial = wActiveMembers.filter(
+        (item) => item.type === "Social"
     ).length;
-    let wNoFull = wMembers.filter(
-        (item) => item.type === "Full" && item.status === "Active"
+
+    const wNoFull = wActiveMembers.filter(
+        (item) => item.type === "Full"
     ).length;
-    let wNoLadies = wMembers.filter(
-        (item) =>
-            item.gender === "L" &&
-            item.status === "Active" &&
-            item.type !== "Test"
+    const wNoPending = wActiveMembers.filter(
+        (item) => item.status === "Pending" && item.type !== "Test"
     ).length;
-    let wNoMen = wMembers.filter(
-        (item) =>
-            item.gender === "M" &&
-            item.status === "Active" &&
-            item.type !== "Test"
+
+    const wNoActive = wActiveMembers.filter(
+        (item) => item.status === "Active" && item.type !== "Test"
     ).length;
-    let wNoWait = wMembers.filter((item) => item.type === "Wait").length;
-    let wNoTest = wMembers.filter((item) => item.type === "Test").length;
-    let wNoTotal = wNoSocial + wNoFull;
-    let wPast = wMembers.filter((item) => item.status === "Past");
-    let wNoPast = wPast.length;
-    let wNewMembersSet = wMembers.filter(
+    const wNoLadies = wActiveMembers.filter(
+        (item) => item.gender === "L" && item.type !== "Test"
+    ).length;
+    const wNoMen = wActiveMembers.filter(
+        (item) => item.gender === "M" && item.type !== "Test"
+    ).length;
+
+    const wNoWait = wMembers.filter(
+        (item) => item.status === "Wait" && item.type !== "Test"
+    ).length;
+    const wNoTest = wMembers.filter((item) => item.type === "Test").length;
+    const wNoGuest = wMembers.filter((item) => item.type === "Guest").length;
+    const wPast = wMembers.filter(
+        (item) => item.status === "Past" && item.type !== "Test"
+    );
+
+    const wNoTotal = wNoSocial + wNoFull;
+    const wNoPast = wPast.length;
+    const wNewMembersSet = wMembers.filter(
         (item) => item._createdDate > wYearStart
     );
-    let wNoJoined = wNewMembersSet.length;
-    let wOldMembersSet = wMembers.filter(
+    const wNoJoined = wNewMembersSet.length;
+    const wOldMembersSet = wMembers.filter(
         (item) =>
             item.status === "Past" &&
             item.dateLeft !== undefined &&
             item.dateLeft > wYearStart
     );
-    let wNoLeft = wOldMembersSet.length;
-    let wRow = [
+    const wNoLeft = wOldMembersSet.length;
+
+    const wTopRow = [
         {
             total: wNoTotal,
             ladies: wNoLadies,
             men: wNoMen,
-            social: wNoSocial,
             full: wNoFull,
-            wait: wNoWait,
+            social: wNoSocial,
             test: wNoTest,
-            past: wNoPast,
+            guest: wNoGuest,
             joined: wNoJoined,
             left: wNoLeft,
+        },
+    ];
+
+    const wBottomRow = [
+        {
+            total: wNoTotal,
+            pending: wNoPending,
+            active: wNoActive,
+            social: wNoSocial,
+            wait: wNoWait,
+            past: wNoPast,
         },
     ];
 
@@ -996,7 +1021,8 @@ export function updateDashboard() {
     // @ts-ignore
     $w("#lblSinceDate").text = wYearStart.toLocaleDateString(locale, options);
 
-    $w("#tblMemberDashboard").rows = wRow;
+    $w("#tblMemberDashboardTop").rows = wTopRow;
+    $w("#tblMemberDashboardBottom").rows = wBottomRow;
 }
 export function getMTBCMaxValue(pDataset) {
     //  Determine the highest MTBCnn value and display +1
@@ -2641,6 +2667,7 @@ export async function btnLstStage3Register_click() {
         }
         hideStageWait(3);
     }
+
     if (wErrMsg.length > 1) {
         $w("#lblErrMsg").text = wErrMsg;
     }
