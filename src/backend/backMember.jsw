@@ -401,11 +401,12 @@ export async function createMember(pIsAudit, pMember) {
                             loginMethod: wLoginMethod,
                         };
                         if (wLstMember.contactpref === "N") {
+                            /**
                             console.log(
                                 "Test Mode: Send Msg OffLineRegistrationConfirmation"
                             );
                             wResult.status = true;
-                            /**
+                            */
                             wResult = await sendMsgToJob(
                                 "E",
                                 ["WEB"],
@@ -414,14 +415,15 @@ export async function createMember(pIsAudit, pMember) {
                                 "OffLineRegistrationConfirmation",
                                 wParams
                             );
-                            */
+                            
                         } else {
+                            /** 
                             console.log(
                                 "Test Mode: Send Msg Membership confirmation"
                             );
                             wResult.status = true;
-                            /**
-                            wResult = await sendMsg(
+                            */
+                            await sendMsg(
                                 "U",
                                 [wLstId],
                                 null,
