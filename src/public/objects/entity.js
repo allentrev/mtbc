@@ -1079,8 +1079,7 @@ export function filterByListChoice(pTarget) {
     let wDateFrom = 0;
     let wDateTo = 0;
     let wBookerId = "";
-    let wByWho = "";
-    let wByDate = "";
+
     let choices = ["All", "CE", "CG", "HG"];
 
     let wTeamName = "";

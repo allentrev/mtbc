@@ -84,7 +84,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = true;
+let gTest = false;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = gTest ? true : authentication.loggedIn();
@@ -1024,6 +1024,7 @@ export function updateDashboard() {
     $w("#tblMemberDashboardTop").rows = wTopRow;
     $w("#tblMemberDashboardBottom").rows = wBottomRow;
 }
+
 export function getMTBCMaxValue(pDataset) {
     //  Determine the highest MTBCnn value and display +1
     let wMTBCMaxValue = 0;
@@ -1148,10 +1149,6 @@ export function inpMemberEditUsername_change(event) {
 }
 function setMTBCUsername() {
     let wMTBCCount = parseInt($w("#lblMTBCCount").text, 10);
-    console.log(
-        "/page/MaintainMember inpEditUsername_change MTBC Count =  ",
-        wMTBCCount
-    );
     return `mtbc${wMTBCCount}@maidenheadtownbc.com`;
 }
 
@@ -1575,16 +1572,20 @@ async function synchroniseFieldValues() {
         let wParams = {
             changeList: wChangeList,
         };
-        let wResult = await sendMsgToJob(
-            "E",
-            ["WEB"],
-            null,
-            false,
-            "MemberAmendFieldValues",
-            wParams
-        );
+        let wResult = { status: false };
+        if (gTest) {
+            wResult.status = true;
+        } else {
+            wResult = await sendMsgToJob(
+                "E",
+                ["WEB"],
+                null,
+                false,
+                "MemberAmendFieldValues",
+                wParams
+            );
+        }
 
-        //let wResult.status = true;
         if (wResult && wResult.status) {
             console.log("/MaintainMember synchroniseFieldValues sendMsg OK");
         } else {
@@ -1607,13 +1608,11 @@ function clearSelectStacks() {
 function clearSelectStack(p2or3) {
     if (p2or3 === "2") {
         gSelectLeftStack.length = 0;
-        console.log("css LEFT", p2or3, gSelectLeftStack.length);
 
         $w("#chk2").checked = false;
         $w("#boxRpt2").style.backgroundColor = COLOUR.FREE;
     } else {
         gSelectRightStack.length = 0;
-        console.log("css right", p2or3, gSelectRightStack.length);
         $w("#chk3").checked = false;
         $w("#boxRpt3").style.backgroundColor = COLOUR.FREE;
     }
@@ -2216,96 +2215,108 @@ async function updateLstMembers(pSource, p2or3, pStatus) {
 }
 
 function updateRecordStore(p2or3, pRec) {
-    let wRecordData = getRecordStore(p2or3);
-    let wSortedData = [];
-    if (!wRecordData) {
-        console.log(`updateRecordStore wrong stage ${gStage}`);
-    } else {
-        let wRecordItem = wRecordData.find((item) => item._id === pRec._id);
-        if (/** this is an update */ wRecordItem) {
-            switch (gStage) {
-                case "Lst-Imp":
-                    if (p2or3 === "2") {
+    try {
+        let wRecordData = getRecordStore(p2or3);
+        let wSortedData = [];
+        let wRecordItem = {};
+        if (!wRecordData) {
+            console.log(`updateRecordStore wrong stage ${gStage}`);
+        } else {
+            wRecordItem = wRecordData.find((item) => item._id === pRec._id);
+            if (/** this is an update */ wRecordItem) {
+                switch (gStage) {
+                    case "Lst-Imp":
+                        if (p2or3 === "2") {
+                            wRecordItem.firstName = pRec.firstName;
+                            wRecordItem.lastName = pRec.lastName;
+                            wRecordItem.status = pRec.status;
+                            wSortedData = _.orderBy(wRecordData, [
+                                "surname",
+                                "firstName",
+                            ]);
+                            gLstRecords = [...wSortedData];
+                        } else {
+                            wRecordItem.firstName = pRec.firstName;
+                            wRecordItem.lastName = pRec.lastName;
+                            wRecordItem.status = pRec.status;
+                            wSortedData = _.orderBy(wRecordData, [
+                                "surname",
+                                "firstName",
+                            ]);
+                            gImpRecords = [...wSortedData];
+                        }
+                        break;
+                    case "Lst-Wix":
                         wRecordItem.firstName = pRec.firstName;
                         wRecordItem.lastName = pRec.lastName;
                         wRecordItem.status = pRec.status;
                         wSortedData = _.orderBy(wRecordData, [
-                            "surname",
+                            "lastName",
                             "firstName",
                         ]);
-                        gLstRecords = [...wSortedData];
-                    } else {
+                        gWixRecords = [...wSortedData];
+                        break;
+                    case "Lst-GGL":
                         wRecordItem.firstName = pRec.firstName;
                         wRecordItem.lastName = pRec.lastName;
                         wRecordItem.status = pRec.status;
                         wSortedData = _.orderBy(wRecordData, [
-                            "surname",
+                            "lastName",
                             "firstName",
                         ]);
-                        gImpRecords = [...wSortedData];
-                    }
-                    break;
-                case "Lst-Wix":
-                    wRecordItem.firstName = pRec.firstName;
-                    wRecordItem.lastName = pRec.lastName;
-                    wRecordItem.status = pRec.status;
-                    wSortedData = _.orderBy(wRecordData, [
-                        "lastName",
-                        "firstName",
-                    ]);
-                    gWixRecords = [...wSortedData];
-                    break;
-                case "Lst-GGL":
-                    wRecordItem.firstName = pRec.firstName;
-                    wRecordItem.lastName = pRec.lastName;
-                    wRecordItem.status = pRec.status;
-                    wSortedData = _.orderBy(wRecordData, [
-                        "lastName",
-                        "firstName",
-                    ]);
-                    gGGLRecords = [...wSortedData];
-                    break;
-            }
-        } /** this is an addition */ else {
-            wRecordData.push(pRec);
-            switch (gStage) {
-                case "Lst-Imp":
-                    if (p2or3 === "2") {
+                        gGGLRecords = [...wSortedData];
+                        break;
+                }
+            } /** this is an addition */ else {
+                wRecordData.push(pRec);
+                wRecordItem = wRecordData.find((item) => item._id === pRec._id);
+                switch (gStage) {
+                    case "Lst-Imp":
+                        if (p2or3 === "2") {
+                            wSortedData = _.orderBy(wRecordData, [
+                                "surname",
+                                "firstName",
+                            ]);
+                            gLstRecords = [...wSortedData];
+                        } else {
+                            wSortedData = _.orderBy(wRecordData, [
+                                "surname",
+                                "firstName",
+                            ]);
+                            gImpRecords = [...wSortedData];
+                        }
+                        break;
+                    case "Lst-Wix":
+                        wRecordItem.firstName = pRec.firstName;
+                        wRecordItem.lastName = pRec.lastName;
+                        wRecordItem.status = pRec.status;
                         wSortedData = _.orderBy(wRecordData, [
-                            "surname",
+                            "lastName",
                             "firstName",
                         ]);
-                        gLstRecords = [...wSortedData];
-                    } else {
+                        gWixRecords = [...wSortedData];
+                        break;
+                    case "Lst-GGL":
+                        wRecordItem.firstName = pRec.firstName;
+                        wRecordItem.lastName = pRec.lastName;
+                        wRecordItem.status = pRec.status;
                         wSortedData = _.orderBy(wRecordData, [
-                            "surname",
+                            "lastName",
                             "firstName",
                         ]);
-                        gImpRecords = [...wSortedData];
-                    }
-                    break;
-                case "Lst-Wix":
-                    wRecordItem.firstName = pRec.firstName;
-                    wRecordItem.lastName = pRec.lastName;
-                    wRecordItem.status = pRec.status;
-                    wSortedData = _.orderBy(wRecordData, [
-                        "lastName",
-                        "firstName",
-                    ]);
-                    gWixRecords = [...wSortedData];
-                    break;
-                case "Lst-GGL":
-                    wRecordItem.firstName = pRec.firstName;
-                    wRecordItem.lastName = pRec.lastName;
-                    wRecordItem.status = pRec.status;
-                    wSortedData = _.orderBy(wRecordData, [
-                        "lastName",
-                        "firstName",
-                    ]);
-                    gGGLRecords = [...wSortedData];
-                    break;
+                        gGGLRecords = [...wSortedData];
+                        break;
+                }
             }
         }
+    } catch (err) {
+        console.log(
+            "/Page/MaintainMeber updateRecordStore try-catch error, stage, p20r3, err, pRec",
+            gStage,
+            p2or3
+        );
+        console.log(err);
+        console.log(pRec);
     }
 }
 
@@ -2314,12 +2325,14 @@ function deleteGlobalStore(p2or3, pId) {
     if (!wRecordData) {
         console.log(`deleteGlobalStore wrong stage ${gStage}`);
     } else {
-        let wIdx = wRecordData.findIndex((item) => item._id === pId);
+        let wIdx = wRecordData.findIndex(
+            (item) => item._id === pId || item.id === pId
+        );
         if (wIdx > -1) {
             wRecordData.splice(wIdx, 1);
         } else {
             console.log(
-                `deleteGlobalStore couldnt find ${pId} in ${gStage} global data store`
+                `deleteGlobalStore couldnt find ${pId} in ${gStage} global data store ${p2or3}`
             );
         }
     }
@@ -2356,6 +2369,8 @@ function resetCommand() {
 }
 
 async function createNewMember(pIsAudit, pMember) {
+    let wOldMemberId = pMember.id;
+
     let wMember = {
         _id: undefined,
         username: "",
@@ -2379,6 +2394,10 @@ async function createNewMember(pIsAudit, pMember) {
         wixId: pMember.wixId,
         photo: "",
     };
+
+    if (!wOldMemberId) {
+        wOldMemberId = "Imported";
+    }
 
     let wUsername =
         capitalize(pMember.surname) + pMember.firstName[0].toUpperCase();
@@ -2409,7 +2428,9 @@ async function createNewMember(pIsAudit, pMember) {
                 wMember.contactpref = "S";
             }
         }
-        console.log("Create new member, contactpref", wMember.contactpref);
+        console.log(
+            `Create new member with contactpref ${wMember.contactpref} from lst ${wOldMemberId}`
+        );
         wResult = await createMember(pIsAudit, wMember);
         if (wResult && wResult.status) {
             let wSavedRecord = wResult.savedRecord;
@@ -2507,15 +2528,22 @@ export async function btnNameAmend3Save() {
                 newName: wTargetMember.firstName + " " + wTargetMember.surname,
             };
 
-            wResult = await sendMsgToJob(
-                "E",
-                ["WEB"],
-                null,
-                false,
-                "MemberAmendImportName",
-                wParams
-            );
-            //let wResult.status = true;
+            if (gTest) {
+                wResult.status = true;
+                console.log("Test Mode: Send Msg");
+            } else {
+                wResult.status = true;
+                /**
+                wResult = await sendMsgToJob(
+                    "E",
+                    ["WEB"],
+                    null,
+                    false,
+                    "MemberAmendImportName",
+                    wParams
+                );
+                */
+            }
             if (wResult && wResult.status) {
                 console.log(
                     "/MaintainMember btnNameAmend3Save sendMsgToJob OK for ",
@@ -2666,7 +2694,10 @@ export async function btnLstStage3Register_click() {
             showMsg(3, 0, `New Wix member: not found`);
         }
         hideStageWait(3);
-    }
+        console.log(
+            "------------------------- next for entry-----------------------------------------------"
+        );
+    } // for
 
     if (wErrMsg.length > 1) {
         $w("#lblErrMsg").text = wErrMsg;

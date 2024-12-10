@@ -361,24 +361,14 @@ export async function createMember(pIsAudit, pMember) {
                         await createLstMember(wLstRec);
                     if (lstStatus) {
                         let wLstId = wLstMember._id;
-                        console.log(
-                            `/backend/backMember createMember Lst member created ${wName}`
-                        );
                         //------------------ Create MTBC Member ----------------------------
-                        console.log(
-                            `/backend/backMember createMember loginemail =  ${pMember.loginEmail}`
-                        );
                         if (pMember.loginEmail.includes("mtbc")) {
                             wMTBCRec.lstId = wLstId;
                             wMTBCRec.tokenA = wTokenA;
                             wMTBCRec.tokenB = wTokenB;
                             let [wMTBCStatus, wMTBCReult] =
                                 await createMTBCMember(wMTBCRec);
-                            if (wMTBCStatus) {
-                                console.log(
-                                    `/backend/backMember createMember MTBC member created ${wName}`
-                                );
-                            } else {
+                            if (!wMTBCStatus) {
                                 console.log(
                                     "/backend/backMember createMember MTBC record failed, err"
                                 );
@@ -411,7 +401,11 @@ export async function createMember(pIsAudit, pMember) {
                             loginMethod: wLoginMethod,
                         };
                         if (wLstMember.contactpref === "N") {
-                            console.log("Send to WEB");
+                            console.log(
+                                "Test Mode: Send Msg OffLineRegistrationConfirmation"
+                            );
+                            wResult.status = true;
+                            /**
                             wResult = await sendMsgToJob(
                                 "E",
                                 ["WEB"],
@@ -420,8 +414,13 @@ export async function createMember(pIsAudit, pMember) {
                                 "OffLineRegistrationConfirmation",
                                 wParams
                             );
+                            */
                         } else {
-                            console.log("Send to person");
+                            console.log(
+                                "Test Mode: Send Msg Membership confirmation"
+                            );
+                            wResult.status = true;
+                            /**
                             wResult = await sendMsg(
                                 "U",
                                 [wLstId],
@@ -430,9 +429,8 @@ export async function createMember(pIsAudit, pMember) {
                                 "MemberRegistrationConfirmation",
                                 wParams
                             );
+                            */
                         }
-                        //let [emailStatus, emailResponse] = await sendCreateMemberConfirmationEmail(toEmail);
-                        //if (emailStatus) {
                         if (wResult && wResult.status) {
                             console.log(
                                 `/backend/backMember createMember Email sent response for ${wName}`
@@ -615,7 +613,7 @@ export function createLstMember(pRec) {
         .insert("lstMembers", toInsert)
         .then((lstMember) => {
             console.log(
-                `/backend/backMember createLstMember Created lst user ${pRec.firstName} ${pRec.surname}`
+                `/backend/backMember createLstMember Created lst user ${pRec.firstName} ${pRec.surname} with Id ${lstMember._id}`
             );
             return [true, lstMember];
         })

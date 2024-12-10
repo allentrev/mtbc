@@ -6,9 +6,6 @@
 //
 //  Usage:  x page
 //------------------------------------------------------------------------------------------------------
-import wixData from "wix-data";
-import wixWindow from "wix-window";
-
 import { authentication } from "wix-members-frontend";
 import { currentMember } from "wix-members-frontend";
 import { session } from "wix-storage-frontend";
