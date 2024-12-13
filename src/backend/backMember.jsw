@@ -8,11 +8,13 @@ import { members as membersV2 } from "wix-members.v2";
 import { sendForgotPassword } from "backend/email.jsw";
 import { sendForgotUsername } from "backend/email.jsw";
 import { sendMsg, sendMsgToJob } from "backend/backMsg.web";
+import { bulkDeleteRecords, bulkSaveRecords } from "backend/backEvents.jsw";
 
 import wixData from "wix-data";
 import _ from "lodash";
 
 import { sendCreateMemberConfirmationEmail } from "backend/email.jsw";
+import { saveRecord } from "./backEvents.jsw";
 
 //
 //  New file
@@ -1170,74 +1172,188 @@ export async function getAllGoogleMembers() {
             .ascending("firstName")
             .limit(1000)
             .find();
-        const wRecords = wResult.items;
-        if (wRecords.length > 0) {
-            let wCouples = wRecords.filter((item) =>
-                item.firstName.includes("&")
-            );
-            let wImportSet = wRecords.filter(
-                (item) => !item.firstName.includes("&")
-            );
-            if (wCouples.length > 0) {
-                // create 2 records from the 1 imported
-                for (let wCouple of wCouples) {
-                    let wNewRecord1 = { ...wCouple };
-                    let wNewRecord2 = { ...wCouple };
-                    const [wFirstPerson, wSecondPerson] =
-                        wCouple.firstName.split(" & ");
-                    wNewRecord1.firstName = wFirstPerson;
-                    wImportSet.push(wNewRecord1);
-                    wNewRecord2.firstName = wSecondPerson;
-                    wImportSet.push(wNewRecord2);
-                }
-                let wSortedImportSet = _.orderBy(wImportSet, [
-                    "lastName",
-                    "firstName",
-                ]);
 
-                let dlist = wSortedImportSet.map((item) => {
-                    let wMobilePhone =
-                        (
-                            item.mobile === " " ||
-                            item.mobile === null ||
-                            item.mobile === undefined
-                        ) ?
-                            null
-                        :   item.mobile.trim().replace(/\s+/g, "");
-                    let wFirstName =
-                        item.firstName ? item.firstName.trim() : "";
-                    let wLastName = item.lastName ? item.lastName.trim() : "";
-                    let wFullName = wFirstName + " " + wLastName;
-                    let wLabels = [];
-                    if (item.labels && item.labels.length > 0) {
-                        wLabels = item.labels.split(" ::: ");
-                        wLabels.pop();
-                    }
-                    return {
-                        key: wFullName,
-                        _id: item._id,
-                        firstName: wFirstName,
-                        surname: wLastName,
-                        player: wFullName,
-                        fullName: wFullName,
-                        contactEmail:
-                            item.email ? item.email.toLowerCase() : null,
-                        altEmail:
-                            item.altEmail ? item.altEmail.toLowerCase() : null,
-                        mobilePhone: wMobilePhone || null,
-                        labels: wLabels,
-                    };
-                });
-                return dlist;
-            } else {
-                return [];
-            }
-        } // wRecords > 0
+        const wRecords = wResult.items;
+        //console.log(wResult);
+
+        let wAllGoogleMembers = [];
+
+        if (wRecords.length > 0) {
+            let wCouples = wRecords.filter(
+                (item) => item.firstName && item.firstName.includes("&")
+            );
+            let wSingles = wRecords.filter(
+                (item) => item.firstName && !item.firstName.includes("&")
+            );
+            //console.log(wRecords.length);
+            //console.log(wCouples);
+            //console.log(wSingles);
+            let wUpdatedSingles = await setGenderInSingles(wSingles);
+            //console.log("UpdatedSingles");
+            //console.log(wUpdatedSingles);
+            let wMergedImportSet = await addCouplesSetToImportSet(
+                wUpdatedSingles,
+                wCouples
+            );
+            //console.log("wMergedImportSet");
+            //console.log(wMergedImportSet);
+
+            wAllGoogleMembers = formatImportSet(wMergedImportSet);
+            //console.log("wAllGoogleMembers");
+            //console.log(wAllGoogleMembers);
+        }
+        return wAllGoogleMembers;
     } catch (err) {
         console.log("/backend/BackMember getAllGoogleMembers Try-catch err");
         console.log(err);
         return [];
     }
+}
+
+async function setGenderInSingles(pMembers) {
+    let wSinglesSet = [];
+    for (let wMember of pMembers) {
+        let wLabels = wMember.labels;
+        if (wLabels && wLabels.includes("::: Men")) {
+            wMember.gender = "M";
+        } else if (wLabels && wLabels.includes("::: Ladies")) {
+            wMember.gender = "L";
+        } else {
+            //console.log(
+            //    `backend/backMember setGenderInSingles cannot determine gender for ${wMember._id} and ${wLabels}`
+            //);
+            wMember.gender = await getGender(
+                wMember.firstName,
+                wMember.lastName
+            );
+        }
+        wSinglesSet.push(wMember);
+    }
+    return wSinglesSet;
+}
+
+async function addCouplesSetToImportSet(pImport, pCouples) {
+    let wImportSet = [...pImport];
+    if (pCouples.length > 0) {
+        // create 2 records from the 1 imported
+        for (let wCouple of pCouples) {
+            let wNewRecord1 = { ...wCouple };
+            let wNewRecord2 = { ...wCouple };
+            const [wFirstPerson, wSecondPerson] =
+                wCouple.firstName.split(" & ");
+
+            wNewRecord1.firstName = wFirstPerson;
+            wNewRecord1.labelArray = formLabelArrayfromLabel(wCouple.labels);
+            wNewRecord1.gender = await getGender(
+                wFirstPerson,
+                wCouple.lastName
+            );
+            wImportSet.push(wNewRecord1);
+            let wResult = await saveGoogleRecord(
+                "lstGoogleImport",
+                wNewRecord1
+            );
+            if (wResult && wResult.status) {
+                wNewRecord2.firstName = wSecondPerson;
+                wNewRecord2._id = undefined;
+                wNewRecord2.labelArray = wNewRecord1.labelArray;
+                wNewRecord2.gender = await getGender(
+                    wSecondPerson,
+                    wCouple.lastName
+                );
+                wResult = await saveGoogleRecord(
+                    "lstGoogleImport",
+                    wNewRecord2
+                );
+                if (wResult && wResult.status) {
+                    let wId = wResult.savedRecord._id;
+                    wNewRecord2._id = wId;
+                    wImportSet.push(wNewRecord2);
+                } else {
+                    console.log(
+                        `/backend/backMember getAllGoogleMembers second save: couple (${wFirstName}) record failed`
+                    );
+                    return;
+                }
+            } else {
+                console.log(
+                    `/backend/backMember getAllGoogleMembers first save: couple (${wFirstName}) record failed`
+                );
+                return;
+            }
+        } // for loop
+    } // couples > 0
+
+    let wSortedImportSet = _.orderBy(wImportSet, ["lastName", "firstName"]);
+
+    return wSortedImportSet;
+}
+
+async function getGender(pFirstName, pLastName) {
+    let wGender = "M";
+    let wResult = await findLstMemberByFullName(pFirstName, pLastName);
+    if (wResult && wResult.status) {
+        let wMember = wResult.members[0];
+        wGender = wMember.gender;
+    }
+    return wGender;
+}
+
+function formatImportSet(pMembers) {
+    let wFormattedSet = [];
+
+    for (let wMember of pMembers) {
+        let wNewItem = {};
+        // format mobile phone number
+        let wPhone = wMember.phone1Value;
+        let wTrimmedPhone = null;
+        let wMobilePhone = null;
+        if (wPhone === " " || wPhone === null || wPhone === undefined) {
+            wMobilePhone = null;
+        } else {
+            wTrimmedPhone = wPhone.trim();
+            wMobilePhone = wTrimmedPhone.replace(/\s+/g, "");
+        }
+        // format names
+        let wFirstName = wMember.firstName ? wMember.firstName.trim() : "";
+        let wLastName = wMember.lastName ? wMember.lastName.trim() : "";
+        let wFullName = wFirstName + " " + wLastName;
+        // process Labels
+        let wLabelArray = formLabelArrayfromLabel(wMember.labels);
+        // Output new Member
+        wNewItem.key = wFullName;
+        wNewItem._id = wMember._id;
+        wNewItem.firstName = wFirstName;
+        wNewItem.lastName = wLastName;
+        wNewItem.surname = wLastName;
+        wNewItem.gender = wMember.gender;
+        wNewItem.player = wFullName;
+        wNewItem.fullName = wFullName;
+        wNewItem.eMail1Label = wMember.eMail1Label || null;
+        wNewItem.eMail1Value =
+            wMember.eMail1Value ? wMember.eMail1Value.toLowerCase() : null;
+        wNewItem.eMail2Label = wMember.eMail2Label || null;
+        wNewItem.eMail2Value =
+            wMember.eEmail2Value ? wMember.eMail2Value.toLowerCase() : null;
+        wNewItem.phone1Label = wMember.phone1Label || null;
+        wNewItem.phone1Value = wMobilePhone || null;
+        wNewItem.labels = wMember.labels || null;
+        wNewItem.labelArray = wLabelArray || [];
+
+        wFormattedSet.push(wNewItem);
+    }
+
+    return wFormattedSet;
+}
+
+function formLabelArrayfromLabel(pLabels) {
+    let wLabelArray = [];
+    if (pLabels && pLabels.length > 0) {
+        wLabelArray = pLabels.split(" ::: ");
+        wLabelArray.pop(); // remove last entry which is always * myContacts
+    }
+
+    return wLabelArray;
 }
 
 export async function saveImportMemberRecord(pRec) {
@@ -1291,6 +1407,47 @@ export async function saveImportMemberRecord(pRec) {
     }
 }
 
+export async function saveGoogleRecord(pDataset, pRec) {
+    try {
+        let options = {
+            consistentRead: true,
+            suppressAuth: true,
+        };
+        //console.log("saveGoogleRecord, pRec take away selected, chnMkr");
+        //console.log(pRec);
+
+        let wRec = {
+            _id: pRec._id,
+            firstName: pRec.firstName,
+            lastName: pRec.lastName,
+            labels: formatLabelsFromLabelArray(pRec.gender, pRec.labelArray),
+            eMail1Label: pRec.eMail1Label,
+            eMail1Value: pRec.eMail1Value,
+            eMail2Label: pRec.eMail2Label,
+            eMail2Value: pRec.eMail2Value,
+            phone1Label: pRec.phone1Label,
+            phone1Value: pRec.phone1Value,
+        };
+
+        let savedRec = await wixData.save(pDataset, wRec, options);
+        if (savedRec) {
+            return { status: true, savedRecord: savedRec, error: null };
+        } else {
+            console.log(
+                `/backend/backMember saveGoogleRecord Save failed in dataset ${pDataset}: Result=`,
+                savedRec
+            );
+            return { status: false, savedRecord: savedRec, error: null };
+        }
+    } catch (error) {
+        console.log(
+            `/backend/backMember saveGoogleRecord TryCatch in dataset ${pDataset} + error`
+        );
+        console.log(error);
+        return { status: false, savedRecord: null, error: error };
+    }
+}
+
 export async function deleteImportMemberRecord(pId) {
     let wOptions = {
         suppressAuth: true,
@@ -1321,6 +1478,103 @@ export async function deleteImportMemberRecord(pId) {
             console.log(err);
             return false;
         });
+}
+
+export async function deleteAllGoogleImport(pUserId) {
+    let wOptions = {
+        suppressAuth: true,
+        suppressHooks: true,
+        consistentRead: true,
+    };
+
+    try {
+        let wResult = await wixData
+            .query("lstGoogleImport")
+            .ascending("lastName")
+            .ascending("firstName")
+            .limit(1000)
+            .find();
+
+        const wRecords = wResult.items;
+        if (wRecords.length > 0) {
+            let wIds = wRecords.map((item) => item._id);
+            let wStatus = await bulkDeleteRecords(
+                "backMember deleteAllGoogleImport",
+                pUserId,
+                "lstGoogleImport",
+                false,
+                wIds
+            );
+            if (!wStatus) {
+                return true;
+            }
+        }
+        return false;
+    } catch (err) {
+        console.log("/backend/backMember deleteAllGoogleImportry-catch, err");
+        console.log(err);
+        return false;
+    }
+}
+
+export async function uploadGlobalDataStore(pUserId, pGlobal) {
+    try {
+        let status = await deleteAllGoogleImport(pUserId);
+
+        let wUpdateSet = pGlobal.map((item) => {
+            return {
+                _id: item._id,
+                firstName: item.firstName,
+                lastName: item.lastName,
+                labels: formatLabelsFromLabelArray(
+                    item.gender,
+                    item.labelArray
+                ),
+                eMail1Label: item.eMail1Label,
+                eMail1Value: item.eMail1Value,
+                eMail2Label: item.eMail2Label,
+                eMail2Value: item.eMail2Value,
+                phone1Label: item.phone1Label,
+                phone1Value: item.phone1Value,
+            };
+        });
+
+        let wResult = await bulkSaveRecords("lstGoogleImport", wUpdateSet);
+        console.log(
+            `backend/backMember uploadGlobalDtaStore bulk save status is ${wResult.status}: ${wResult.results.inserted}
+             inserted ${wResult.results.updated} updated ${wResult.results.errors.length} errors`
+        );
+        return true;
+    } catch (err) {
+        console.log(
+            "/backend/backMember uploadGlobalDataStore, try-catch, err"
+        );
+        console.log(err);
+        return false;
+    }
+}
+
+function formatLabelsFromLabelArray(pGender, pLabelArray) {
+    //console.log("formatLabelsFromLabelArray");
+    //console.log(pLabelArray);
+
+    let wLabels = "All members ::: ";
+    let wSeperator = " ::: ";
+    let wEnd = "* myContacts";
+
+    if (pGender === "M") {
+        wLabels = wLabels + "Men ::: ";
+    } else {
+        wLabels = wLabels + "Ladies ::: ";
+    }
+
+    for (let wItem of pLabelArray) {
+        wLabels = wLabels + wItem + " ::: ";
+    }
+
+    wLabels = wLabels + wEnd;
+
+    return wLabels;
 }
 
 export async function saveGoogleMemberRecord(pRec) {

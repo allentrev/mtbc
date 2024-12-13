@@ -1,8 +1,7 @@
-import wixData from 'wix-data';
+import wixData from "wix-data";
 
-import { saveRecord }			from 'backend/backEvents.jsw';
-import { bulkDeleteRecords }	from 'backend/backEvents.jsw';
-
+import { saveRecord } from "backend/backEvents.jsw";
+import { bulkDeleteRecords } from "backend/backEvents.jsw";
 
 /**
  * Represents a Booking in the system.
@@ -44,63 +43,66 @@ import { bulkDeleteRecords }	from 'backend/backEvents.jsw';
  * @type {Booking}
  */
 export let Booking = {
-	"_id": null,
-    "dateRequired": null,
-    "rangeId": 0,
-    "slotId": 0,
-    "rink": 0,
-	"resourceKey": "",
-    "timeRequired": null,
-	"noSlots": 1,
-    "bookerId": null,
-    "dateBooked": null,
-    "playerAId": null,
-    "playerBId": null,
-    "noPlayers": 0,
-    "usage": "",
-    "compRef": null,
-    "compTitle": null,
-    "matchKey": null,
-    "round": 0,
-    "isBye": "N",
-    "scoreA": 0,
-    "scoreB": 0,
-    "requiredYear": 0,
-    "requiredMonth": 0,
-    "requiredJDate": 0,
-    "newKey": null,
-    "eventId": null,
-	"hasChildren": "N",
-	"pId": "",
-	"parentId": "",
-    "status": "O"
+    _id: null,
+    dateRequired: null,
+    rangeId: 0,
+    slotId: 0,
+    rink: 0,
+    resourceKey: "",
+    timeRequired: null,
+    noSlots: 1,
+    bookerId: null,
+    dateBooked: null,
+    playerAId: null,
+    playerBId: null,
+    noPlayers: 0,
+    usage: "",
+    compRef: null,
+    compTitle: null,
+    matchKey: null,
+    round: 0,
+    isBye: "N",
+    scoreA: 0,
+    scoreB: 0,
+    requiredYear: 0,
+    requiredMonth: 0,
+    requiredJDate: 0,
+    newKey: null,
+    eventId: null,
+    hasChildren: "N",
+    pId: "",
+    parentId: "",
+    status: "O",
 };
 
-export async function getSettingsRinkArray () {
-  	try {
-		const results = await wixData.query("lstSettings")
-    		.eq("title", "RS1")
-    		.find();
-		if (results.items.length ===  0) {
-			console.log("/public/objects/booking getSettingRinkArray Zero length");
-			return false;
-		} else {
-			let item = results.items[0];
-			return item.rinkArray;
-		}
-	}
-	catch (error) {
-		console.log("/public/objects/booking getSettingRinkArray TryCatch " + error);
-		return false;
-	}
+export async function getSettingsRinkArray() {
+    try {
+        const results = await wixData
+            .query("lstSettings")
+            .eq("title", "RS1")
+            .find();
+        if (results.items.length === 0) {
+            console.log(
+                "/public/objects/booking getSettingRinkArray Zero length"
+            );
+            return false;
+        } else {
+            let item = results.items[0];
+            return item.rinkArray;
+        }
+    } catch (error) {
+        console.log(
+            "/public/objects/booking getSettingRinkArray TryCatch " + error
+        );
+        return false;
+    }
 }
 
-export function getDecimalPart(pNumber){
+export function getDecimalPart(pNumber) {
     let decimalValue = pNumber.toString().indexOf(".");
-    let result = pNumber.toString().substring(decimalValue+1);
+    let result = pNumber.toString().substring(decimalValue + 1);
     return result;
 }
-
 
 /**
  * Enum for Booking object status values
@@ -109,152 +111,174 @@ export function getDecimalPart(pNumber){
  */
 
 export const BOOKING = Object.freeze({
-  NEW:		"N",
-  READY:	"R",
-  OPEN:		"O",
-  COMPLETED:"P",
-  MOVED:	"M",
-  DELETED:	"D"
+    NEW: "N",
+    READY: "R",
+    OPEN: "O",
+    COMPLETED: "P",
+    MOVED: "M",
+    DELETED: "D",
 });
 
 export async function getAllBookingsForYear(pYear) {
-	try {
-		let res = await wixData.query('lstBookings')
-			.hasSome("status",["N","O","P","R"])
-			.eq("requiredYear", pYear)
-			.ascending("requiredYear")
-			.ascending("requiredJDate")
-			.ascending('resourceKey')
-			.limit(1000)
-			.find();
-			return {"status": true, "bookings": res.items, "error": null};
-	}
-	catch (err) {
-		console.log("/backend/backBooking getAllBookingsForYear Try-catch fail err");
-		console.log(err);
-		return {"status": false, "bookings": null, "error": err};
-	}
+    try {
+        let res = await wixData
+            .query("lstBookings")
+            .hasSome("status", ["N", "O", "P", "R"])
+            .eq("requiredYear", pYear)
+            .ascending("requiredYear")
+            .ascending("requiredJDate")
+            .ascending("resourceKey")
+            .limit(1000)
+            .find();
+        return { status: true, bookings: res.items, error: null };
+    } catch (err) {
+        console.log(
+            "/backend/backBooking getAllBookingsForYear Try-catch fail err"
+        );
+        console.log(err);
+        return { status: false, bookings: null, error: err };
+    }
 }
 
-export async function deleteLinkedBookings(pUserId, pId){
-	try {
-		let wDeleteList = [];
-		let wResult = await getLinkedBookings(pId);
-		if (wResult.status) {
-			let wBookings = wResult.bookings;
-			wDeleteList = wBookings.map( item => item._id);
-			let wStatus = bulkDeleteRecords("backBookings deleteLinkedBookings", pUserId, "lstBookings", wDeleteList);
-			if (!wStatus){
-				console.log(`/backend/backBookings deleteLinkedBookings by ${pUserId} bulkDeleteRecords fail. See log.`);
-				return {"status": false, "deletedIds": wDeleteList, "error": "bulk delete fail"};
-			}
-		}	
-		return {"status": true, "deletedIds": wDeleteList, "error": ""};
-	}
-	catch (err) {
-		console.log(`/backend/backBookings deleteLinkedBookings by ${pUserId} Try-catch, err `);
-		console.log(err);
-		return {"status": false, "deletedIds": [], "error": err};
-	}
+export async function deleteLinkedBookings(pUserId, pId) {
+    try {
+        let wDeleteList = [];
+        let wResult = await getLinkedBookings(pId);
+        if (wResult.status) {
+            let wBookings = wResult.bookings;
+            wDeleteList = wBookings.map((item) => item._id);
+            let wStatus = bulkDeleteRecords(
+                "backBookings deleteLinkedBookings",
+                pUserId,
+                "lstBookings",
+                true,
+                wDeleteList
+            );
+            if (!wStatus) {
+                console.log(
+                    `/backend/backBookings deleteLinkedBookings by ${pUserId} bulkDeleteRecords fail. See log.`
+                );
+                return {
+                    status: false,
+                    deletedIds: wDeleteList,
+                    error: "bulk delete fail",
+                };
+            }
+        }
+        return { status: true, deletedIds: wDeleteList, error: "" };
+    } catch (err) {
+        console.log(
+            `/backend/backBookings deleteLinkedBookings by ${pUserId} Try-catch, err `
+        );
+        console.log(err);
+        return { status: false, deletedIds: [], error: err };
+    }
 }
 
 export async function getLinkedBookings(pId) {
-	try {
-		return wixData.query("lstBookings")
-    		.eq("parentId", pId)
-			.ne("status", BOOKING.MOVED)
-			.ne("status", BOOKING.DELETED)
-    		.ascending("rink")
-    		.ascending("slotId")
-			.limit(1000)
-			.find()
-			.then ( results => {
-				if (results.items.length ===  0) {
-					return {"status": true, "bookings": [], "error": null};
-				} else {
-					return {"status": true, "bookings": results.items, "error": null};
-				}
-			})
-			.catch ( err => {
-				console.log("/backend/backBookings getLinkedBookings catch, err ");
-				console.log(err);
-				return {"status": false, "bookings": [], "error": err};
-			})
-	}
-	catch (err) {
-		console.log(`/backend/backBookings getLinkedBookings Try-catch, err `);
-		console.log(err);
-		return {"status": false, "bookings": [], "error": err};
-	}
+    try {
+        return wixData
+            .query("lstBookings")
+            .eq("parentId", pId)
+            .ne("status", BOOKING.MOVED)
+            .ne("status", BOOKING.DELETED)
+            .ascending("rink")
+            .ascending("slotId")
+            .limit(1000)
+            .find()
+            .then((results) => {
+                if (results.items.length === 0) {
+                    return { status: true, bookings: [], error: null };
+                } else {
+                    return {
+                        status: true,
+                        bookings: results.items,
+                        error: null,
+                    };
+                }
+            })
+            .catch((err) => {
+                console.log(
+                    "/backend/backBookings getLinkedBookings catch, err "
+                );
+                console.log(err);
+                return { status: false, bookings: [], error: err };
+            });
+    } catch (err) {
+        console.log(`/backend/backBookings getLinkedBookings Try-catch, err `);
+        console.log(err);
+        return { status: false, bookings: [], error: err };
+    }
 }
 
-
-export async function processEventBookings(pEventId, pEventBookings){
+export async function processEventBookings(pEventId, pEventBookings) {
     let wBookings = [...pEventBookings];
-	let wNewBookings = [];
+    let wNewBookings = [];
     let wLastBookingId = "";
     let wResult;
-	// @TODO: add this
-    for (let wBooking of wBookings){
-        wBooking.eventId= pEventId; // all Bookings, including children, have this set
-            // @TODO We could put a check in here to skip if the rink/slot is already taken
-        if (wBooking.chainMkr === "C"){
-            wBooking.usage = "Continuation"; 
+    // @TODO: add this
+    for (let wBooking of wBookings) {
+        wBooking.eventId = pEventId; // all Bookings, including children, have this set
+        // @TODO We could put a check in here to skip if the rink/slot is already taken
+        if (wBooking.chainMkr === "C") {
+            wBooking.usage = "Continuation";
             wBooking.parentId = wLastBookingId;
             wBooking.hasChildren = "N";
             wResult = await writeBooking(wBooking);
-            if (wResult.status){
+            if (wResult.status) {
                 let wSavedRecord = wResult.savedRecord;
-				wNewBookings.push(wSavedRecord);
-			} else {
-                console.log("/backend/backBookings processEventBookings C fail, err");
+                wNewBookings.push(wSavedRecord);
+            } else {
+                console.log(
+                    "/backend/backBookings processEventBookings C fail, err"
+                );
                 console.log(wResult.error);
-                return {"status" : false, "bookings": [], "error": wResult.error};
+                return { status: false, bookings: [], error: wResult.error };
             }
         } else {
-            wBooking.hasChildren = (wBooking.chainMkr === "M") ? "Y" : "N";
+            wBooking.hasChildren = wBooking.chainMkr === "M" ? "Y" : "N";
             wBooking.parentId = "";
             wResult = await writeBooking(wBooking);
-            if (wResult.status){
+            if (wResult.status) {
                 let wSavedRecord = wResult.savedRecord;
                 wLastBookingId = wSavedRecord._id;
-				wNewBookings.push(wSavedRecord);
+                wNewBookings.push(wSavedRecord);
             } else {
-                console.log("/backend/backBookings processEventBookings M fail, err");
+                console.log(
+                    "/backend/backBookings processEventBookings M fail, err"
+                );
                 console.log(wResult.error);
-                return {"status" : false, "bookings": [], "error": wResult.error};
+                return { status: false, bookings: [], error: wResult.error };
             }
         }
     }
-    return {"status" : true, "bookings": wNewBookings, "error": null};
+    return { status: true, bookings: wNewBookings, error: null };
 }
 
-export async function writeBooking(pRec){
-	
-    try{
-        const {chainMkr, selected, ...wNewRec } = pRec;
+export async function writeBooking(pRec) {
+    try {
+        const { chainMkr, selected, ...wNewRec } = pRec;
         let wResult = await saveRecord("lstBookings", wNewRec);
-        if (wResult.status){
+        if (wResult.status) {
             let wSavedRecord = wResult.savedRecord;
-            return {"status": true, "savedRecord": wSavedRecord, "error": null};
+            return { status: true, savedRecord: wSavedRecord, error: null };
         } else {
             console.log("/backend/backBooking writeBooking save fail, err");
             console.log(wResult.error);
-            return {"status": false, "savedRecord": null, "error": wResult.error};
+            return { status: false, savedRecord: null, error: wResult.error };
         }
-    }
-    catch (err){
-            console.log("/backend/backBooking writeBooking Try-catch fail, err");
-            console.log(err);
-            return {"status": false, "savedRecord": null, "error": err};
+    } catch (err) {
+        console.log("/backend/backBooking writeBooking Try-catch fail, err");
+        console.log(err);
+        return { status: false, savedRecord: null, error: err };
     }
 }
 
 /**
  * Summary:	Adds bookings for a specified event.
- * 
+ *
  * Description:	Creates a bookings set for a specified event
- * 
+ *
  * @function
  * @param {string} pBookerId - The ID of the booker.
  * @param {Object} pEvent - The event for which bookings are made.
@@ -266,106 +290,134 @@ export async function writeBooking(pRec){
  * @param {Object} pParams - Additional parameters for the booking.
  * @returns {Promise<Array<any>>} - A promise that resolves to an array of bookings made.
  */
-export async function addBookings(pBookerId, pEvent, pStartRink, pRinksNeeded, pSlotRange, pFromSlot, pToSlot, pParams) {
+export async function addBookings(
+    pBookerId,
+    pEvent,
+    pStartRink,
+    pRinksNeeded,
+    pSlotRange,
+    pFromSlot,
+    pToSlot,
+    pParams
+) {
+    let wStartRink = parseInt(pStartRink, 10);
+    let wRinksNeeded = parseInt(pRinksNeeded, 10);
+    let wSlotRange = parseInt(pSlotRange, 10);
+    let wFromSlot = parseInt(pFromSlot, 10);
+    let wToSlot = parseInt(pToSlot, 10);
+    //console.log("AddBookings , StartRink, RinksNeeded, Range, From, To", wStartRink, wRinksNeeded, wSlotRange,
+    //		 wFromSlot, wToSlot)
 
-	let wStartRink = parseInt(pStartRink,10);
-	let wRinksNeeded = parseInt(pRinksNeeded,10);
-	let wSlotRange = parseInt(pSlotRange,10);
-	let wFromSlot = parseInt(pFromSlot,10);
-	let wToSlot = parseInt(pToSlot,10);
-	//console.log("AddBookings , StartRink, RinksNeeded, Range, From, To", wStartRink, wRinksNeeded, wSlotRange,
-	//		 wFromSlot, wToSlot)
-	
-	let wBookingList = [];
-	let wSlotsNeeded = (wToSlot - wFromSlot) + 1;
+    let wBookingList = [];
+    let wSlotsNeeded = wToSlot - wFromSlot + 1;
 
-	for (let i =  0; i < wRinksNeeded; i++){ 
+    for (let i = 0; i < wRinksNeeded; i++) {
         //this is assuming any subsequent slots have the same wRinksFree shape as the first slot
-		for (let j = 0; j < wSlotsNeeded; j++) {
-			let wChainMkr;
-			if (wSlotsNeeded === 1) {
-				wChainMkr = "S";
-			} else {
-				wChainMkr = (j === 0) ? "M" : "C";
-			} 
-			let wNewBooking = await storeSelection(pBookerId, wChainMkr, pEvent, wSlotRange, wFromSlot + j, wStartRink + i, pParams);
-			wBookingList.push(wNewBooking);
-		}
-	}
-	return wBookingList;
+        for (let j = 0; j < wSlotsNeeded; j++) {
+            let wChainMkr;
+            if (wSlotsNeeded === 1) {
+                wChainMkr = "S";
+            } else {
+                wChainMkr = j === 0 ? "M" : "C";
+            }
+            let wNewBooking = await storeSelection(
+                pBookerId,
+                wChainMkr,
+                pEvent,
+                wSlotRange,
+                wFromSlot + j,
+                wStartRink + i,
+                pParams
+            );
+            wBookingList.push(wNewBooking);
+        }
+    }
+    return wBookingList;
 }
 
-export async function storeSelection(pBookerId, pChainMkr, pEvent, pRange, pSlot, pRink, pParams) {
-
-	//console.log("Store Selection, chainMkr,Range, slot, rink // pParams", pChainMkr, pRange, pSlot, pRink);
-	//console.log(pParams);
-	let toInsert = {
-		"chainMkr":	"",
-		"selected": "",
-        "dateRequired": null,
-		"timeRequired": null,
-		"duration": "",
-        "requiredYear": 0,
-        "requiredMonth": 0,
-        "requiredJDate": 0,
-        "resourceKey": "",
-        "title": "",
-        "rink": 0,
-        "rangeId": 0,
-        "slotId": 0,
-        "compRef": null,
-		"compTitle": null,
-        "usage": "",
-        "status": BOOKING.OPEN,
-        "isBye": "N",
-        "noPlayers": 0,
-        "bookerId": null,
-        "playerAId": null,
-        "playerBId": null,
-        "dateBooked": null,
-        "matchKey": "",
-        "scoreA": 0,
-        "scoreB": 0,
-        "round": 0,
-        "newKey": null,
-		"pId": "",
-		"hasChildren": "N",
-		"parentId": "",
-		"eventId": ""
+export async function storeSelection(
+    pBookerId,
+    pChainMkr,
+    pEvent,
+    pRange,
+    pSlot,
+    pRink,
+    pParams
+) {
+    //console.log("Store Selection, chainMkr,Range, slot, rink // pParams", pChainMkr, pRange, pSlot, pRink);
+    //console.log(pParams);
+    let toInsert = {
+        chainMkr: "",
+        selected: "",
+        dateRequired: null,
+        timeRequired: null,
+        duration: "",
+        requiredYear: 0,
+        requiredMonth: 0,
+        requiredJDate: 0,
+        resourceKey: "",
+        title: "",
+        rink: 0,
+        rangeId: 0,
+        slotId: 0,
+        compRef: null,
+        compTitle: null,
+        usage: "",
+        status: BOOKING.OPEN,
+        isBye: "N",
+        noPlayers: 0,
+        bookerId: null,
+        playerAId: null,
+        playerBId: null,
+        dateBooked: null,
+        matchKey: "",
+        scoreA: 0,
+        scoreB: 0,
+        round: 0,
+        newKey: null,
+        pId: "",
+        hasChildren: "N",
+        parentId: "",
+        eventId: "",
     };
     let wToday = new Date();
-    wToday.setHours(10,0,0,0);
-	
-	let wCompRef= "";
-	if (pParams.source === "E") {
-		wCompRef = "EVENT/" + pEvent.eventType.toUpperCase();
-	} else {
-		wCompRef = "MANUAL";
-	}
-    
-    let wTempPlayer = "ffc88a4a-3cb2-4228-9068-54e3c92d24bd"; 	// id of "Temporary Holder"
+    wToday.setHours(10, 0, 0, 0);
+
+    let wCompRef = "";
+    if (pParams.source === "E") {
+        wCompRef = "EVENT/" + pEvent.eventType.toUpperCase();
+    } else {
+        wCompRef = "MANUAL";
+    }
+
+    let wTempPlayer = "ffc88a4a-3cb2-4228-9068-54e3c92d24bd"; // id of "Temporary Holder"
     let wBookerId = pBookerId || wTempPlayer;
     let wRequiredMonth = pEvent.startDate.getMonth();
 
-    let wResourceKey = getResourceKey(pEvent.requiredYear, pEvent.requiredJDate, pRink, pSlot);
+    let wResourceKey = getResourceKey(
+        pEvent.requiredYear,
+        pEvent.requiredJDate,
+        pRink,
+        pSlot
+    );
     toInsert.chainMkr = pChainMkr;
-	toInsert.selected = pEvent.selected;
-	toInsert.dateRequired = pEvent.startDate;
-	toInsert.timeRequired = pEvent.startTime;
-	toInsert.duration = durationToString(pEvent.duration);
+    toInsert.selected = pEvent.selected;
+    toInsert.dateRequired = pEvent.startDate;
+    toInsert.timeRequired = pEvent.startTime;
+    toInsert.duration = durationToString(pEvent.duration);
     toInsert.requiredYear = pEvent.requiredYear;
-    toInsert.requiredMonth = parseInt(wRequiredMonth,10);
-    toInsert.requiredJDate =pEvent.requiredJDate;
+    toInsert.requiredMonth = parseInt(wRequiredMonth, 10);
+    toInsert.requiredJDate = pEvent.requiredJDate;
     toInsert.resourceKey = wResourceKey;
-    toInsert.rink = parseInt(pRink,10);
-    toInsert.rangeId = parseInt(pRange,10);
-    toInsert.slotId = parseInt(pSlot,10); 
+    toInsert.rink = parseInt(pRink, 10);
+    toInsert.rangeId = parseInt(pRange, 10);
+    toInsert.slotId = parseInt(pSlot, 10);
     toInsert.compRef = wCompRef;
-	toInsert.compTitle = pParams.title;
+    toInsert.compTitle = pParams.title;
     toInsert.usage = pParams.use;
     toInsert.status = BOOKING.OPEN;
     toInsert.isBye = pEvent.isBye;
-    toInsert.noPlayers = parseInt(pParams.f2,10);
+    toInsert.noPlayers = parseInt(pParams.f2, 10);
     toInsert.bookerId = wBookerId;
     toInsert.playerAId = pParams.f3;
     toInsert.playerBId = pParams.f5;
@@ -373,47 +425,61 @@ export async function storeSelection(pBookerId, pChainMkr, pEvent, pRange, pSlot
     toInsert.matchKey = pEvent.matchKey;
     toInsert.scoreA = pEvent.scoreA;
     toInsert.scoreB = pEvent.scoreB;
-    toInsert.round =parseInt(pEvent.round,10) || 0;
+    toInsert.round = parseInt(pEvent.round, 10) || 0;
     toInsert.newKey = null;
-	toInsert.eventId = pEvent._id;
-	toInsert.hasChildren = "N";
-	toInsert.parentId = pEvent.parentId;
-	toInsert.pId = wResourceKey;
-	return toInsert;
+    toInsert.eventId = pEvent._id;
+    toInsert.hasChildren = "N";
+    toInsert.parentId = pEvent.parentId;
+    toInsert.pId = wResourceKey;
+    return toInsert;
     //console.log("selection stored");
 }
 
 export function durationToString(pDuration) {
-	let wHours = 0;
-	let wMins = 0;
-	let wDuration = "";
-	if (typeof pDuration === "string"){
-		wDuration = pDuration.substring(0,5);
-		if (pDuration.includes(":")) {
-			wHours = parseInt(wDuration.split(":")[0],10);
-			wMins = parseInt(wDuration.split(":")[1],10);
-		} else {
-			console.log("/backend/backBookings durationToString invalid duration string,", pDuration )
-			return "01:00"
-		}
-	} else if (typeof pDuration === "number") {
-  		wHours = Math.floor(pDuration);
-  		let wFraction = Math.round((pDuration % 1)*100)/100;
-		wMins = Math.round(60*wFraction);
-	} else {
-		console.log("/backend/backBookings durationToString unknown duration type,", typeof pDuration )
-		return "01:00"
-	}
-	if (wHours < 0 || wHours > 23) {
-		wHours = 1;
-	}
-	if (wMins < 0 || wMins > 59) {
-		wMins = 0;
-	}
-	return String(wHours).padStart(2,"0") + ":" + String(wMins).padStart(2,"0");
+    let wHours = 0;
+    let wMins = 0;
+    let wDuration = "";
+    if (typeof pDuration === "string") {
+        wDuration = pDuration.substring(0, 5);
+        if (pDuration.includes(":")) {
+            wHours = parseInt(wDuration.split(":")[0], 10);
+            wMins = parseInt(wDuration.split(":")[1], 10);
+        } else {
+            console.log(
+                "/backend/backBookings durationToString invalid duration string,",
+                pDuration
+            );
+            return "01:00";
+        }
+    } else if (typeof pDuration === "number") {
+        wHours = Math.floor(pDuration);
+        let wFraction = Math.round((pDuration % 1) * 100) / 100;
+        wMins = Math.round(60 * wFraction);
+    } else {
+        console.log(
+            "/backend/backBookings durationToString unknown duration type,",
+            typeof pDuration
+        );
+        return "01:00";
+    }
+    if (wHours < 0 || wHours > 23) {
+        wHours = 1;
+    }
+    if (wMins < 0 || wMins > 59) {
+        wMins = 0;
+    }
+    return (
+        String(wHours).padStart(2, "0") + ":" + String(wMins).padStart(2, "0")
+    );
 }
 
-export function getResourceKey(pYear, pJDate, pRink, pSlot){
-	let wJDate = String(pYear) + String(pJDate).padStart(3,"0");
-	return wJDate + "S" + String(pSlot).padStart(2,"0") + "R" + String(pRink).padStart(2,"0");
+export function getResourceKey(pYear, pJDate, pRink, pSlot) {
+    let wJDate = String(pYear) + String(pJDate).padStart(3, "0");
+    return (
+        wJDate +
+        "S" +
+        String(pSlot).padStart(2, "0") +
+        "R" +
+        String(pRink).padStart(2, "0")
+    );
 }

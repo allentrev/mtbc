@@ -7,7 +7,10 @@ import { saveRecord } from "backend/backEvents.jsw";
 
 import { deleteWixMembers } from "backend/backMember.jsw";
 //import { deleteGoogleImportRecord } from "backend/backMember.jsw";
-import { deleteImportMemberRecord } from "backend/backMember.jsw";
+import {
+    deleteImportMemberRecord,
+    uploadGlobalDataStore,
+} from "backend/backMember.jsw";
 
 import { saveImportMemberRecord } from "backend/backMember.jsw";
 import { findLstMemberByFullName } from "backend/backMember.jsw";
@@ -84,7 +87,7 @@ let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = false;
+let gTest = true;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = gTest ? true : authentication.loggedIn();
@@ -224,7 +227,7 @@ $w.onReady(async function () {
         $w("#btnLstVWix").onClick(() => doStage3());
         $w("#btnLstVGGL").onClick(() => doStage4());
         $w("#btnSyncClose").onClick(() => processCustomClose());
-        $w("#btnLstStage1Amend").onClick(() => btnLstAmend_click(1));
+        $w("#btnLstStage1Amend").onClick(() => btnNameAmend_click(1));
         $w("#btnNameAmend2Save").onClick(() => btnNameAmend2Save_click());
         $w("#btnNameAmend3Save").onClick(() => btnNameAmend3Save());
         $w("#btnNameAmendCancel").onClick(() => btnNameAmendCancel_click());
@@ -233,10 +236,12 @@ $w.onReady(async function () {
         $w("#btnImpStage1NewFull").onClick(() => btnImpStage1New_click("F"));
         $w("#btnImpStage1NewSocial").onClick(() => btnImpStage1New_click("S"));
         $w("#btnLstStage3Register").onClick(() => btnLstStage3Register_click());
-        $w("#btnWixStage3Update").onClick(() => btnLstAmend_click(3));
+        $w("#btnWixStage3Update").onClick(() => btnNameAmend_click(3));
         $w("#btnWixStage3Delete").onClick(() => btnWixStage3Delete_click());
-        $w("#btnLstStage4Amend").onClick(() => btnLstAmend_click(4));
+        $w("#btnGGLStage4Amend").onClick(() => btnNameAmend_click(4));
         $w("#btnGGLStage4Guest").onClick(() => btnGGLStage4Guest_click());
+        $w("#btnGGLStage4Save").onClick(() => btnGGLStage4Save_click());
+        $w("#btnGGLStage4Update").onClick(() => btnGGLStage4Update_click());
         $w("#btnImpStage1Past").onClick(() => btnImpStage1Past_click());
 
         //$w("#chk2").onClick((event) => chkSyncSelect_click("2", event));
@@ -1730,8 +1735,10 @@ function configureStage3Commands(p2or3, pLeftCount, pRightCount) {
 function configureStage4Commands(p2or3, pLeftCount, pRightCount) {
     if (pLeftCount === 1 && pRightCount === 1) {
         $w("#btnGGLStage4Update").show();
+        $w("#btnGGLStage4Save").hide();
     } else {
         $w("#btnGGLStage4Update").hide();
+        $w("#btnGGLStage4Save").show();
         $w("#boxNameAmend").collapse();
     }
     if (p2or3 === "2") {
@@ -1755,12 +1762,15 @@ function configureStage4Commands(p2or3, pLeftCount, pRightCount) {
         switch (pRightCount) {
             case 0:
                 $w("#btnGGLStage4Guest").hide();
+                $w("#btnGGLStage4Save").show();
                 break;
             case 1:
                 $w("#btnGGLStage4Guest").show();
+                $w("#btnGGLStage4Save").show();
                 break;
             default:
                 $w("#btnGGLStage4Guest").show();
+                $w("#btnGGLStage4Save").show();
                 break;
         }
     } // if p2or3 === 2
@@ -2021,7 +2031,7 @@ function messageDone(p2or3) {
 let wMember2 = {};
 let wMember3 = {};
 
-export async function btnLstAmend_click(pStage) {
+export async function btnNameAmend_click(pStage) {
     //  This is where we have corresponding entries in each side, but they differ only in name.
     //  It can be entered by pressing btnLstStage1AMend in Stage 1, or by btnWixStage3Update in Stage3, or btnGGLStage4Update in Stage 4;
     //  For Lst-Import reconciliation, either the Lst value or the Import value can be amended.
@@ -2532,6 +2542,7 @@ export async function btnNameAmend3Save() {
                 wResult.status = true;
                 console.log("Test Mode: Send Msg");
             } else {
+                //TODO before go live bring in email
                 wResult.status = true;
                 /**
                 wResult = await sendMsgToJob(
@@ -2629,6 +2640,8 @@ export function btnNameAmendCancel_click() {
     $w("#btnWixStage3Delete").hide();
     $w("#btnLstStage3Register").hide();
     $w("#btnGGLStage4Update").hide();
+    $w("#btnGGLStage4Save").hide();
+    $w("#btnGGLStage4Guest").hide();
 
     clearSelectStacks();
     //clearAllSelection(2);
@@ -2805,6 +2818,22 @@ export async function btnGGLStage4Guest_click() {
         showMsg(4, 0, "Nothing to update");
     }
     $w("#btnGGLStage4Guest").enable();
+    hideStageWait(4);
+}
+
+export async function btnGGLStage4Save_click() {
+    // Simply overwrite the contents of lstGoogleImport wutg gGGLRecords.
+
+    $w("#btnGGLStage4Save").disable();
+    showStageWait(4);
+
+    let wResult = await uploadGlobalDataStore(loggedInMember._id, gGGLRecords);
+    if (wResult) {
+        console.log("Stage 4 Save Ok");
+    } else {
+        console.log("Stage 4 Save Fail");
+    }
+    $w("#btnGGLStage4Save").enable();
     hideStageWait(4);
 }
 

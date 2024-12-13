@@ -400,6 +400,7 @@ export async function btnDelete_click(pUserId, event) {
         "/public/objects/entity btnDelete_click",
         pUserId,
         wDataset,
+        true,
         wItemIds
     );
     //let res = true;
@@ -411,6 +412,7 @@ export async function btnDelete_click(pUserId, event) {
                 "MaintainEvent/deleteExistingBookings",
                 pUserId,
                 "lstBookings",
+                true,
                 wBookingsToDelete
             );
             if (res) {
@@ -442,6 +444,7 @@ export async function btnDelete_click(pUserId, event) {
                 "public/objects/entity btnDelete_click",
                 pUserId,
                 "lstMTBC",
+                true,
                 wMTBCMembersToDelete
             );
             if (res) {
