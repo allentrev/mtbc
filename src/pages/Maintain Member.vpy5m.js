@@ -81,13 +81,11 @@ const USERNAME_LENGTH = 3;
 
 const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
 
-let gMode = MODE.CLEAR;
-
 let loggedInMember;
 let loggedInMemberRoles;
 
 // for testing ------	------------------------------------------------------------------------
-let gTest = true;
+let gTest = false;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = gTest ? true : authentication.loggedIn();
@@ -241,7 +239,7 @@ $w.onReady(async function () {
         $w("#btnGGLStage4Amend").onClick(() => btnNameAmend_click(4));
         $w("#btnGGLStage4Guest").onClick(() => btnGGLStage4Guest_click());
         $w("#btnGGLStage4Save").onClick(() => btnGGLStage4Save_click());
-        $w("#btnGGLStage4Update").onClick(() => btnGGLStage4Update_click());
+        $w("#btnGGLStage4Update").onClick(() => btnNameAmend_click(4));
         $w("#btnImpStage1Past").onClick(() => btnImpStage1Past_click());
 
         //$w("#chk2").onClick((event) => chkSyncSelect_click("2", event));
@@ -446,27 +444,12 @@ function clearEdit(pTarget) {
 function populateEdit(pTarget) {
     let wSelected = getSelectedItem(pTarget);
 
-    let wStatusPendingOptions = [
+    let wStatusOptions = [
         { label: "Pending", value: "Pending" },
-        { label: "Active", value: "Active" },
-        { label: "Past", value: "Past" },
-    ];
-    let wStatusActiveOptions = [
         { label: "Active", value: "Active" },
         { label: "Wait", value: "Wait" },
         { label: "Past", value: "Past" },
-        { label: "Pending", value: "Pending" },
     ];
-    let wStatusWaitOptions = [
-        { label: "Wait", value: "Wait" },
-        { label: "Actiive", value: "Active" },
-        { label: "Past", value: "Past" },
-    ];
-    let wStatusPastOptions = [
-        { label: "Past", value: "Past" },
-        { label: "Actiive", value: "Active" },
-    ];
-
     //console.log(pSelected);
     let wPhotoSrc = wSelected.gender === "M" ? gManOutline : gWomanOutline;
     let wMobilePhone = "";
@@ -493,22 +476,8 @@ function populateEdit(pTarget) {
                 wSelected.homePhone === "no phone #" ?
                     ""
                 :   hyphenatePhoneNumber(wSelected.homePhone);
-            switch (wSelected.status) {
-                case "Pending":
-                    $w("#drpMemberEditNewStatus").options =
-                        wStatusPendingOptions;
-                    break;
-                case "Active":
-                    $w("#drpMemberEditNewStatus").options =
-                        wStatusActiveOptions;
-                    break;
-                case "Wait":
-                    $w("#drpMemberEditNewStatus").options = wStatusWaitOptions;
-                    break;
-                case "Past":
-                    $w("#drpMemberEditNewStatus").options = wStatusPastOptions;
-                    break;
-            }
+            $w("#drpMemberEditNewStatus").options = wStatusOptions;
+            $w("#drpMemberEditNewStatus").value = wSelected.status;
             if (wSelected.dateLeft instanceof Date) {
                 $w("#dpkMemberEditDateLeft").show();
                 $w("#dpkMemberEditDateLeft").value = wSelected.dateLeft;
@@ -854,9 +823,10 @@ export async function btnMemberASave_click() {
             }
         }
         resetSection("Member");
+        setMode(MODE.CLEAR);
+        updateDashboard();
         $w("#btnMemberASave").enable();
         hideWait("Member");
-        setMode(MODE.CLEAR);
     } catch (err) {
         console.log(
             "/page/Maintain Member btnMemberASave_click Try-catch, err"
@@ -945,7 +915,6 @@ export function updateDashboard() {
         //day: 'numeric',
         year: "numeric",
     };
-
     const wYearStart = new Date(gYear - 1, 8, 1);
     const wMembers = getEntity("Member");
 
@@ -1044,7 +1013,7 @@ export function getMTBCMaxValue(pDataset) {
 
 export async function validateLoginEmail(value, reject) {
     // @ts-ignore
-    if (gMode === MODE.UPDATE) {
+    if (getMode() === MODE.UPDATE) {
         return;
     }
     let wValue = String(value).trim();
@@ -1237,39 +1206,47 @@ let gMessages = [];
 export async function doStage1() {
     //  A = LSt B = Import  C = Wix
     // Arrays containing elements common to A, B, and C
-
-    resetCommand();
-    gMessages.length = 0;
-    showMessage(gStage);
-    $w("#tblProgress").rows = gMessages;
-    showMessage("Loading Lst Members"); //A
-    let promiseA = loadLstMembersData();
-    showMessage("Loading Wix Members"); //C
-    let promiseC = loadWixMembersData();
-    showMessage("Loading Import Members"); //B
-    let promiseB = loadImpMembersData();
-    Promise.all([promiseA, promiseB, promiseC]).then(async () => {
-        if (reconcileMTBCValues()) {
-            messageDone(0);
-            const onlyA = unique(gLstRecords, gImpRecords);
-            const onlyB = unique(gImpRecords, gLstRecords);
-            //console.log("Stage 1 onlyA, onlyB");
-            //console.log(onlyA);
-            //console.log(onlyB);
-            if (onlyA.length > 0 || onlyB.length > 0) {
-                showMessage("Reconcile Lst with Import");
-                reconcileDatasets(onlyA, onlyB);
+    try {
+        $w("#imgSyncWait").show();
+        resetCommand();
+        gMessages.length = 0;
+        showMessage(gStage);
+        $w("#tblProgress").rows = gMessages;
+        showMessage("Loading Lst Members"); //A
+        let promiseA = loadLstMembersData();
+        showMessage("Loading Wix Members"); //C
+        let promiseC = loadWixMembersData();
+        showMessage("Loading Import Members"); //B
+        let promiseB = loadImpMembersData();
+        Promise.all([promiseA, promiseB, promiseC]).then(async () => {
+            if (reconcileMTBCValues()) {
+                messageDone(0);
+                let wLstActiveRecords = getActiveLstMembers(gLstRecords);
+                const onlyA = unique(wLstActiveRecords, gImpRecords);
+                const onlyB = unique(gImpRecords, wLstActiveRecords);
+                //console.log("Stage 1 onlyA, onlyB");
+                //console.log(onlyA);
+                //console.log(onlyB);
+                if (onlyA.length > 0 || onlyB.length > 0) {
+                    showMessage("Reconcile Lst with Import");
+                    reconcileDatasets(onlyA, onlyB);
+                } else {
+                    $w("#boxLstCompare").expand();
+                    $w("#txtRefresh").expand();
+                    gStage = "Field-Values";
+                    messageDone(3);
+                }
             } else {
-                $w("#boxLstCompare").expand();
-                $w("#txtRefresh").expand();
-                gStage = "Field-Values";
-                messageDone(3);
+                showMessage("MTBC Max Value disparity");
+                messageDone(5);
             }
-        } else {
-            showMessage("MTBC Max Value disparity");
-            messageDone(5);
-        }
-    });
+            $w("#imgSyncWait").hide();
+        });
+    } catch (err) {
+        console.log("/page/MaintainMember doStage1 Try-catch, err");
+        console.log(err);
+        $w("#imgSyncWait").hide();
+    }
 }
 
 export async function doStage2() {
@@ -1291,60 +1268,75 @@ export async function doStage2() {
 }
 
 export async function doStage3() {
-    resetCommand();
-    gMessages.length = 0;
-    showMessage(gStage);
-    $w("#tblProgress").rows = gMessages;
-    showMessage("Loading Lst Members"); //A
-    let promiseA = loadLstMembersData();
-    showMessage("Loading Wix Members"); //C
-    let promiseC = loadWixMembersData();
+    try {
+        $w("#imgSyncWait").show();
+        resetCommand();
+        gMessages.length = 0;
+        showMessage(gStage);
+        $w("#tblProgress").rows = gMessages;
+        showMessage("Loading Lst Members"); //A
+        let promiseA = loadLstMembersData();
+        showMessage("Loading Wix Members"); //C
+        let promiseC = loadWixMembersData();
 
-    Promise.all([promiseA, promiseC]).then(() => {
-        gStage = "Lst-Wix";
-        messageDone(3);
-        clearSelectStacks();
-        showMessage("Reconcile Lst with Wix");
-        const onlyC = unique(gWixRecords, gLstRecords);
-        const onlyD = unique(gLstRecords, gWixRecords);
-        if (onlyC.length > 0 || onlyD.length > 0) {
-            reconcileDatasets(onlyD, onlyC);
-        } else {
-            gStage = "Lst-GGL";
-            messageDone(4);
-        }
-    });
+        Promise.all([promiseA, promiseC]).then(() => {
+            gStage = "Lst-Wix";
+            messageDone(3);
+            clearSelectStacks();
+            showMessage("Reconcile Lst with Wix");
+            let wLstActiveRecords = getActiveLstMembers(gLstRecords);
+            const onlyC = unique(gWixRecords, wLstActiveRecords);
+            const onlyD = unique(wLstActiveRecords, gWixRecords);
+            if (onlyC.length > 0 || onlyD.length > 0) {
+                reconcileDatasets(onlyD, onlyC);
+            } else {
+                gStage = "Lst-GGL";
+                messageDone(4);
+            }
+            $w("#imgSyncWait").hide();
+        });
+    } catch (err) {
+        console.log("/page/MaintainMember doStage3 Try-catch, err");
+        console.log(err);
+        $w("#imgSyncWait").hide();
+    }
 }
 
 export async function doStage4() {
-    resetCommand();
-    gMessages.length = 0;
-    showMessage(gStage);
-    $w("#tblProgress").rows = gMessages;
-    showMessage("Loading Lst Members"); //A
-    let promiseA = loadLstMembersData();
-    showMessage("Loading Google Members"); //E
-    let promiseC = loadGGLMembersData();
+    try {
+        $w("#imgSyncWait").show();
+        resetCommand();
+        gMessages.length = 0;
+        showMessage(gStage);
+        $w("#tblProgress").rows = gMessages;
+        showMessage("Loading Lst Members"); //A
+        let promiseA = loadLstMembersData();
+        showMessage("Loading Google Members"); //E
+        let promiseC = loadGGLMembersData();
 
-    Promise.all([promiseA, promiseC]).then(() => {
-        gStage = "Lst-Google";
-        clearSelectStacks();
-        //console.log(gLstRecords);
-        //console.log(gGGLRecords);
-        messageDone(3);
-        showMessage("Reconcile Lst with Google");
-        const onlyC = unique(gGGLRecords, gLstRecords);
-        const onlyD = unique(gLstRecords, gGGLRecords);
-        //console.log("Stage 4 onlyD, onlyC");
-        //console.log(onlyD);
-        //console.log(onlyC);
-        if (onlyC.length > 0 || onlyD.length > 0) {
-            reconcileDatasets(onlyD, onlyC);
-        } else {
-            gStage = "End";
-            messageDone(4);
-        }
-    });
+        Promise.all([promiseA, promiseC]).then(() => {
+            gStage = "Lst-Google";
+            clearSelectStacks();
+            //console.log(gLstRecords);
+            //console.log(gGGLRecords);
+            messageDone(3);
+            showMessage("Reconcile Lst with Google");
+            let wLstActiveRecords = getActiveLstMembers(gLstRecords);
+            const onlyC = unique(gGGLRecords, wLstActiveRecords);
+            const onlyD = unique(wLstActiveRecords, gGGLRecords);
+            if (onlyC.length > 0 || onlyD.length > 0) {
+                reconcileDatasets(onlyD, onlyC);
+            } else {
+                gStage = "End";
+                messageDone(4);
+            }
+            $w("#imgSyncWait").hide();
+        });
+    } catch (err) {
+        console.log("/page/MaintainMember doStage4 Try-catch, err");
+        console.log(err);
+        $w("#imgSyncWait").hide();
+    }
 }
 
 export function boxRpt_click(p2or3, pEvent) {
@@ -1364,6 +1356,15 @@ export function boxRpt_click(p2or3, pEvent) {
 
 //====== SYNC Event Handler Supporting functions ----------------------------------------------------------------
 //
+function getActiveLstMembers(pLstRecords) {
+    let wActiveLstRecords = pLstRecords
+        .filter((item) => item.username !== "ClubHouse")
+        .filter((item) => item.status !== "Past")
+        .filter((item) => item.type !== "Guest")
+        .filter((item) => item.type !== "Test");
+    return wActiveLstRecords;
+}
+
 function reconcileMTBCValues() {
     showMessage("Reconcile MTBC values");
     if (gLstRecords) {
@@ -1474,8 +1475,9 @@ async function synchroniseFieldValues() {
     ];
 
     let wChangeList = [];
+    let wActiveLstMembers = getActiveLstMembers(gLstRecords);
     //let wLstMember = gLstRecords[1];
-    for (let wLstMember of gLstRecords) {
+    for (let wLstMember of wActiveLstMembers) {
         let wLstIn;
         let wImpIn;
         let wLst = "";
@@ -1778,65 +1780,70 @@ function configureStage4Commands(p2or3, pLeftCount, pRightCount) {
 
 function removeFromSet(p2or3, pId) {
     // @ts-ignore
-    let wRpt = $w(`#rpt${p2or3}`);
-    // @ts-ignore
-    let wTxtNone = $w(`#txt${p2or3}None`);
-    let wOnlyLeft = [];
-    let wOnlyRight = [];
-    if (p2or3 === "2") {
-        wOnlyLeft = wRpt.data;
-        let x = wOnlyLeft.findIndex(
-            (item) => item.id === pId || item._id === pId
-        );
-        if (x > -1) {
-            wOnlyLeft.splice(x, 1);
-            if (wOnlyLeft.length === 0) {
-                wRpt.collapse();
-                wTxtNone.expand();
+    try {
+        let wRpt = $w(`#rpt${p2or3}`);
+        // @ts-ignore
+        let wTxtNone = $w(`#txt${p2or3}None`);
+        let wOnlyLeft = [];
+        let wOnlyRight = [];
+        if (p2or3 === "2") {
+            wOnlyLeft = wRpt.data;
+            let x = wOnlyLeft.findIndex(
+                (item) => item.id === pId || item._id === pId
+            );
+            if (x > -1) {
+                wOnlyLeft.splice(x, 1);
+                if (wOnlyLeft.length === 0) {
+                    wRpt.collapse();
+                    wTxtNone.expand();
+                } else {
+                    wRpt.expand();
+                    wTxtNone.collapse();
+                    wRpt.data = wOnlyLeft;
+                }
             } else {
-                wRpt.expand();
-                wTxtNone.collapse();
-                wRpt.data = wOnlyLeft;
+                console.log(
+                    "MaintainMember removeFromSet cant find member, id, p2or3 ",
+                    pId,
+                    p2or3
+                );
             }
         } else {
-            console.log(
-                "MaintainMember removeFromSet cant find member, id, p2or3 ",
-                pId,
-                p2or3
+            wOnlyRight = wRpt.data;
+            let x = wOnlyRight.findIndex(
+                (item) => item.id === pId || item._id === pId
             );
-        }
-    } else {
-        wOnlyRight = wRpt.data;
-        let x = wOnlyRight.findIndex(
-            (item) => item.id === pId || item._id === pId
-        );
-        if (x > -1) {
-            wOnlyRight.splice(x, 1);
-            if (wOnlyRight.length === 0) {
-                wRpt.collapse();
-                wTxtNone.expand();
+            if (x > -1) {
+                wOnlyRight.splice(x, 1);
+                if (wOnlyRight.length === 0) {
+                    wRpt.collapse();
+                    wTxtNone.expand();
+                } else {
+                    wRpt.expand();
+                    wTxtNone.collapse();
+                    wRpt.data = wOnlyRight;
+                }
             } else {
-                wRpt.expand();
-                wTxtNone.collapse();
-                wRpt.data = wOnlyRight;
+                console.log(
+                    "MaintainMember removeFromSet cant find member, id, p2or3 ",
+                    pId,
+                    p2or3
+                );
             }
-        } else {
-            console.log(
-                "MaintainMember removeFromSet cant find member, id, p2or3 ",
-                pId,
-                p2or3
-            );
         }
-    }
 
-    if (wOnlyLeft.length === 0 && wOnlyRight.length === 0) {
-        $w("#txtRefresh").expand();
-        $w("#txt2None").collapse();
-        $w("#txt3None").collapse();
-        $w("#boxStage1Commands").collapse();
-        messageDone(3);
-    } else {
-        $w("#txtRefresh").collapse();
+        if (wOnlyLeft.length === 0 && wOnlyRight.length === 0) {
+            $w("#txtRefresh").expand();
+            $w("#txt2None").collapse();
+            $w("#txt3None").collapse();
+            $w("#boxStage1Commands").collapse();
+            messageDone(3);
+        } else {
+            $w("#txtRefresh").collapse();
+        }
+    } catch (err) {
+        console.log("/page/MaintainMember removeFromSet Try-catch, err");
+        console.log(err);
     }
 }
 
@@ -1952,48 +1959,65 @@ async function loadWixMembersData() {
     //  Record key is _id
 
     // console.log("loadWix`MembersData", gTest);
+    try {
+        const wAll = await getActiveWixMembers();
+        let wWixContactsMembers = wAll.filter(
+            (item) => item.name !== "Maidenhead Town"
+        );
 
-    const wAll = await getActiveWixMembers();
-    let wWixContactsMembers = wAll.filter(
-        (item) => item.name !== "Maidenhead Town"
-    );
-
-    for (let wMember of wWixContactsMembers) {
-        let wTempMember = wMember;
-        wTempMember.key = wTempMember.name;
-        gWixRecords.push(wTempMember);
+        for (let wMember of wWixContactsMembers) {
+            let wTempMember = wMember;
+            wTempMember.key = wTempMember.name;
+            gWixRecords.push(wTempMember);
+        }
+        //console.log(gWixRecords);
+        gStage === "Lst-Import" ? messageDone(2) : messageDone(3);
+    } catch (err) {
+        console.log("/page/MaintainMember loadWixMemberData Try-catch, err");
+        console.log(err);
     }
-    gStage === "Lst-Import" ? messageDone(2) : messageDone(3);
 }
 
 async function loadLstMembersData() {
     //  Record key is _id or id
 
-    let wAll = await getAllMembers();
-    gLstRecords = wAll
-        .filter((item) => item.username !== "ClubHouse")
-        .filter((item) => item.status !== "Past")
-        .filter((item) => item.type !== "Guest")
-        .filter((item) => item.type !== "Test");
-    for (let wMember of gLstRecords) {
-        wMember.key = wMember.fullName;
+    try {
+        gLstRecords = await getAllMembers();
+        for (let wMember of gLstRecords) {
+            wMember.key = wMember.fullName;
+        }
+        messageDone(1);
+    } catch (err) {
+        console.log("/page/MaintainMember loadLstMembersData Try-catch, err");
+        console.log(err);
+        $w("#imgSyncWait").hide();
     }
-    messageDone(1);
 }
 
 async function loadImpMembersData() {
     //  Record key is _id
-
-    gImpRecords = await getAllImportMembers();
-    messageDone(2);
+    try {
+        gImpRecords = await getAllImportMembers();
+        messageDone(2);
+    } catch (err) {
+        console.log("/page/MaintainMember loadImpMembersData try-catch, err");
+        console.log(err);
+        $w("#imgSyncWait").hide();
+    }
 }
 
 async function loadGGLMembersData() {
     //  Record key is _id
-
-    gGGLRecords = await getAllGoogleMembers();
-    messageDone(2);
+    try {
+        gGGLRecords = await getAllGoogleMembers();
+        messageDone(2);
+    } catch (err) {
+        console.log("/page/MaintainMember loadGGLMembersData Try-catch, err");
+        console.log(err);
+        $w("#imgSyncWait").hide();
+    }
 }
+
 //====== SYNC Helper functions -------------------------------------------------------------------------------
 //
 
@@ -2084,88 +2108,123 @@ export async function btnNameAmend_click(pStage) {
 export async function btnLstStage1Past_click() {
     // There is an entry in Lst but not in Import. This is the case for members who have left the club or who
     // have passed away.
-    $w("#btnLstStage1Past").disable();
-    await updateLstMembers("btnLstStage1Past", "2", "Past");
-    $w("#btnLstStage1Past").enable();
+    try {
+        $w("#btnLstStage1Past").disable();
+        await updateLstMembers("btnLstStage1Past", "2", "Past");
+        $w("#btnLstStage1Past").enable();
+    } catch (err) {
+        console.log(
+            "/page/MaintainMember btnLstStage1Past_click Try-catch, err"
+        );
+        console.log(err);
+    }
 }
 
 export async function btnLstStage1Test_click() {
     // There is an entry in Lst but not in Import. This is the case for development members used in local testing
-    $w("#btnLstStage1Test").disable();
-    await updateLstMembers("btnLstStage1Test", "2", "Test");
-    $w("#btnLstStage1Test").enable();
+    try {
+        $w("#btnLstStage1Test").disable();
+        await updateLstMembers("btnLstStage1Test", "2", "Test");
+        $w("#btnLstStage1Test").enable();
+    } catch (err) {
+        console.log(
+            "/page/MaintainMember btnLstStage1Test_click Try-catch, err"
+        );
+        console.log(err);
+    }
 }
 
 export async function btnImpStage1Past_click() {
     //  You can end up with situations where a record exists in Import but has a status Past in Lst, therefore
     //  it will not show up in the left repeater. Simply, remove the import entry.
     console.log("btnImpStage1Past", gStage);
-    const p2or3 = "3";
+    const wStage = 1;
     console.log(gImpRecords);
-    for (let wMemberId of gSelectRightStack) {
-        console.log(wMemberId);
-        showStageWait(1);
-        await deleteImportMemberRecord(wMemberId);
-        removeFromSet(p2or3, wMemberId);
-        await deleteGlobalStore(p2or3, wMemberId);
-        showMsg(1, 0, `Imp member ${wMemberId} deleted`);
+    try {
+        showStageWait(wStage);
+        for (let wImpRowId of gSelectRightStack) {
+            console.log(wImpRowId);
+            await deleteImportMemberRecord(wImpRowId);
+            removeFromSet(p2or3, wImpRowId);
+            await deleteGlobalStore(p2or3, wImpRowId);
+            showMsg(1, 0, `Imp member ${wImpRowId} deleted`);
+        }
+        gSelectRightStack.length = 0;
+        $w(`#chk${p2or3}`).checked = false;
+        hideStageWait(wStage);
+    } catch (err) {
+        console.log(
+            "/page/MaintainMember btnImpStage1Past_click Try-catch, err"
+        );
+        console.log(err);
+        hideStageWait(wStage);
     }
-    gSelectRightStack.length = 0;
-    $w(`#chk${p2or3}`).checked = false;
-    hideStageWait(p2or3);
 }
 
 export async function btnImpStage1New_click(pType) {
     //  These are entries in Import but not in Lst. These are the new members joined this year.
     //  pType shows which button was pressed: F = Full member, S = Soceial member
-
-    console.log("Btn Imp New click", gStage, pType);
-    $w("#lblErrMsg").text = "";
-    let wErrMsg = "";
-    let wType = pType === "F" ? "Full" : "Social";
-    let wItemIds = [...gSelectRightStack];
-    for (let wItemId of wItemIds) {
-        showStageWait(1);
-        let wImportMember = gImpRecords.find((item) => item._id === wItemId);
-        if (wImportMember) {
-            wImportMember.loginEmail = setMTBCUsername();
-            wImportMember.type = wType;
-            let wResult = await createNewMember(false, wImportMember); // this updates entity globalDataStore
-            if (wResult && wResult.status) {
-                let wSavedRecord = wResult.savedRecord;
-                removeFromSet("3", wMember3._id);
-                updateRecordStore("2", wSavedRecord);
-                clearSelectStack(3);
-                $w("#lblMTBCCount").text = updateMTBCUsernameCount();
-                showMsg(
-                    1,
-                    0,
-                    `New ${pType} member ${wImportMember.firstName} ${wImportMember.surname} created`
-                );
-            } else {
-                // add error result error message to wErrMsg string
-                if (wErrMsg.length === 0) {
-                    wErrMsg = wResult.error;
+    try {
+        console.log("Btn Imp New click", gStage, pType);
+        $w("#lblErrMsg").text = "";
+        let wErrMsg = "";
+        let wType = pType === "F" ? "Full" : "Social";
+        let wItemIds = [...gSelectRightStack];
+        for (let wItemId of wItemIds) {
+            showStageWait(1);
+            let wImportMember = gImpRecords.find(
+                (item) => item._id === wItemId
+            );
+            if (wImportMember) {
+                wImportMember.loginEmail = setMTBCUsername();
+                wImportMember.type = wType;
+                let wResult = await createNewMember(false, wImportMember); // this updates entity globalDataStore
+                if (wResult && wResult.status) {
+                    let wSavedRecord = wResult.savedRecord;
+                    removeFromSet("3", wMember3._id);
+                    updateRecordStore("2", wSavedRecord);
+                    clearSelectStack(3);
+                    $w("#lblMTBCCount").text = updateMTBCUsernameCount();
+                    showMsg(
+                        1,
+                        0,
+                        `New ${pType} member ${wImportMember.firstName} ${wImportMember.surname} created`
+                    );
                 } else {
-                    wErrMsg = wErrMsg + "\n" + wResult.error;
+                    // add error result error message to wErrMsg string
+                    if (wErrMsg.length === 0) {
+                        wErrMsg = wResult.error;
+                    } else {
+                        wErrMsg = wErrMsg + "\n" + wResult.error;
+                    }
+                    showMsg(
+                        1,
+                        0,
+                        `New ${pType} member ${wImportMember.firstName} ${wImportMember.surname} creation errors`
+                    );
                 }
+            } else {
+                console.log(
+                    "/MaintainMember btnImpNew Member Not found",
+                    wItemId
+                );
                 showMsg(
                     1,
                     0,
-                    `New ${pType} member ${wImportMember.firstName} ${wImportMember.surname} creation errors`
+                    `New ${pType} member ${wImportMember.firstName} ${wImportMember.surname} creation member not found`
                 );
             }
-        } else {
-            console.log("/MaintainMember btnImpNew Member Not found", wItemId);
-            showMsg(
-                1,
-                0,
-                `New ${pType} member ${wImportMember.firstName} ${wImportMember.surname} creation member not found`
-            );
         }
-    }
-    if (wErrMsg.length > 1) {
-        $w("#lblErrMsg").text = wErrMsg;
+        if (wErrMsg.length > 1) {
+            $w("#lblErrMsg").text = wErrMsg;
+        }
+        hideStageWait(1);
+    } catch (err) {
+        console.log(
+            "/page/MaintainMember btnImpStage1New_click Try-catch, err"
+        );
+        console.log(err);
+        hideStageWait(1);
     }
 }
 //====== Stage 1: Helpers -------------------------------------------------------------------------------------
@@ -2179,53 +2238,65 @@ export async function btnImpStage1New_click(pType) {
  *
  */
 async function updateLstMembers(pSource, p2or3, pStatus) {
-    showStageWait(1);
-    let wUpdateStack = [];
-    let wToday = new Date();
-    for (let wMemberId of gSelectLeftStack) {
-        let wMember = gLstRecords.find((item) => item._id === wMemberId);
-        // using .find updates gLst directly
-        if (wMember) {
-            if (pSource === "btnLstPast") {
-                wMember.status = pStatus;
-                wMember.dateLeft = wToday;
+    try {
+        showStageWait(1);
+        let wUpdateStack = [];
+        let wToday = new Date();
+        for (let wLstRowId of gSelectLeftStack) {
+            let wLstMember = gLstRecords.find((item) => item._id === wLstRowId);
+            // using .find updates gLst directly
+            if (wLstMember) {
+                if (pSource === "btnLstPast") {
+                    wLstMember.status = pStatus;
+                    wLstMember.dateLeft = wToday;
+                } else {
+                    wLstMember.type = "Test";
+                }
+                wUpdateStack.push(wLstMember);
+                removeFromSet(p2or3, wLstRowId);
             } else {
-                wMember.type = "Test";
+                console.log(
+                    `/MaintainMember ${pSource} Lst Not found`,
+                    wLstRowId
+                );
             }
-            wUpdateStack.push(wMember);
-            removeFromSet(p2or3, wMemberId);
-        } else {
-            console.log("/MaintainMember ${pSource} Lst Not found", wMemberId);
         }
+        clearSelectStack(p2or3);
+        if (wUpdateStack && wUpdateStack.length > 0) {
+            let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
+            let wUpdateArray = wResult.results.updatedItemIds;
+            let wUpdates = wUpdateArray.toString();
+            let wErrors = wResult.results.errors.length;
+            console.log(
+                `/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
+            );
+            clearSelectStacks();
+            showMsg(
+                1,
+                0,
+                `${pSource} Bulk Members Save: ${String(
+                    wUpdateArray.length
+                )} updated, ${wErrors} errors`
+            );
+        } else {
+            console.log(
+                `/MaintainMember ${pSource} Bulk Members Save: Nothing to update`
+            );
+            showMsg(1, 0, "Nothing to update");
+        }
+        hideStageWait(1);
+    } catch (err) {
+        console.log("/page/MaintainMember updateLstMembers Try-catch, err");
+        console.log(err);
+        hideStageWait(1);
     }
-    clearSelectStack(p2or3);
-    if (wUpdateStack && wUpdateStack.length > 0) {
-        let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
-        let wUpdateArray = wResult.results.updatedItemIds;
-        let wUpdates = wUpdateArray.toString();
-        let wErrors = wResult.results.errors.length;
-        console.log(
-            `/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
-        );
-        clearSelectStacks();
-        showMsg(
-            1,
-            0,
-            `${pSource} Bulk Members Save: ${String(
-                wUpdateArray.length
-            )} updated, ${wErrors} errors`
-        );
-    } else {
-        console.log(
-            `/MaintainMember ${pSource} Bulk Members Save: Nothing to update`
-        );
-        showMsg(1, 0, "Nothing to update");
-    }
-    hideStageWait(1);
 }
 
 function updateRecordStore(p2or3, pRec) {
     try {
+        //console.log("urs");
+        //console.log(pRec);
+        //console.log(gGGLRecords);
         let wRecordData = getRecordStore(p2or3);
         let wSortedData = [];
         let wRecordItem = {};
@@ -2257,24 +2328,47 @@ function updateRecordStore(p2or3, pRec) {
                         }
                         break;
                     case "Lst-Wix":
-                        wRecordItem.firstName = pRec.firstName;
-                        wRecordItem.lastName = pRec.lastName;
-                        wRecordItem.status = pRec.status;
-                        wSortedData = _.orderBy(wRecordData, [
-                            "lastName",
-                            "firstName",
-                        ]);
-                        gWixRecords = [...wSortedData];
+                        if (p2or3 === "2") {
+                            wRecordItem.firstName = pRec.firstName;
+                            wRecordItem.lastName = pRec.lastName;
+                            wRecordItem.status = pRec.status;
+                            wSortedData = _.orderBy(wRecordData, [
+                                "surname",
+                                "firstName",
+                            ]);
+                            gLstRecords = [...wSortedData];
+                        } else {
+                            wRecordItem.firstName = pRec.firstName;
+                            wRecordItem.lastName = pRec.lastName;
+                            wRecordItem.status = pRec.status;
+                            wSortedData = _.orderBy(wRecordData, [
+                                "lastName",
+                                "firstName",
+                            ]);
+                            gWixRecords = [...wSortedData];
+                        }
                         break;
                     case "Lst-GGL":
-                        wRecordItem.firstName = pRec.firstName;
-                        wRecordItem.lastName = pRec.lastName;
-                        wRecordItem.status = pRec.status;
-                        wSortedData = _.orderBy(wRecordData, [
-                            "lastName",
-                            "firstName",
-                        ]);
-                        gGGLRecords = [...wSortedData];
+                        if (p2or3 === "2") {
+                            wRecordItem.firstName = pRec.firstName;
+                            wRecordItem.lastName = pRec.lastName;
+                            wRecordItem.status = pRec.status;
+                            wRecordItem.type = pRec.type;
+                            wSortedData = _.orderBy(wRecordData, [
+                                "surname",
+                                "firstName",
+                            ]);
+                            gLstRecords = [...wSortedData];
+                        } else {
+                            wRecordItem.firstName = pRec.firstName;
+                            wRecordItem.lastName = pRec.lastName;
+                            wRecordItem.status = pRec.status;
+                            wSortedData = _.orderBy(wRecordData, [
+                                "lastName",
+                                "firstName",
+                            ]);
+                            gGGLRecords = [...wSortedData];
+                        }
                         break;
                 }
             } /** this is an addition */ else {
@@ -2297,31 +2391,49 @@ function updateRecordStore(p2or3, pRec) {
                         }
                         break;
                     case "Lst-Wix":
-                        wRecordItem.firstName = pRec.firstName;
-                        wRecordItem.lastName = pRec.lastName;
-                        wRecordItem.status = pRec.status;
-                        wSortedData = _.orderBy(wRecordData, [
-                            "lastName",
-                            "firstName",
-                        ]);
-                        gWixRecords = [...wSortedData];
+                        if (p2or3 === "2") {
+                            wSortedData = _.orderBy(wRecordData, [
+                                "surname",
+                                "firstName",
+                            ]);
+                            gLstRecords = [...wSortedData];
+                        } else {
+                            wRecordItem.firstName = pRec.firstName;
+                            wRecordItem.lastName = pRec.lastName;
+                            S;
+                            wRecordItem.status = pRec.status;
+                            wSortedData = _.orderBy(wRecordData, [
+                                "lastName",
+                                "firstName",
+                            ]);
+                            gWixRecords = [...wSortedData];
+                        }
                         break;
                     case "Lst-GGL":
-                        wRecordItem.firstName = pRec.firstName;
-                        wRecordItem.lastName = pRec.lastName;
-                        wRecordItem.status = pRec.status;
-                        wSortedData = _.orderBy(wRecordData, [
-                            "lastName",
-                            "firstName",
-                        ]);
-                        gGGLRecords = [...wSortedData];
+                        if (p2or3 === "2") {
+                            wSortedData = _.orderBy(wRecordData, [
+                                "surname",
+                                "firstName",
+                            ]);
+                            gLstRecords = [...wSortedData];
+                        } else {
+                            wRecordItem.firstName = pRec.firstName;
+                            wRecordItem.lastName = pRec.lastName;
+                            wRecordItem.status = pRec.status;
+                            wRecordItem.type = pRec.type;
+                            wSortedData = _.orderBy(wRecordData, [
+                                "lastName",
+                                "firstName",
+                            ]);
+                            gGGLRecords = [...wSortedData];
+                        }
                         break;
                 }
             }
         }
     } catch (err) {
         console.log(
-            "/Page/MaintainMeber updateRecordStore try-catch error, stage, p20r3, err, pRec",
+            "/Page/MaintainMember updateRecordStore try-catch error, stage, p20r3, err, pRec",
             gStage,
             p2or3
         );
@@ -2331,20 +2443,29 @@ function updateRecordStore(p2or3, pRec) {
 }
 
 function deleteGlobalStore(p2or3, pId) {
-    let wRecordData = getRecordStore(p2or3);
-    if (!wRecordData) {
-        console.log(`deleteGlobalStore wrong stage ${gStage}`);
-    } else {
-        let wIdx = wRecordData.findIndex(
-            (item) => item._id === pId || item.id === pId
-        );
-        if (wIdx > -1) {
-            wRecordData.splice(wIdx, 1);
+    try {
+        let wRecordData = getRecordStore(p2or3);
+        if (!wRecordData) {
+            console.log(`deleteGlobalStore wrong stage ${gStage}`);
         } else {
-            console.log(
-                `deleteGlobalStore couldnt find ${pId} in ${gStage} global data store ${p2or3}`
+            let wIdx = wRecordData.findIndex(
+                (item) => item._id === pId || item.id === pId
             );
+            if (wIdx > -1) {
+                wRecordData.splice(wIdx, 1);
+            } else {
+                console.log(
+                    `deleteGlobalStore couldnt find ${pId} in ${gStage} global data store ${p2or3}`
+                );
+            }
         }
+    } catch (err) {
+        console.log(
+            "/Page/MaintainMember deleteGlobalStore try-catch error, stage, p20r3, err, pRec",
+            gStage,
+            p2or3
+        );
+        console.log(err);
     }
 }
 
@@ -2379,89 +2500,94 @@ function resetCommand() {
 }
 
 async function createNewMember(pIsAudit, pMember) {
-    let wOldMemberId = pMember.id;
+    try {
+        let wOldMemberId = pMember.id;
 
-    let wMember = {
-        _id: undefined,
-        username: "",
-        loginEmail: pMember.loginEmail,
-        firstName: pMember.firstName,
-        surname: pMember.surname,
-        gender: pMember.gender,
-        type: pMember.type,
-        status: "Pending",
-        contactpref: "E",
-        allowshare: "Y",
-        contactEmail: pMember.contactEmail,
-        altEmail: "",
-        mobilePhone: pMember.mobilePhone,
-        homePhone: pMember.homePhone,
-        locker: pMember.locker,
-        addrLine1: pMember.addrLine1,
-        addrLine2: pMember.addrLine2,
-        town: pMember.town,
-        postCode: pMember.postCode,
-        wixId: pMember.wixId,
-        photo: "",
-    };
-
-    if (!wOldMemberId) {
-        wOldMemberId = "Imported";
-    }
-
-    let wUsername =
-        capitalize(pMember.surname) + pMember.firstName[0].toUpperCase();
-    let wResult;
-    if (await isUnique(wUsername)) {
-        let wPhoto = pMember.gender === "M" ? gManOutline : gWomanOutline;
-
-        wResult = { Status: true, savedRecord: { _id: "1234" }, error: "" };
-        wMember.username = wUsername;
-        wMember.dateLeft = undefined;
-        wMember.status = STATUS.PENDING;
-        wMember._id = undefined;
-        wMember.photo = wPhoto;
-        wMember.contactpref = "N";
-        if (
-            wMember.contactEmail !== "" &&
-            wMember.contactEmail !== null &&
-            wMember.contactEmail !== undefined
-        ) {
-            wMember.contactpref = "E";
-        } else {
-            if (
-                wMember.mobilePhone !== "no phone #" &&
-                wMember.mobilePhone !== "" &&
-                wMember.mobilePhone !== null &&
-                wMember.mobilePhone !== undefined
-            ) {
-                wMember.contactpref = "S";
-            }
-        }
-        console.log(
-            `Create new member with contactpref ${wMember.contactpref} from lst ${wOldMemberId}`
-        );
-        wResult = await createMember(pIsAudit, wMember);
-        if (wResult && wResult.status) {
-            let wSavedRecord = wResult.savedRecord;
-            updateGlobalDataStore(wSavedRecord, "Member");
-            updatePagination("Member");
-        } else {
-            console.log("MaintainMember createNewMember createMember fail");
-            console.log(wResult.error);
-        }
-    } else {
-        console.log(
-            "MaintinMember createNewMember username is not unique",
-            wUsername
-        );
-        wResult = {
-            Status: false,
-            savedRecord: { _id: "1234" },
-            error: `${wUsername} Username not unique`,
+        let wMember = {
+            _id: undefined,
+            username: "",
+            loginEmail: pMember.loginEmail,
+            firstName: pMember.firstName,
+            surname: pMember.surname,
+            gender: pMember.gender,
+            type: pMember.type,
+            status: "Pending",
+            contactpref: "E",
+            allowshare: "Y",
+            contactEmail: pMember.contactEmail,
+            altEmail: "",
+            mobilePhone: pMember.mobilePhone,
+            homePhone: pMember.homePhone,
+            locker: pMember.locker,
+            addrLine1: pMember.addrLine1,
+            addrLine2: pMember.addrLine2,
+            town: pMember.town,
+            postCode: pMember.postCode,
+            wixId: pMember.wixId,
+            photo: "",
         };
+
+        if (!wOldMemberId) {
+            wOldMemberId = "Imported";
+        }
+
+        let wUsername =
+            capitalize(pMember.surname) + pMember.firstName[0].toUpperCase();
+        let wResult;
+        if (await isUnique(wUsername)) {
+            let wPhoto = pMember.gender === "M" ? gManOutline : gWomanOutline;
+
+            wResult = { Status: true, savedRecord: { _id: "1234" }, error: "" };
+            wMember.username = wUsername;
+            wMember.dateLeft = undefined;
+            wMember.status = STATUS.PENDING;
+            wMember._id = undefined;
+            wMember.photo = wPhoto;
+            wMember.contactpref = "N";
+            if (
+                wMember.contactEmail !== "" &&
+                wMember.contactEmail !== null &&
+                wMember.contactEmail !== undefined
+            ) {
+                wMember.contactpref = "E";
+            } else {
+                if (
+                    wMember.mobilePhone !== "no phone #" &&
+                    wMember.mobilePhone !== "" &&
+                    wMember.mobilePhone !== null &&
+                    wMember.mobilePhone !== undefined
+                ) {
+                    wMember.contactpref = "S";
+                }
+            }
+            console.log(
+                `Create new member with contactpref ${wMember.contactpref} from lst ${wOldMemberId}`
+            );
+            wResult = await createMember(pIsAudit, wMember);
+            if (wResult && wResult.status) {
+                let wSavedRecord = wResult.savedRecord;
+                updateGlobalDataStore(wSavedRecord, "Member");
+                updatePagination("Member");
+            } else {
+                console.log("MaintainMember createNewMember createMember fail");
+                console.log(wResult.error);
+            }
+        } else {
+            console.log(
+                "MaintinMember createNewMember username is not unique",
+                wUsername
+            );
+            wResult = {
+                Status: false,
+                savedRecord: { _id: "1234" },
+                error: `${wUsername} Username not unique`,
+            };
+        }
+        return wResult;
+    } catch (err) {
+        console.log("/Page/MaintainMember createNewMember try-catch error");
+        console.log(err);
     }
-    return wResult;
 }
 //====== Name Amend Box =======================================================================================
 //
@@ -2471,46 +2597,54 @@ export async function btnNameAmend2Save_click() {
     // Set up from btnLstStage1Amend, btnWixUp3date or btnGGLStage4Update
     // Update the Lst value with the Import values
     console.log("Btn Lst Amend Save click", gStage);
-    showStageWait(1);
+    try {
+        showStageWait(1);
 
-    let wId2 = gSelectLeftStack[0];
-    let wMember = getSyncTargetItem("2", wId2);
+        let wId2 = gSelectLeftStack[0];
+        let wMember = getSyncTargetItem("2", wId2);
 
-    if (gStage === "Lst-Import") {
-        wMember.firstName = $w("#inpNameAmend3FirstName").value;
-        wMember.surname = $w("#inpNameAmend3Surname").value;
-        let wResult = await saveRecord("lstMembers", wMember);
-        if (wResult && wResult.status) {
-            let wSavedRecord = wResult.savedRecord;
-            updateGlobalDataStore(wSavedRecord, "Member");
-            updatePagination("Member");
-            $w("#btnLstStage1Amend").hide();
-            removeFromSet("2", wMember2._id);
-            removeFromSet("3", wMember3._id);
-            updateRecordStore("2", wSavedRecord);
-            clearSelectStacks();
-            $w("#boxNameAmend").collapse();
-            showMsg(
-                1,
-                0,
-                `LST name ${wMember.firstName} ${wMember.surname} updated`
-            );
+        if (gStage === "Lst-Import") {
+            wMember.firstName = $w("#inpNameAmend3FirstName").value;
+            wMember.surname = $w("#inpNameAmend3Surname").value;
+            let wResult = await saveRecord("lstMembers", wMember);
+            if (wResult && wResult.status) {
+                let wSavedRecord = wResult.savedRecord;
+                $w("#btnLstStage1Amend").hide();
+                removeFromSet("2", wMember2._id);
+                removeFromSet("3", wMember3._id);
+                updateRecordStore("2", wSavedRecord);
+                clearSelectStacks();
+                $w("#boxNameAmend").collapse();
+                showMsg(
+                    1,
+                    0,
+                    `LST name ${wMember.firstName} ${wMember.surname} updated`
+                );
+            } else {
+                console.log("MaintainMember btnNameAmend2Save saverecord fail");
+                console.log(wResult.error);
+                showMsg(
+                    1,
+                    0,
+                    `LST name ${wMember.firstName} ${wMember.surname} update failed`
+                );
+            }
         } else {
-            console.log("MaintainMember btnNameAmend2Save saverecord fail");
-            console.log(wResult.error);
+            console.log("MaintainMember btnNameAmend2Save wrong state", gStage);
             showMsg(
                 1,
                 0,
-                `LST name ${wMember.firstName} ${wMember.surname} update failed`
+                `LST name ${wMember.firstName} ${wMember.surname} wrong stage`
             );
         }
-    } else {
-        console.log("MaintainMember btnNameAmend2Save wrong state", gStage);
-        showMsg(
-            1,
-            0,
-            `LST name ${wMember.firstName} ${wMember.surname} wrong stage`
+        hideStageWait(1);
+    } catch (err) {
+        console.log(
+            "/Page/MaintainMember btnNameAmend2Save_click try-catch error"
         );
+        console.log(err);
+        console.log(pRec);
+        hideStageWait(1);
     }
 }
 
@@ -2520,113 +2654,121 @@ export async function btnNameAmend3Save() {
     // Update the Wix or Google value with the Import/Lst values
     console.log("Btn Name Amend 3 Save click", gStage);
 
-    let wId3 = gSelectRightStack[0];
-    let wTargetMember = getSyncTargetItem("3", wId3);
+    try {
+        let wId3 = gSelectRightStack[0];
+        let wTargetMember = getSyncTargetItem("3", wId3);
 
-    if (gStage === "Lst-Import") {
-        showStageWait(1);
-        //  Update the IMport record and send Email to Membership secretary to update Master membership spreadsheet
-        let wOldName = wTargetMember.firstName + " " + wTargetMember.surname;
-        wTargetMember.firstName = $w("#inpNameAmend2FirstName").value;
-        wTargetMember.surname = $w("#inpNameAmend2Surname").value;
-        let wResult = await saveImportMemberRecord(wTargetMember);
-        //  Send message to Membership secreatry
-        if (wResult && wResult.status) {
-            let wSavedRecord = wResult.savedRecord;
-            let wParams = {
-                oldName: wOldName,
-                newName: wTargetMember.firstName + " " + wTargetMember.surname,
-            };
-
-            if (gTest) {
-                wResult.status = true;
-                console.log("Test Mode: Send Msg");
-            } else {
-                //TODO before go live bring in email
-                wResult.status = true;
-                /**
-                wResult = await sendMsgToJob(
-                    "E",
-                    ["WEB"],
-                    null,
-                    false,
-                    "MemberAmendImportName",
-                    wParams
-                );
-                */
-            }
+        if (gStage === "Lst-Import") {
+            showStageWait(1);
+            //  Update the IMport record and send Email to Membership secretary to update Master membership spreadsheet
+            let wOldName =
+                wTargetMember.firstName + " " + wTargetMember.surname;
+            wTargetMember.firstName = $w("#inpNameAmend2FirstName").value;
+            wTargetMember.surname = $w("#inpNameAmend2Surname").value;
+            let wResult = await saveImportMemberRecord(wTargetMember);
+            //  Send message to Membership secreatry
             if (wResult && wResult.status) {
-                console.log(
-                    "/MaintainMember btnNameAmend3Save sendMsgToJob OK for ",
-                    wTargetMember._id
-                );
-                $w("#btnLstStage1Amend").hide();
-                removeFromSet("2", wMember2._id);
-                removeFromSet("3", wMember3._id);
-                updateRecordStore("3", wSavedRecord);
+                let wSavedRecord = wResult.savedRecord;
+                let wParams = {
+                    oldName: wOldName,
+                    newName:
+                        wTargetMember.firstName + " " + wTargetMember.surname,
+                };
 
-                clearSelectStacks();
-                $w("#boxNameAmend").collapse();
+                if (gTest) {
+                    wResult.status = true;
+                    console.log("Test Mode: Send Msg");
+                } else {
+                    //TODO before go live bring in email
+                    wResult.status = true;
+                    /**
+                    wResult = await sendMsgToJob(
+                        "E",
+                        ["WEB"],
+                        null,
+                        false,
+                        "MemberAmendImportName",
+                        wParams
+                    );
+                    */
+                }
+                if (wResult && wResult.status) {
+                    console.log(
+                        "/MaintainMember btnNameAmend3Save sendMsgToJob OK for ",
+                        wTargetMember._id
+                    );
+                    $w("#btnLstStage1Amend").hide();
+                    removeFromSet("2", wMember2._id);
+                    removeFromSet("3", wMember3._id);
+                    updateRecordStore("3", wSavedRecord);
+
+                    clearSelectStacks();
+                    $w("#boxNameAmend").collapse();
+                    showMsg(
+                        1,
+                        0,
+                        `Import name ${wTargetMember.firstName} ${wTargetMember.surname} updated`
+                    );
+                } else {
+                    console.log(
+                        "/MaintainMember btnNameAmend3Save sendMsgToJob failed, error"
+                    );
+                    console.log(wResult.error);
+                }
+            } else {
+                console.log("MaintainMember btnNameAmend3Save saverecord fail");
+                console.log(wResult.error);
                 showMsg(
                     1,
                     0,
-                    `Import name ${wTargetMember.firstName} ${wTargetMember.surname} updated`
+                    `Import name ${wTargetMember.firstName} ${wTargetMember.surname} update failed`
                 );
-            } else {
-                console.log(
-                    "/MaintainMember btnNameAmend3Save sendMsgToJob failed, error"
-                );
-                console.log(wResult.error);
             }
+            hideStageWait(1);
+        } else if (gStage === "Lst-Wix") {
+            showStageWait(3);
+            //  Update the Wix record
+            let wFirstName = $w("#inpNameAmend2FirstName").value.trim();
+            let wSurname = $w("#inpNameAmend2Surname").value.trim();
+            wTargetMember.firstName = wFirstName;
+            wTargetMember.lastName = wSurname;
+            wTargetMember._id = wMember3._id;
+            // eslint-disable-next-line no-unused-vars
+            let wSavedRecord = await updateWixMember(wTargetMember);
+            $w("#btnWixStage3Update").hide();
+            removeFromSet("2", wMember2._id);
+            removeFromSet("3", wMember3._id);
+            updateRecordStore("3", wSavedRecord);
+            clearSelectStacks();
+            $w("#boxNameAmend").collapse();
+            showMsg(3, 0, `Wix name ${wFirstName} ${wSurname} updated`);
+            hideStageWait(3);
+        } else if (gStage === "Lst-Google") {
+            showStageWait(4);
+            //  Update the Google Import record
+            let wFirstName = $w("#inpNameAmend2FirstName").value.trim();
+            let wSurname = $w("#inpNameAmend2Surname").value.trim();
+            wTargetMember.firstName = wFirstName;
+            wTargetMember.lastName = wSurname;
+            wTargetMember._id = wMember3._id;
+            // eslint-disable-next-line no-unused-vars
+            let wResult = await saveGoogleMemberRecord(wTargetMember);
+            let wSavedRecord = wResult.savedRecord;
+            $w("#btnGGLStage4Update").hide();
+            removeFromSet("2", wMember2._id);
+            removeFromSet("3", wMember3._id);
+            updateRecordStore("3", wSavedRecord);
+            clearSelectStacks();
+            $w("#boxNameAmend").collapse();
+            showMsg(4, 0, `Google name ${wFirstName} ${wSurname} updated`);
+            hideStageWait(4);
         } else {
-            console.log("MaintainMember btnNameAmend3Save saverecord fail");
-            console.log(wResult.error);
-            showMsg(
-                1,
-                0,
-                `Import name ${wTargetMember.firstName} ${wTargetMember.surname} update failed`
-            );
+            console.log("MaintainMember btnNameAmend3Save wrong state", gStage);
         }
-        hideStageWait(1);
-    } else if (gStage === "Lst-Wix") {
-        showStageWait(3);
-        //  Update the Wix record
-        let wFirstName = $w("#inpNameAmend2FirstName").value.trim();
-        let wSurname = $w("#inpNameAmend2Surname").value.trim();
-        wTargetMember.firstName = wFirstName;
-        wTargetMember.lastName = wSurname;
-        wTargetMember._id = wMember3._id;
-        // eslint-disable-next-line no-unused-vars
-        let wSavedRecord = await updateWixMember(wTargetMember);
-        $w("#btnWixStage3Update").hide();
-        removeFromSet("2", wMember2._id);
-        removeFromSet("3", wMember3._id);
-        updateRecordStore("3", wSavedRecord);
-        clearSelectStacks();
-        $w("#boxNameAmend").collapse();
-        showMsg(3, 0, `Wix name ${wFirstName} ${wSurname} updated`);
+    } catch (err) {
+        console.log("/Page/MaintainMember btnNameAmend3Save try-catch error");
+        console.log(err);
         hideStageWait(3);
-    } else if (gStage === "Lst-Google") {
-        showStageWait(4);
-        //  Update the Google Import record
-        let wFirstName = $w("#inpNameAmend2FirstName").value.trim();
-        let wSurname = $w("#inpNameAmend2Surname").value.trim();
-        wTargetMember.firstName = wFirstName;
-        wTargetMember.lastName = wSurname;
-        wTargetMember._id = wMember3._id;
-        // eslint-disable-next-line no-unused-vars
-        let wResult = await saveGoogleMemberRecord(wTargetMember);
-        let wSavedRecord = wResult.savedRecord;
-        $w("#btnGGLStage4Update").hide();
-        removeFromSet("2", wMember2._id);
-        removeFromSet("3", wMember3._id);
-        updateRecordStore("3", wSavedRecord);
-        clearSelectStacks();
-        $w("#boxNameAmend").collapse();
-        showMsg(4, 0, `Google name ${wFirstName} ${wSurname} updated`);
-        hideStageWait(4);
-    } else {
-        console.log("MaintainMember btnNameAmend3Save wrong state", gStage);
     }
 }
 
@@ -2662,60 +2804,69 @@ export async function btnLstStage3Register_click() {
     //  1) Create new mmber (Lst, Wix, MTBC) using details from old Lst
     //  2) Delete existing Lst member
 
-    $w("#lblErrMsg").text = "";
-    let wErrMsg = "";
-    for (let wMemberId of gSelectLeftStack) {
-        $w("#btnLstStage3Register").hide();
-        showStageWait(3);
-        let wLstMember = gLstRecords.find((item) => item._id === wMemberId);
-        if (wLstMember) {
-            wLstMember.loginEmail = setMTBCUsername();
-            let wOldLstId = wLstMember._id;
-            wLstMember._id = undefined;
-            let wResult = await createNewMember(true, wLstMember); //includes updateGlobalDataStore
-            if (wResult && wResult.status) {
-                let wSavedRecord = wResult.savedRecord;
-                removeFromSet("2", wMemberId);
-                updateRecordStore("2", wSavedRecord);
-                updateRecordStore("3", wSavedRecord);
-                await deleteLstMember(wOldLstId);
-                deleteGlobalStore("2", wOldLstId);
-                $w("#lblMTBCCount").text = updateMTBCUsernameCount();
-                showMsg(
-                    3,
-                    0,
-                    `New Wix member ${wLstMember.firstName} ${wLstMember.surname} created`
-                );
-            } else {
-                // add error result error message to wErrMsg string
-                if (wErrMsg.length === 0) {
-                    wErrMsg = wResult.error;
+    try {
+        $w("#lblErrMsg").text = "";
+        let wErrMsg = "";
+        for (let wLstRowId of gSelectLeftStack) {
+            $w("#btnLstStage3Register").hide();
+            showStageWait(3);
+            let wLstMember = gLstRecords.find((item) => item._id === wLstRowId);
+            if (wLstMember) {
+                wLstMember.loginEmail = setMTBCUsername();
+                let wOldLstId = wLstMember._id;
+                wLstMember._id = undefined;
+                let wResult = await createNewMember(true, wLstMember); //includes updateGlobalDataStore
+                if (wResult && wResult.status) {
+                    let wSavedRecord = wResult.savedRecord;
+                    removeFromSet("2", wLstRowId);
+                    updateRecordStore("2", wSavedRecord);
+                    updateRecordStore("3", wSavedRecord);
+                    await deleteLstMember(wOldLstId);
+                    deleteGlobalStore("2", wOldLstId);
+                    $w("#lblMTBCCount").text = updateMTBCUsernameCount();
+                    showMsg(
+                        3,
+                        0,
+                        `New Wix member ${wLstMember.firstName} ${wLstMember.surname} created`
+                    );
                 } else {
-                    wErrMsg = wErrMsg + "\n" + wResult.error;
+                    // add error result error message to wErrMsg string
+                    if (wErrMsg.length === 0) {
+                        wErrMsg = wResult.error;
+                    } else {
+                        wErrMsg = wErrMsg + "\n" + wResult.error;
+                    }
+                    showMsg(
+                        3,
+                        0,
+                        `New Wix member ${wLstMember.firstName} ${wLstMember.surname} creation errors`
+                    );
                 }
-                showMsg(
-                    3,
-                    0,
-                    `New Wix member ${wLstMember.firstName} ${wLstMember.surname} creation errors`
+            } else {
+                console.log(
+                    "/MaintainMember btnLst3Register Member Not found",
+                    wLsttMemberId
                 );
+                showMsg(3, 0, `New Wix member: not found`);
             }
-        } else {
+            hideStageWait(3);
             console.log(
-                "/MaintainMember btnLst3Register Member Not found",
-                wMemberId
+                "------------------------- next for entry-----------------------------------------------"
             );
-            showMsg(3, 0, `New Wix member: not found`);
-        }
-        hideStageWait(3);
-        console.log(
-            "------------------------- next for entry-----------------------------------------------"
-        );
-    } // for
+        } // for
 
-    if (wErrMsg.length > 1) {
-        $w("#lblErrMsg").text = wErrMsg;
+        if (wErrMsg.length > 1) {
+            $w("#lblErrMsg").text = wErrMsg;
+        }
+        clearSelectStack(2);
+        hideStageWait(3);
+    } catch (err) {
+        console.log(
+            "/Page/MaintainMember btnLstStage3Register_click try-catch error"
+        );
+        console.log(err);
+        hideStageWait(3);
     }
-    clearSelectStack(2);
 }
 
 export async function btnWixStage3Delete_click() {
@@ -2723,118 +2874,153 @@ export async function btnWixStage3Delete_click() {
     //  of a once regsitered member, where the Lst record has been deleted and the Wix member left dangling.
     //  Therefore, the only action to take is to delete the Wix record to keep everything aligned.
     //
-    console.log("btnWixStage3Delete", gStage);
-    const p2or3 = "3";
-    for (let wMemberId of gSelectRightStack) {
-        showStageWait(3);
-        let wMember = gWixRecords.find((item) => item._id === wMemberId);
-        if (wMember) {
-            await deleteWixMembers([wMemberId]);
-            removeFromSet(p2or3, wMemberId);
-            deleteGlobalStore(p2or3, wMemberId);
-            showMsg(
-                3,
-                0,
-                `Wix member ${wMember.firstName} ${wMember.lastName} deletedd`
-            );
-        } else {
-            console.log(
-                "/MaintainMember btnWixStage3Delete Wix member Not found",
-                wMemberId
-            );
-            showMsg(3, 0, `Wix member not found`);
+    try {
+        console.log("btnWixStage3Delete", gStage);
+        const p2or3 = "3";
+        for (let wWixRowId of gSelectRightStack) {
+            showStageWait(3);
+            let wMember = gWixRecords.find((item) => item._id === wWixRowId);
+            if (wMember) {
+                await deleteWixMembers([wWixRowId]);
+                removeFromSet(p2or3, wWixRowId);
+                deleteGlobalStore(p2or3, wWixRowId);
+                showMsg(
+                    3,
+                    0,
+                    `Wix member ${wMember.firstName} ${wMember.lastName} deletedd`
+                );
+            } else {
+                console.log(
+                    "/MaintainMember btnWixStage3Delete Wix member Not found",
+                    wWixRowId
+                );
+                showMsg(3, 0, `Wix member not found`);
+            }
         }
+        gSelectRightStack.length = 0;
+        $w(`#chk${p2or3}`).checked = false;
+        clearSelectStack(3);
+        hideStageWait(3);
+    } catch (err) {
+        console.log(
+            "/Page/MaintainMember btnWixStage3Delete_click try-catch error"
+        );
+        console.log(err);
         hideStageWait(3);
     }
-    gSelectRightStack.length = 0;
-    $w(`#chk${p2or3}`).checked = false;
-    clearSelectStack(3);
 }
+
 //====== Stage 4: Lst v Google Import ===========================================================================
 //
 
 export async function btnGGLStage4Guest_click() {
     // There is an entry in Google Import but not in Lst. This is the case for members who have left the club
     // but is added to Message Labels so they get Notifications, Needs tochange the Past status to a new Guest status.
-    $w("#btnGGLStage4Guest").disable();
-    console.log("Do STge 4 guest");
-    let wToday = new Date();
 
-    showStageWait(4);
-    let wUpdateStack = [];
-    for (let wMemberId of gSelectRightStack) {
-        let wGGLEntry = gGGLRecords.find((item) => item._id === wMemberId);
-        if (wGGLEntry) {
-            // find Lst record, if any
-            let wFirstName = wGGLEntry.firstName;
-            let wSurname = wGGLEntry.lastName;
-            let wResult = await findLstMemberByFullName(wFirstName, wSurname);
-            if (wResult && wResult.status) {
-                let wLstEntrys = wResult.members;
-                if (wMembers.length > 1) {
-                    console.log(
-                        `/Page/MaintainMember btnGGLStage4Guest multiple LSt records for ${wFirstName} ${wSurname}`
-                    );
+    try {
+        $w("#btnGGLStage4Guest").disable();
+        console.log("Do STge 4 guest");
+        let wToday = new Date();
+
+        showStageWait(4);
+        let wUpdateStack = [];
+        for (let wGGLRowId of gSelectRightStack) {
+            let wGGLEntry = gGGLRecords.find((item) => item._id === wGGLRowId);
+            if (wGGLEntry) {
+                // find Lst record, if any
+                let wFirstName = wGGLEntry.firstName;
+                let wSurname = wGGLEntry.lastName;
+                console.log(wFirstName, wSurname);
+                let wResult = await findLstMemberByFullName(
+                    wFirstName,
+                    wSurname
+                );
+                if (wResult && wResult.status) {
+                    let wLstEntrys = wResult.members;
+                    if (wLstEntrys.length > 1) {
+                        console.log(
+                            `/Page/MaintainMember btnGGLStage4Guest multiple LSt records for ${wFirstName} ${wSurname}`
+                        );
+                    } else {
+                        let wLstMember = wLstEntrys[0];
+                        if (wLstMember.status !== "Past") {
+                            console.log(
+                                `/Page/MaintainMember btnGGLStage4Guest Member is a ${wLstMember.status} member, not a Past member`
+                            );
+                            //showError("");
+                        } else {
+                            wLstMember.status = "Active";
+                            wLstMember.type = "Guest";
+                            wLstMember.dateLeft = wToday;
+                            wUpdateStack.push(wLstMember);
+                            removeFromSet("3", wGGLRowId);
+                            updateRecordStore(2, wLstMember);
+                        }
+                    }
+                } /** wResult */ else {
+                    console.log("/MaintainMember GGL Not found", wGGLRowId);
+                    console.log(wResult);
                 }
-                let wMember = wLstEntrys[0];
-                if (wMember.status !== "Past") {
-                    console.log(
-                        `/Page/MaintainMember btnGGLStage4Guest Member is a ${wMember.status} member, not a Past member`
-                    );
-                    //showError("");
-                    return;
-                }
-                wMember.status = "Active";
-                wMember.type = "Guest";
-                wMember.dateLeft = wToday;
-                wUpdateStack.push(wMember);
-                removeFromSet("3", wMemberId);
-                updateRecordStore(2, wMember);
-            } /** wResult */ else {
-                console.log("/MaintainMember GGL Not found", wMemberId);
-                console.log(wResult);
-            }
-        } // GGLEntry
-    } //for loop
+            } // GGLEntry
+        } //for loop
 
-    clearSelectStack(3);
-
-    if (wUpdateStack && wUpdateStack.length > 0) {
-        let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
-        let wUpdateArray = wResult.results.updatedItemIds;
-        let wUpdates = wUpdateArray.toString();
-        let wErrors = wResult.results.errors.length;
+        clearSelectStack(3);
+        if (wUpdateStack && wUpdateStack.length > 0) {
+            let wResult = await bulkSaveRecords("lstMembers", wUpdateStack);
+            let wUpdateArray = wResult.results.updatedItemIds;
+            let wUpdates = wUpdateArray.toString();
+            let wErrors = wResult.results.errors.length;
+            console.log(
+                `/MaintainMember Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
+            );
+            clearSelectStacks();
+            showMsg(
+                4,
+                0,
+                `Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`
+            );
+        } else {
+            console.log(`/MaintainMember Bulk Members Save: Nothing to update`);
+            showMsg(4, 0, "Nothing to update");
+        }
+        $w("#btnGGLStage4Guest").enable();
+        hideStageWait(4);
+        console.log("gLst");
+        console.log(gLstRecords);
+    } catch (err) {
         console.log(
-            `/MaintainMember Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
+            "/Page/MaintainMember btnGGLStage4Guest_click try-catch error"
         );
-        clearSelectStacks();
-        showMsg(
-            4,
-            0,
-            `Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`
-        );
-    } else {
-        console.log(`/MaintainMember Bulk Members Save: Nothing to update`);
-        showMsg(4, 0, "Nothing to update");
+        console.log(err);
+        hideStageWait(4);
     }
-    $w("#btnGGLStage4Guest").enable();
-    hideStageWait(4);
 }
 
 export async function btnGGLStage4Save_click() {
     // Simply overwrite the contents of lstGoogleImport wutg gGGLRecords.
 
-    $w("#btnGGLStage4Save").disable();
-    showStageWait(4);
+    try {
+        $w("#btnGGLStage4Save").disable();
+        showStageWait(4);
 
-    let wResult = await uploadGlobalDataStore(loggedInMember._id, gGGLRecords);
-    if (wResult) {
-        console.log("Stage 4 Save Ok");
-    } else {
-        console.log("Stage 4 Save Fail");
+        let wResult = await uploadGlobalDataStore(
+            loggedInMember._id,
+            gGGLRecords
+        );
+        if (wResult) {
+            console.log("Stage 4 Save Ok");
+        } else {
+            console.log("Stage 4 Save Fail");
+        }
+        $w("#btnGGLStage4Save").enable();
+        hideStageWait(4);
+    } catch (err) {
+        console.log(
+            "/Page/MaintainMember btnGGLStage4Save_click try-catch error"
+        );
+        console.log(err);
+        hideStageWait(4);
     }
-    $w("#btnGGLStage4Save").enable();
-    hideStageWait(4);
 }
 
 //====== Locker Handling ========================================================================================
@@ -3117,13 +3303,14 @@ async function processCustomOpen() {
     $w("#imgCustom").hide();
 }
 
-function processCustomClose() {
+async function processCustomClose() {
     // copy gLstRecords into GlobalDataStore and reset pagination
     setEntity("Member", [...gLstRecords]);
     resetPagination("Member");
     console.log(
         "/pages/MaintainMember processCustomClose Member entity reset from sync"
     );
+    await updateDashboard();
     $w("#secDesktop").expand();
     $w("#secMobile").collapse();
     $w("#secMember").expand();

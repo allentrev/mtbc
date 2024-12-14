@@ -1583,32 +1583,18 @@ export async function saveGoogleMemberRecord(pRec) {
             consistentRead: true,
             suppressAuth: true,
         };
-        //console.log("saverecord, pRec take away selected, chnMkr");
-        //console.log(pRec);
         let pNewRec = {
             _id: pRec._id,
-            mF: pRec.gender,
-            type: pRec.type,
-            sal: pRec.sal,
-            name: pRec.firstName,
-            surname: pRec.surname,
-            add1: pRec.addrLine1,
-            add2: pRec.addrLine2,
-            add3: pRec.town,
-            postcode: pRec.postCode,
-            home: pRec.homePhone,
-            mobile: pRec.mobilePhone,
-            email: pRec.contactEmail,
-            altEmail: pRec.altEmail,
+            firstName: pRec.firstName,
+            lastName: pRec.lastName,
             labels: pRec.labels,
-            loc1: "",
-            loc2: "",
+            eMail1Label: pRec.eMail1Label,
+            eMail1Value: pRec.eMail1Value,
+            eMail2Label: pRec.eMail2Label,
+            eMail2Value: pRec.eMail2Value,
+            phone1Label: pRec.phone1Label,
+            phone1Value: pRec.phone1Value,
         };
-        const wLoc1 = String(parseInt(pRec.locker[0], 10));
-        let wLoc2 = String(parseInt(pRec.locker[1], 10));
-        if (wLoc2 === "0") {
-            wLoc2 = null;
-        }
         let savedRec = await wixData.save("lstGoogleImport", pNewRec, options);
         if (savedRec) {
             return { status: true, savedRecord: savedRec, error: null };
