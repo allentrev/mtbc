@@ -1,23 +1,27 @@
-import wixWindow				from 'wix-window';
-import { authentication }   	from 'wix-members-frontend';
+import wixWindow from "wix-window";
+import wixLocation from "wix-location";
+import { authentication } from "wix-members-frontend";
 
-import { retrieveSessionMemberDetails } from 'public/objects/member';
+import { retrieveSessionMemberDetails } from "public/objects/member";
 
 let loggedInMember;
 let loggedInMemberRoles;
-	
+
 // for testing -----------------------------------------------------------------------------
 let gTest = false;
 
-const isLoggedIn = (gTest) ? true : authentication.loggedIn();
+const isLoggedIn = gTest ? true : authentication.loggedIn();
 
 $w.onReady(async function () {
+    let status;
 
-	let status;
-	
     // for testing ------	------------------------------------------------------------------------
     //let wUser = {"_id": "ab308621-7664-4e93-a7aa-a255a9ee6867", "loggedIn": true, "roles": [{"title": "Full"}]};	//
-    let wUser = { "_id": "88f9e943-ae7d-4039-9026-ccdf26676a2b", "loggedIn": true, "roles": [{ "title": "Manager" }] }; //Me
+    let wUser = {
+        _id: "88f9e943-ae7d-4039-9026-ccdf26676a2b",
+        loggedIn: true,
+        roles: [{ title: "Manager" }],
+    }; //Me
     //let wUser = {"_id": "af7b851d-c5e5-49a6-adc9-e91736530794", "loggedIn": true, "roles": [{"title": "Coach"},{"title": "Press"}]}; //Tony Roberts
     //let wUser = {"_id": "612f172a-1591-4aec-a770-af673bbc207b", "loggedIn": true, "roles": [{"title": "Member"},{"title": "Captain"}]}; //Tony Roberts
     /**
@@ -32,15 +36,21 @@ $w.onReady(async function () {
     Yoneko Stuart	93daeee8-3d4b-40cc-a016-c88e93af1559	957faf19-39cd-47ca-9b81-5a0c2863bb87
     */
 
-    [status, loggedInMember, loggedInMemberRoles] = await retrieveSessionMemberDetails(gTest, wUser); // wUser only used in test cases
-	//console.log(loggedInMember);
-	//console.log(loggedInMemberRoles);
+    [status, loggedInMember, loggedInMemberRoles] =
+        await retrieveSessionMemberDetails(gTest, wUser); // wUser only used in test cases
+    //console.log(loggedInMember);
+    //console.log(loggedInMemberRoles);
     if (isLoggedIn) {
-		configurePage();
+        configurePage();
     } else {
-		console.log("/membersArea/MembersMenu onready isloggenIn fail");
+        console.log("/membersArea/MembersMenu onready isloggenIn fail");
     }
-})
+    //====== Event Handlers ----------------------------------------------------------------------------------------------
+    //
+    $w("#lblManagerSystemMaintainMember").onClick(() =>
+        dolblClick("maintain-member")
+    );
+});
 /**
 export const ROLES = Object.freeze({
 	ADMIN:			"Admin",
@@ -56,41 +66,57 @@ export const ROLES = Object.freeze({
 */
 
 function configurePage() {
+    let wRoles = convertToString(loggedInMemberRoles);
+    $w("#lblFullName").text = loggedInMember.name;
+    //console.log(loggedInMemberRoles);
+    //console.log(loggedInMemberRoles.includes("Captain"));
+    $w("#lblRole").text = wRoles;
+    $w("#lblWixId").text = loggedInMember.wixId;
+    $w("#lblLstId").text = loggedInMember.lstId;
+    loggedInMemberRoles.includes("Admin") ?
+        $w("#strAdmin").expand()
+    :   $w("#strAdmin").collapse();
+    loggedInMemberRoles.includes("Manager") ?
+        $w("#strManager").expand()
+    :   $w("#strManager").collapse();
+    loggedInMemberRoles.includes("Coach") ?
+        $w("#strCoach").expand()
+    :   $w("#strCoach").collapse();
+    loggedInMemberRoles.includes("Press") ?
+        $w("#strPressOfficer").expand()
+    :   $w("#strPressOfficer").collapse();
+    loggedInMemberRoles.includes("Captain") ?
+        $w("#strTeamCaptain").expand()
+    :   $w("#strTeamCaptain").collapse();
+    loggedInMemberRoles.includes("Competition") ?
+        $w("#strTeamCaptain").expand()
+    :   $w("#strTeamCaptain").collapse();
+    $w("#strTeamCaptain").expand();
+    switch (wixWindow.formFactor) {
+        case "Mobile":
+            $w("#txtFormFactor").text = "Mobile";
+            break;
+        case "Tablet":
+            $w("#txtFormFactor").text = "Tablet";
+            break;
+        case "Desktop":
+            $w("#txtFormFactor").text = "Desktop";
+            break;
+        default:
+            $w("#txtFormFactor").text = "Desktop";
+            break;
+    }
+}
 
-	let wRoles = convertToString(loggedInMemberRoles);
-	$w('#lblFullName').text = loggedInMember.name;
-	//console.log(loggedInMemberRoles);
-	//console.log(loggedInMemberRoles.includes("Captain"));
-	$w('#lblRole').text = wRoles;
-	$w('#lblWixId').text = loggedInMember.wixId;
-	$w('#lblLstId').text = loggedInMember.lstId;
-	(loggedInMemberRoles.includes("Admin")) ? $w('#strAdmin').expand() : $w('#strAdmin').collapse();
-	(loggedInMemberRoles.includes("Manager")) ? $w('#strManager').expand() : $w('#strManager').collapse();
-	(loggedInMemberRoles.includes("Coach")) ? $w('#strCoach').expand() : $w('#strCoach').collapse();
-	(loggedInMemberRoles.includes("Press")) ? $w('#strPressOfficer').expand() : $w('#strPressOfficer').collapse();
-	(loggedInMemberRoles.includes("Captain")) ? $w('#strTeamCaptain').expand() : $w('#strTeamCaptain').collapse();
-	(loggedInMemberRoles.includes("Competition")) ? $w('#strTeamCaptain').expand() : $w('#strTeamCaptain').collapse();
-$w('#strTeamCaptain').expand();
-	switch (wixWindow.formFactor) {
-		case "Mobile":
-			$w('#txtFormFactor').text = "Mobile"
-			break;
-		case "Tablet":
-			$w('#txtFormFactor').text = "Tablet";
-			break;
-		case "Desktop":
-			$w('#txtFormFactor').text = "Desktop";
-			break;
-		default:
-			$w('#txtFormFactor').text = "Desktop"
-			break;
-	}
+export function dolblClick(pPage) {
+    $w("Image").show();
+    wixLocation.to(`/${pPage}`);
 }
 
 export function convertToString(pRoles) {
-	let wString = "";
-	pRoles.forEach( (item) => {
-		wString = wString + item + ", "
-	})
-	return wString.substring(0,wString.length - 2);
+    let wString = "";
+    pRoles.forEach((item) => {
+        wString = wString + item + ", ";
+    });
+    return wString.substring(0, wString.length - 2);
 }
