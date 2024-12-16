@@ -1486,6 +1486,9 @@ export function updateGlobalDataStore(pRec, pTarget) {
                 wSelectedItem.loginEmail = pRec.loginEmail;
                 wSelectedItem.firstName = pRec.firstName;
                 wSelectedItem.surname = pRec.surname;
+                wSelectedItem.lastName = pRec.lastName;
+                wSelectedItem.player = pRec.player;
+                wSelectedItem.fullName = pRewc.fullName;
                 wSelectedItem.gender = pRec.gender;
                 wSelectedItem.type = pRec.type;
                 wSelectedItem.status = pRec.status;

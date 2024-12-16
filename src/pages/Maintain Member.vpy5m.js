@@ -6,7 +6,7 @@ import _ from "lodash";
 import { saveRecord } from "backend/backEvents.jsw";
 
 import { deleteWixMembers } from "backend/backMember.jsw";
-//import { deleteGoogleImportRecord } from "backend/backMember.jsw";
+import { deleteGoogleImportRecord } from "backend/backMember.jsw";
 import {
     deleteImportMemberRecord,
     uploadGlobalDataStore,
@@ -125,12 +125,12 @@ $w.onReady(async function () {
         if (isLoggedIn) {
             let wRoles = loggedInMemberRoles.toString();
             console.log(
-                "/page/Maintain Member onReady  Roles = <" + wRoles + ">",
+                "/page/MaintainMember onReady  Roles = <" + wRoles + ">",
                 loggedInMember.name,
                 loggedInMember.lstId
             );
         } else {
-            console.log("/page/Maintain Member onReady Not signed in");
+            console.log("/page/MaintainMember onReady Not signed in");
         }
 
         if (wixWindow.formFactor === "Mobile") {
@@ -225,22 +225,27 @@ $w.onReady(async function () {
         $w("#btnLstVWix").onClick(() => doStage3());
         $w("#btnLstVGGL").onClick(() => doStage4());
         $w("#btnSyncClose").onClick(() => processCustomClose());
-        $w("#btnLstStage1Amend").onClick(() => btnNameAmend_click(1));
         $w("#btnNameAmend2Save").onClick(() => btnNameAmend2Save_click());
-        $w("#btnNameAmend3Save").onClick(() => btnNameAmend3Save());
+        $w("#btnNameAmend3Save").onClick(() => btnNameAmend3Save_click());
         $w("#btnNameAmendCancel").onClick(() => btnNameAmendCancel_click());
+
+        $w("#btnLstStage1Amend").onClick(() => btnNameAmend_click(1));
         $w("#btnLstStage1Past").onClick(() => btnLstStage1Past_click());
         $w("#btnLstStage1Test").onClick(() => btnLstStage1Test_click());
         $w("#btnImpStage1NewFull").onClick(() => btnImpStage1New_click("F"));
         $w("#btnImpStage1NewSocial").onClick(() => btnImpStage1New_click("S"));
+        $w("#btnImpStage1Past").onClick(() => btnImpStage1Past_click());
+
         $w("#btnLstStage3Register").onClick(() => btnLstStage3Register_click());
         $w("#btnWixStage3Update").onClick(() => btnNameAmend_click(3));
         $w("#btnWixStage3Delete").onClick(() => btnWixStage3Delete_click());
+
         $w("#btnGGLStage4Amend").onClick(() => btnNameAmend_click(4));
         $w("#btnGGLStage4Guest").onClick(() => btnGGLStage4Guest_click());
         $w("#btnGGLStage4Save").onClick(() => btnGGLStage4Save_click());
         $w("#btnGGLStage4Update").onClick(() => btnNameAmend_click(4));
-        $w("#btnImpStage1Past").onClick(() => btnImpStage1Past_click());
+        $w("#btnGGLStage4Add").onClick(() => btnGGLStage4Add_click());
+        $w("#btnGGLStage4Delete").onClick(() => btnGGLStage4Delete_click());
 
         //$w("#chk2").onClick((event) => chkSyncSelect_click("2", event));
         //$w("#chk3").onClick((event) => chkSyncSelect_click("3", event));
@@ -298,7 +303,7 @@ $w.onReady(async function () {
             }
         });
     } catch (err) {
-        console.log("/page/Maintain Member onReady Try-catch, err");
+        console.log("/page/MaintainMember onReady Try-catch, err");
         console.log(err);
         if (!gTest) {
             wixLocation.to("/syserror");
@@ -369,14 +374,13 @@ export async function loadMembers() {
             setEntity("Member", [...wAllMembers]);
             resetSection("Member");
         } else {
-            console.log("/page/Maintain Member loadMembers read failed, err");
-            //console.log(wResults.error);
+            console.log("/page/MaintainMember loadMembers read failed");
         }
         await doMemberView("");
         resetPagination("Member");
         hideWait("Member");
     } catch (err) {
-        console.log("/page/Maintain Member loadMembers Try-catch, err");
+        console.log("/page/MaintainMember loadMembers Try-catch, err");
         console.log(err);
         if (!gTest) {
             wixLocation.to("/syserror");
@@ -434,7 +438,7 @@ function clearEdit(pTarget) {
             break;
         default:
             console.log(
-                "/MaintainMember clearEditBox Invalid switch key",
+                "/page/MaintainMember clearEditBox Invalid switch key",
                 pTarget
             );
             break;
@@ -517,7 +521,7 @@ function populateEdit(pTarget) {
             break;
         default:
             console.log(
-                "/MaintainMember populateEdit Invalid switch key",
+                "/page/MaintainMember populateEdit Invalid switch key",
                 pTarget
             );
             break;
@@ -773,7 +777,7 @@ export async function btnMemberASave_click() {
                 break;
             default:
                 console.log(
-                    "/page/Maintain Member btnMemberSave invalid mode = [" +
+                    "/page/MaintainMember btnMemberSave invalid mode = [" +
                         getMode() +
                         "]"
                 );
@@ -828,9 +832,7 @@ export async function btnMemberASave_click() {
         $w("#btnMemberASave").enable();
         hideWait("Member");
     } catch (err) {
-        console.log(
-            "/page/Maintain Member btnMemberASave_click Try-catch, err"
-        );
+        console.log("/page/MaintainMember btnMemberASave_click Try-catch, err");
         console.log(err);
         if (!gTest) {
             wixLocation.to("/syserror");
@@ -1063,10 +1065,13 @@ export function upbMemberEditPhoto_change() {
             .catch((uploadError) => {
                 $w("#txtMemberErrMsg").text = "File upload error";
                 console.log(
-                    "/MaintainMember File upload error: " +
+                    "/page/MaintainMember File upload error: " +
                         uploadError.errorCode
                 );
-                console.log("/MaintainMember ", uploadError.errorDescription);
+                console.log(
+                    "/page/MaintainMember ",
+                    uploadError.errorDescription
+                );
                 setTimeout(() => {
                     $w("#btnMemberASave").enable();
                     $w("#txtMemberErrMsg").collapse();
@@ -1195,7 +1200,7 @@ let gWixRecords = [];
 let gLstRecords = [];
 let gImpRecords = [];
 let gGGLRecords = [];
-let gStage = "Lst-Import";
+let gStage = "Lst-Imp";
 
 let gSelectLeftStack = [];
 let gSelectRightStack = [];
@@ -1315,7 +1320,7 @@ export async function doStage4() {
         let promiseC = loadGGLMembersData();
 
         Promise.all([promiseA, promiseC]).then(() => {
-            gStage = "Lst-Google";
+            gStage = "Lst-GGL";
             clearSelectStacks();
             //console.log(gLstRecords);
             //console.log(gGGLRecords);
@@ -1396,14 +1401,14 @@ function reconcileDatasets(pA, pB) {
     //console.log("ReconDs", pA.length, pB.length);
     $w("#boxLstCompare").expand();
     switch (gStage) {
-        case "Lst-Import":
+        case "Lst-Imp":
             $w("#txtRightHdr").text =
                 "The following members are in Import only";
             break;
         case "Lst-Wix":
             $w("#txtRightHdr").text = "The following members are in Wix only";
             break;
-        case "Lst-Google":
+        case "Lst-GGL":
             $w("#txtRightHdr").text =
                 "The following members are in the Google Account only";
             break;
@@ -1419,7 +1424,7 @@ function reconcileDatasets(pA, pB) {
         $w("#txtRefresh").expand();
         return;
     }
-    if (gStage === "Lst-Import") {
+    if (gStage === "Lst-Imp") {
         $w("#boxStage1Commands").expand();
         $w("#boxStage3Commands").collapse();
         $w("#boxStage4Commands").collapse();
@@ -1427,7 +1432,7 @@ function reconcileDatasets(pA, pB) {
         $w("#boxStage1Commands").collapse();
         $w("#boxStage3Commands").expand();
         $w("#boxStage4Commands").collapse();
-    } else if (gStage === "Lst-Google") {
+    } else if (gStage === "Lst-GGL") {
         $w("#boxStage1Commands").collapse();
         $w("#boxStage3Commands").collapse();
         $w("#boxStage4Commands").expand();
@@ -1550,7 +1555,6 @@ async function synchroniseFieldValues() {
                 wLstMember[wFK] = wLst;
             } // for i 1 to 7 loop
             if (wChanged) {
-                console.log(wLstMember);
                 //save record
                 let wResult = await saveRecord("lstMembers", wLstMember);
                 //let wResult = {"status": true};
@@ -1559,11 +1563,10 @@ async function synchroniseFieldValues() {
                         `The following changes were made to ${wLstMember.key}'s Lst record:\n` +
                         wMsg +
                         "\n";
-                    console.log(wOut);
                     wChangeList.push(wOut);
                 } else {
                     console.log(
-                        "/MaintainMember synchroniseFieldValues sendMsg failed, error"
+                        "/page/MaintainMember synchroniseFieldValues sendMsg failed, error"
                     );
                     console.log(wResult.error);
                 }
@@ -1571,7 +1574,7 @@ async function synchroniseFieldValues() {
             }
         } else {
             console.log(
-                `/MaintainMember synchroniseFieldValues Cant find member ${wLstMember.key}`
+                `/page/MaintainMember synchroniseFieldValues Cant find member ${wLstMember.key}`
             );
         }
     } // for of gLstRecords
@@ -1594,10 +1597,12 @@ async function synchroniseFieldValues() {
         }
 
         if (wResult && wResult.status) {
-            console.log("/MaintainMember synchroniseFieldValues sendMsg OK");
+            console.log(
+                "/page/MaintainMember synchroniseFieldValues sendMsg OK"
+            );
         } else {
             console.log(
-                "/MaintainMember synchroniseFieldValues sendMsg failed, error"
+                "/page/MaintainMember synchroniseFieldValues sendMsg failed, error"
             );
             console.log(wResult.error);
         }
@@ -1636,7 +1641,7 @@ function configureSyncCommands(p2or3) {
     let wLeftSelectedStackCount = gSelectLeftStack.length;
     let wRightSelectedStackCount = gSelectRightStack.length;
 
-    if (gStage === "Lst-Import") {
+    if (gStage === "Lst-Imp") {
         configureStage1Commands(
             p2or3,
             wLeftSelectedStackCount,
@@ -1648,7 +1653,7 @@ function configureSyncCommands(p2or3) {
             wLeftSelectedStackCount,
             wRightSelectedStackCount
         );
-    } /** gSTage === "Lst-Google" */ else {
+    } /** gStage === "Lst-GGL" */ else {
         configureStage4Commands(
             p2or3,
             wLeftSelectedStackCount,
@@ -1737,42 +1742,41 @@ function configureStage3Commands(p2or3, pLeftCount, pRightCount) {
 function configureStage4Commands(p2or3, pLeftCount, pRightCount) {
     if (pLeftCount === 1 && pRightCount === 1) {
         $w("#btnGGLStage4Update").show();
-        $w("#btnGGLStage4Save").hide();
     } else {
         $w("#btnGGLStage4Update").hide();
-        $w("#btnGGLStage4Save").show();
         $w("#boxNameAmend").collapse();
     }
     if (p2or3 === "2") {
-        /** do nothing
-    switch (pSelectedStackCount) {
-      case 0:
-        $w("#btnGGLStage4Guest").hide();
-        $w("#btnGGLStage4Update").hide();
-        break;
-      case 1:
-        $w("#btnGGLStage4Guest").show();
-        $w("#btnGGLStage4Update").show();
-        break;
-      default:
-        $w("#btnLstStage4Guest").show();
-        $w("#btnLstStage4Update").hide();
-        break;
-    }
-    */
+        switch (pLeftCount) {
+            case 0:
+                $w("#btnGGLStage4Amend").hide();
+                $w("#btnGGLStage4Add").hide();
+                break;
+            case 1:
+                $w("#btnGGLStage4Amend").show();
+                $w("#btnGGLStage4Add").show();
+                break;
+            default:
+                $w("#btnLstStage4Amend").hide();
+                $w("#btnLstStage4Add").show();
+                break;
+        }
     } /** p2or3 = 3 */ else {
         switch (pRightCount) {
             case 0:
                 $w("#btnGGLStage4Guest").hide();
                 $w("#btnGGLStage4Save").show();
+                $w("#btnGGLStage4Delete").hide();
                 break;
             case 1:
                 $w("#btnGGLStage4Guest").show();
                 $w("#btnGGLStage4Save").show();
+                $w("#btnGGLStage4Delete").show();
                 break;
             default:
                 $w("#btnGGLStage4Guest").show();
                 $w("#btnGGLStage4Save").show();
+                $w("#btnGGLStage4Delete").show();
                 break;
         }
     } // if p2or3 === 2
@@ -1803,7 +1807,7 @@ function removeFromSet(p2or3, pId) {
                 }
             } else {
                 console.log(
-                    "MaintainMember removeFromSet cant find member, id, p2or3 ",
+                    "/pageMaintainMember removeFromSet cant find member, id, p2or3 ",
                     pId,
                     p2or3
                 );
@@ -1825,7 +1829,7 @@ function removeFromSet(p2or3, pId) {
                 }
             } else {
                 console.log(
-                    "MaintainMember removeFromSet cant find member, id, p2or3 ",
+                    "/page/MaintainMember removeFromSet cant find member, id, p2or3 ",
                     pId,
                     p2or3
                 );
@@ -1868,7 +1872,7 @@ export function pushToSelectStack(pControl, pRec, pId, p2or3) {
             gSelectLeftStack.push(pId);
         } else {
             console.log(
-                "MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
+                "/page/MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
                 p2or3
             );
         }
@@ -1878,7 +1882,7 @@ export function pushToSelectStack(pControl, pRec, pId, p2or3) {
             gSelectRightStack.push(pId);
         } else {
             console.log(
-                "MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
+                "/page/MaintainMember pushToSelectStack member already exists in stack, id, p2or3 ",
                 pId,
                 p2or3
             );
@@ -1898,7 +1902,7 @@ export function pullFromSelectStack(pControl, pRec, pId, p2or3) {
             gSelectLeftStack.splice(x, 1);
         } else {
             console.log(
-                "MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
+                "/page/MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
                 pId,
                 p2or3
             );
@@ -1909,7 +1913,7 @@ export function pullFromSelectStack(pControl, pRec, pId, p2or3) {
             gSelectRightStack.splice(x, 1);
         } else {
             console.log(
-                "MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
+                "/page/MaintainMember pullFromSelectStack cant find member, id, p2or3 ",
                 pId,
                 p2or3
             );
@@ -1918,7 +1922,7 @@ export function pullFromSelectStack(pControl, pRec, pId, p2or3) {
 }
 
 export function getSyncTargetItem(p2or3, pId) {
-    if (gStage === "Lst-Import") {
+    if (gStage === "Lst-Imp") {
         if (p2or3 === "2") {
             return gLstRecords.find((wItem) => wItem._id === pId);
         } else {
@@ -1930,7 +1934,7 @@ export function getSyncTargetItem(p2or3, pId) {
         } else {
             return gWixRecords.find((wItem) => wItem._id === pId);
         }
-    } else if (gStage === "Lst-Google") {
+    } else if (gStage === "Lst-GGL") {
         if (p2or3 === "2") {
             return gLstRecords.find((wItem) => wItem._id === pId);
         } else {
@@ -1970,8 +1974,9 @@ async function loadWixMembersData() {
             wTempMember.key = wTempMember.name;
             gWixRecords.push(wTempMember);
         }
+        //console.log("gWixRecords");
         //console.log(gWixRecords);
-        gStage === "Lst-Import" ? messageDone(2) : messageDone(3);
+        gStage === "Lst-Imp" ? messageDone(2) : messageDone(3);
     } catch (err) {
         console.log("/page/MaintainMember loadWixMemberData Try-catch, err");
         console.log(err);
@@ -1987,6 +1992,8 @@ async function loadLstMembersData() {
             wMember.key = wMember.fullName;
         }
         messageDone(1);
+        //console.log("pLstRecords");
+        //console.log(gLstRecords);
     } catch (err) {
         console.log("/page/MaintainMember loadLstMembersData Try-catch, err");
         console.log(err);
@@ -1999,6 +2006,8 @@ async function loadImpMembersData() {
     try {
         gImpRecords = await getAllImportMembers();
         messageDone(2);
+        //console.log("pImpRecords");
+        //console.log(gImpRecords);
     } catch (err) {
         console.log("/page/MaintainMember loadImpMembersData try-catch, err");
         console.log(err);
@@ -2010,6 +2019,8 @@ async function loadGGLMembersData() {
     //  Record key is _id
     try {
         gGGLRecords = await getAllGoogleMembers();
+        //console.log("loadGGLMembersData, gGGL");
+        //console.log(gGGLRecords);
         messageDone(2);
     } catch (err) {
         console.log("/page/MaintainMember loadGGLMembersData Try-catch, err");
@@ -2061,7 +2072,7 @@ export async function btnNameAmend_click(pStage) {
     //  For Lst-Import reconciliation, either the Lst value or the Import value can be amended.
     //  For Lst-Wix and Lst-Google reconciliations, then the Lst value is immutable.
     //  So, action is to update the Wix or Google record with the Lst values.
-    console.log("Btn Lst Update click", pStage, gStage);
+    //console.log("Btn Lst Update click", pStage, gStage);
 
     let wItemId2 = gSelectLeftStack[0];
     let wItemId3 = gSelectRightStack[0];
@@ -2081,9 +2092,9 @@ export async function btnNameAmend_click(pStage) {
     $w("#inpNameAmend2Surname").value = wMember2.surname;
     $w("#inpNameAmend3FirstName").value = wMember3.firstName;
     $w("#inpNameAmend3Surname").value =
-        gStage === "Lst-Import" ? wMember3.surname : wMember3.lastName;
+        gStage === "Lst-Imp" ? wMember3.surname : wMember3.lastName;
     $w("#boxNameAmend").expand();
-    if (gStage === "Lst-Import") {
+    if (gStage === "Lst-Imp") {
         $w("#txtNameAmend2Caption").text = "Web data";
         $w("#txtNameAmend3Caption").text = "Master data";
         $w("#btnNameAmend2Save").enable();
@@ -2137,13 +2148,11 @@ export async function btnLstStage1Test_click() {
 export async function btnImpStage1Past_click() {
     //  You can end up with situations where a record exists in Import but has a status Past in Lst, therefore
     //  it will not show up in the left repeater. Simply, remove the import entry.
-    console.log("btnImpStage1Past", gStage);
+    //console.log("btnImpStage1Past", gStage);
     const wStage = 1;
-    console.log(gImpRecords);
     try {
         showStageWait(wStage);
         for (let wImpRowId of gSelectRightStack) {
-            console.log(wImpRowId);
             await deleteImportMemberRecord(wImpRowId);
             removeFromSet(p2or3, wImpRowId);
             await deleteGlobalStore(p2or3, wImpRowId);
@@ -2165,7 +2174,7 @@ export async function btnImpStage1New_click(pType) {
     //  These are entries in Import but not in Lst. These are the new members joined this year.
     //  pType shows which button was pressed: F = Full member, S = Soceial member
     try {
-        console.log("Btn Imp New click", gStage, pType);
+        //console.log("Btn Imp New click", gStage, pType);
         $w("#lblErrMsg").text = "";
         let wErrMsg = "";
         let wType = pType === "F" ? "Full" : "Social";
@@ -2205,7 +2214,7 @@ export async function btnImpStage1New_click(pType) {
                 }
             } else {
                 console.log(
-                    "/MaintainMember btnImpNew Member Not found",
+                    "/page/MaintainMember btnImpNew Member Not found",
                     wItemId
                 );
                 showMsg(
@@ -2227,6 +2236,7 @@ export async function btnImpStage1New_click(pType) {
         hideStageWait(1);
     }
 }
+
 //====== Stage 1: Helpers -------------------------------------------------------------------------------------
 
 /**
@@ -2256,7 +2266,7 @@ async function updateLstMembers(pSource, p2or3, pStatus) {
                 removeFromSet(p2or3, wLstRowId);
             } else {
                 console.log(
-                    `/MaintainMember ${pSource} Lst Not found`,
+                    `/page/MaintainMember ${pSource} Lst Not found`,
                     wLstRowId
                 );
             }
@@ -2268,7 +2278,7 @@ async function updateLstMembers(pSource, p2or3, pStatus) {
             let wUpdates = wUpdateArray.toString();
             let wErrors = wResult.results.errors.length;
             console.log(
-                `/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
+                `/page/MaintainMember ${pSource} Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
             );
             clearSelectStacks();
             showMsg(
@@ -2280,7 +2290,7 @@ async function updateLstMembers(pSource, p2or3, pStatus) {
             );
         } else {
             console.log(
-                `/MaintainMember ${pSource} Bulk Members Save: Nothing to update`
+                `/page/MaintainMember ${pSource} Bulk Members Save: Nothing to update`
             );
             showMsg(1, 0, "Nothing to update");
         }
@@ -2294,22 +2304,30 @@ async function updateLstMembers(pSource, p2or3, pStatus) {
 
 function updateRecordStore(p2or3, pRec) {
     try {
-        //console.log("urs");
+        //console.log("urs", gStage, p2or3);
         //console.log(pRec);
         //console.log(gGGLRecords);
         let wRecordData = getRecordStore(p2or3);
         let wSortedData = [];
         let wRecordItem = {};
+        let wFullName = "";
+
         if (!wRecordData) {
-            console.log(`updateRecordStore wrong stage ${gStage}`);
+            console.log(
+                `/page/MaintauMember updateRecordStore wrong stage ${gStage}`
+            );
         } else {
             wRecordItem = wRecordData.find((item) => item._id === pRec._id);
             if (/** this is an update */ wRecordItem) {
+                wFullName = pRec.firstName + " " + pRec.lastName;
+                wRecordItem.firstName = pRec.firstName;
+                wRecordItem.lastName = pRec.lastName;
+                wRecordItem.surname = pRec.lastName;
+                wRecordItem.player = wFullName;
+                wRecordItem.fullName = wFullName;
                 switch (gStage) {
                     case "Lst-Imp":
                         if (p2or3 === "2") {
-                            wRecordItem.firstName = pRec.firstName;
-                            wRecordItem.lastName = pRec.lastName;
                             wRecordItem.status = pRec.status;
                             wSortedData = _.orderBy(wRecordData, [
                                 "surname",
@@ -2317,9 +2335,8 @@ function updateRecordStore(p2or3, pRec) {
                             ]);
                             gLstRecords = [...wSortedData];
                         } else {
-                            wRecordItem.firstName = pRec.firstName;
-                            wRecordItem.lastName = pRec.lastName;
                             wRecordItem.status = pRec.status;
+                            wRecordItem.key = wFullName;
                             wSortedData = _.orderBy(wRecordData, [
                                 "surname",
                                 "firstName",
@@ -2329,8 +2346,6 @@ function updateRecordStore(p2or3, pRec) {
                         break;
                     case "Lst-Wix":
                         if (p2or3 === "2") {
-                            wRecordItem.firstName = pRec.firstName;
-                            wRecordItem.lastName = pRec.lastName;
                             wRecordItem.status = pRec.status;
                             wSortedData = _.orderBy(wRecordData, [
                                 "surname",
@@ -2338,8 +2353,6 @@ function updateRecordStore(p2or3, pRec) {
                             ]);
                             gLstRecords = [...wSortedData];
                         } else {
-                            wRecordItem.firstName = pRec.firstName;
-                            wRecordItem.lastName = pRec.lastName;
                             wRecordItem.status = pRec.status;
                             wSortedData = _.orderBy(wRecordData, [
                                 "lastName",
@@ -2350,8 +2363,6 @@ function updateRecordStore(p2or3, pRec) {
                         break;
                     case "Lst-GGL":
                         if (p2or3 === "2") {
-                            wRecordItem.firstName = pRec.firstName;
-                            wRecordItem.lastName = pRec.lastName;
                             wRecordItem.status = pRec.status;
                             wRecordItem.type = pRec.type;
                             wSortedData = _.orderBy(wRecordData, [
@@ -2360,8 +2371,7 @@ function updateRecordStore(p2or3, pRec) {
                             ]);
                             gLstRecords = [...wSortedData];
                         } else {
-                            wRecordItem.firstName = pRec.firstName;
-                            wRecordItem.lastName = pRec.lastName;
+                            wRecordItem.key = wFullName;
                             wRecordItem.status = pRec.status;
                             wSortedData = _.orderBy(wRecordData, [
                                 "lastName",
@@ -2370,10 +2380,20 @@ function updateRecordStore(p2or3, pRec) {
                             gGGLRecords = [...wSortedData];
                         }
                         break;
+                    default:
+                        console.log(
+                            `/page/MaintainMember updateRecordStore invalid switch ${gStage}`
+                        );
                 }
             } /** this is an addition */ else {
                 wRecordData.push(pRec);
                 wRecordItem = wRecordData.find((item) => item._id === pRec._id);
+                wFullName = pRec.firstName + " " + pRec.lastName;
+                wRecordItem.firstName = pRec.firstName;
+                wRecordItem.lastName = pRec.lastName;
+                wRecordItem.surname = pRec.lastName;
+                wRecordItem.player = wFullName;
+                wRecordItem.fullName = wFullName;
                 switch (gStage) {
                     case "Lst-Imp":
                         if (p2or3 === "2") {
@@ -2398,8 +2418,6 @@ function updateRecordStore(p2or3, pRec) {
                             ]);
                             gLstRecords = [...wSortedData];
                         } else {
-                            wRecordItem.firstName = pRec.firstName;
-                            wRecordItem.lastName = pRec.lastName;
                             S;
                             wRecordItem.status = pRec.status;
                             wSortedData = _.orderBy(wRecordData, [
@@ -2417,8 +2435,7 @@ function updateRecordStore(p2or3, pRec) {
                             ]);
                             gLstRecords = [...wSortedData];
                         } else {
-                            wRecordItem.firstName = pRec.firstName;
-                            wRecordItem.lastName = pRec.lastName;
+                            wRecordItem.key = wFullName;
                             wRecordItem.status = pRec.status;
                             wRecordItem.type = pRec.type;
                             wSortedData = _.orderBy(wRecordData, [
@@ -2428,12 +2445,16 @@ function updateRecordStore(p2or3, pRec) {
                             gGGLRecords = [...wSortedData];
                         }
                         break;
+                    default:
+                        console.log(
+                            `/page/MaintainMember updateRecordStore invalid switch 2 ${gStage}`
+                        );
                 }
             }
         }
     } catch (err) {
         console.log(
-            "/Page/MaintainMember updateRecordStore try-catch error, stage, p20r3, err, pRec",
+            "/page/MaintainMember updateRecordStore try-catch error, stage, p20r3, err, pRec",
             gStage,
             p2or3
         );
@@ -2446,7 +2467,9 @@ function deleteGlobalStore(p2or3, pId) {
     try {
         let wRecordData = getRecordStore(p2or3);
         if (!wRecordData) {
-            console.log(`deleteGlobalStore wrong stage ${gStage}`);
+            console.log(
+                `/page/MaintainMember deleteGlobalStore wrong stage ${gStage}`
+            );
         } else {
             let wIdx = wRecordData.findIndex(
                 (item) => item._id === pId || item.id === pId
@@ -2455,13 +2478,13 @@ function deleteGlobalStore(p2or3, pId) {
                 wRecordData.splice(wIdx, 1);
             } else {
                 console.log(
-                    `deleteGlobalStore couldnt find ${pId} in ${gStage} global data store ${p2or3}`
+                    `/page/MaintainMember deleteGlobalStore couldnt find ${pId} in ${gStage} global data store ${p2or3}`
                 );
             }
         }
     } catch (err) {
         console.log(
-            "/Page/MaintainMember deleteGlobalStore try-catch error, stage, p20r3, err, pRec",
+            "/page/MaintainMember deleteGlobalStore try-catch error, stage, p20r3, err, pRec",
             gStage,
             p2or3
         );
@@ -2480,7 +2503,7 @@ function getRecordStore(p2or3) {
         if (gStage === "Lst-Wix") {
             wRecordData = gWixRecords;
         }
-        if (gStage === "Lst-Google") {
+        if (gStage === "Lst-GGL") {
             wRecordData = gGGLRecords;
         }
     }
@@ -2561,7 +2584,7 @@ async function createNewMember(pIsAudit, pMember) {
                 }
             }
             console.log(
-                `Create new member with contactpref ${wMember.contactpref} from lst ${wOldMemberId}`
+                `/page/MaintainMember createNewMember with contactpref ${wMember.contactpref} from lst ${wOldMemberId}`
             );
             wResult = await createMember(pIsAudit, wMember);
             if (wResult && wResult.status) {
@@ -2569,12 +2592,14 @@ async function createNewMember(pIsAudit, pMember) {
                 updateGlobalDataStore(wSavedRecord, "Member");
                 updatePagination("Member");
             } else {
-                console.log("MaintainMember createNewMember createMember fail");
+                console.log(
+                    "/page/MaintainMember createNewMember createMember fail"
+                );
                 console.log(wResult.error);
             }
         } else {
             console.log(
-                "MaintinMember createNewMember username is not unique",
+                "/pageMaintainMember createNewMember username is not unique",
                 wUsername
             );
             wResult = {
@@ -2585,7 +2610,7 @@ async function createNewMember(pIsAudit, pMember) {
         }
         return wResult;
     } catch (err) {
-        console.log("/Page/MaintainMember createNewMember try-catch error");
+        console.log("/page/MaintainMember createNewMember try-catch error");
         console.log(err);
     }
 }
@@ -2596,14 +2621,14 @@ async function createNewMember(pIsAudit, pMember) {
 export async function btnNameAmend2Save_click() {
     // Set up from btnLstStage1Amend, btnWixUp3date or btnGGLStage4Update
     // Update the Lst value with the Import values
-    console.log("Btn Lst Amend Save click", gStage);
+    //console.log("Btn Lst Amend Save click", gStage);
     try {
         showStageWait(1);
 
         let wId2 = gSelectLeftStack[0];
         let wMember = getSyncTargetItem("2", wId2);
 
-        if (gStage === "Lst-Import") {
+        if (gStage === "Lst-Imp") {
             wMember.firstName = $w("#inpNameAmend3FirstName").value;
             wMember.surname = $w("#inpNameAmend3Surname").value;
             let wResult = await saveRecord("lstMembers", wMember);
@@ -2621,7 +2646,9 @@ export async function btnNameAmend2Save_click() {
                     `LST name ${wMember.firstName} ${wMember.surname} updated`
                 );
             } else {
-                console.log("MaintainMember btnNameAmend2Save saverecord fail");
+                console.log(
+                    "/page/MaintainMember btnNameAmend2Save saverecord fail"
+                );
                 console.log(wResult.error);
                 showMsg(
                     1,
@@ -2630,7 +2657,10 @@ export async function btnNameAmend2Save_click() {
                 );
             }
         } else {
-            console.log("MaintainMember btnNameAmend2Save wrong state", gStage);
+            console.log(
+                "/page/MaintainMember btnNameAmend2Save wrong state",
+                gStage
+            );
             showMsg(
                 1,
                 0,
@@ -2640,7 +2670,7 @@ export async function btnNameAmend2Save_click() {
         hideStageWait(1);
     } catch (err) {
         console.log(
-            "/Page/MaintainMember btnNameAmend2Save_click try-catch error"
+            "/page/MaintainMember btnNameAmend2Save_click try-catch error"
         );
         console.log(err);
         console.log(pRec);
@@ -2649,16 +2679,16 @@ export async function btnNameAmend2Save_click() {
 }
 
 // @ts-ignore
-export async function btnNameAmend3Save() {
+export async function btnNameAmend3Save_click() {
     // Set up from btnLstAmend
-    // Update the Wix or Google value with the Import/Lst values
-    console.log("Btn Name Amend 3 Save click", gStage);
+    // Update the Wix or Google value with the Lst values
+    //console.log("Btn Name Amend 3 Save click", gStage);
 
     try {
         let wId3 = gSelectRightStack[0];
         let wTargetMember = getSyncTargetItem("3", wId3);
 
-        if (gStage === "Lst-Import") {
+        if (gStage === "Lst-Imp") {
             showStageWait(1);
             //  Update the IMport record and send Email to Membership secretary to update Master membership spreadsheet
             let wOldName =
@@ -2679,9 +2709,7 @@ export async function btnNameAmend3Save() {
                     wResult.status = true;
                     console.log("Test Mode: Send Msg");
                 } else {
-                    //TODO before go live bring in email
-                    wResult.status = true;
-                    /**
+                    //wResult.status = true;
                     wResult = await sendMsgToJob(
                         "E",
                         ["WEB"],
@@ -2690,11 +2718,10 @@ export async function btnNameAmend3Save() {
                         "MemberAmendImportName",
                         wParams
                     );
-                    */
                 }
                 if (wResult && wResult.status) {
                     console.log(
-                        "/MaintainMember btnNameAmend3Save sendMsgToJob OK for ",
+                        "/page/MaintainMember btnNameAmend3Save sendMsgToJob OK for ",
                         wTargetMember._id
                     );
                     $w("#btnLstStage1Amend").hide();
@@ -2711,12 +2738,14 @@ export async function btnNameAmend3Save() {
                     );
                 } else {
                     console.log(
-                        "/MaintainMember btnNameAmend3Save sendMsgToJob failed, error"
+                        "/page/MaintainMember btnNameAmend3Save sendMsgToJob failed, error"
                     );
                     console.log(wResult.error);
                 }
             } else {
-                console.log("MaintainMember btnNameAmend3Save saverecord fail");
+                console.log(
+                    "/page/MaintainMember btnNameAmend3Save saverecord fail"
+                );
                 console.log(wResult.error);
                 showMsg(
                     1,
@@ -2743,7 +2772,7 @@ export async function btnNameAmend3Save() {
             $w("#boxNameAmend").collapse();
             showMsg(3, 0, `Wix name ${wFirstName} ${wSurname} updated`);
             hideStageWait(3);
-        } else if (gStage === "Lst-Google") {
+        } else if (gStage === "Lst-GGL") {
             showStageWait(4);
             //  Update the Google Import record
             let wFirstName = $w("#inpNameAmend2FirstName").value.trim();
@@ -2763,10 +2792,13 @@ export async function btnNameAmend3Save() {
             showMsg(4, 0, `Google name ${wFirstName} ${wSurname} updated`);
             hideStageWait(4);
         } else {
-            console.log("MaintainMember btnNameAmend3Save wrong state", gStage);
+            console.log(
+                "/page/MaintainMember btnNameAmend3Save wrong state",
+                gStage
+            );
         }
     } catch (err) {
-        console.log("/Page/MaintainMember btnNameAmend3Save try-catch error");
+        console.log("/page/MaintainMember btnNameAmend3Save try-catch error");
         console.log(err);
         hideStageWait(3);
     }
@@ -2794,7 +2826,7 @@ export function btnNameAmendCancel_click() {
 //====== Stage 3: Lst v Wix Compare ===========================================================================
 //
 export async function btnLstStage3Register_click() {
-    console.log("btnLstStage3Register", gStage);
+    //console.log("btnLstStage3Register", gStage);
     //  These are LST entries that are in both LST and Import, but not in Wix. This covers old LST
     //  members who were in the club, but they never registered.
     //
@@ -2844,7 +2876,7 @@ export async function btnLstStage3Register_click() {
                 }
             } else {
                 console.log(
-                    "/MaintainMember btnLst3Register Member Not found",
+                    "/page/MaintainMember btnLst3Register Member Not found",
                     wLsttMemberId
                 );
                 showMsg(3, 0, `New Wix member: not found`);
@@ -2862,7 +2894,7 @@ export async function btnLstStage3Register_click() {
         hideStageWait(3);
     } catch (err) {
         console.log(
-            "/Page/MaintainMember btnLstStage3Register_click try-catch error"
+            "/page/MaintainMember btnLstStage3Register_click try-catch error"
         );
         console.log(err);
         hideStageWait(3);
@@ -2875,7 +2907,7 @@ export async function btnWixStage3Delete_click() {
     //  Therefore, the only action to take is to delete the Wix record to keep everything aligned.
     //
     try {
-        console.log("btnWixStage3Delete", gStage);
+        //console.log("btnWixStage3Delete", gStage);
         const p2or3 = "3";
         for (let wWixRowId of gSelectRightStack) {
             showStageWait(3);
@@ -2891,7 +2923,7 @@ export async function btnWixStage3Delete_click() {
                 );
             } else {
                 console.log(
-                    "/MaintainMember btnWixStage3Delete Wix member Not found",
+                    "/page/MaintainMember btnWixStage3Delete Wix member Not found",
                     wWixRowId
                 );
                 showMsg(3, 0, `Wix member not found`);
@@ -2903,7 +2935,7 @@ export async function btnWixStage3Delete_click() {
         hideStageWait(3);
     } catch (err) {
         console.log(
-            "/Page/MaintainMember btnWixStage3Delete_click try-catch error"
+            "/page/MaintainMember btnWixStage3Delete_click try-catch error"
         );
         console.log(err);
         hideStageWait(3);
@@ -2913,13 +2945,150 @@ export async function btnWixStage3Delete_click() {
 //====== Stage 4: Lst v Google Import ===========================================================================
 //
 
+export async function btnGGLStage4Add_click() {
+    //  These are entries in LST mbut dont exist in Google. They tend to be members who do not have any email address and/or
+    //  mobile number. They need to be added to Google Import: those without both an email address and a mobile phone use the
+    //  label "None", while those without an email address but with a mobile phone use the label "SMS".
+
+    try {
+        //console.log("BtnGGLStage4Add click");
+        const p2or3 = 2;
+        for (let wLstRowId of gSelectLeftStack) {
+            showStageWait(4);
+            let wMember = gLstRecords.find((item) => item._id === wLstRowId);
+            if (wMember) {
+                let wLabelArray = [];
+
+                let wEmail = wMember.contactEmail;
+                let wMobile = wMember.mobilePhone;
+                let wHasEmail =
+                    wEmail === "" || wEmail === null || wEmail === undefined ?
+                        false
+                    :   true;
+                let wHasPhone =
+                    (
+                        wMobile === "" ||
+                        wMobile === null ||
+                        wMobile === undefined
+                    ) ?
+                        false
+                    :   true;
+
+                if (wHasEmail) {
+                    wLabelArray.push("All members");
+                    if (wMember.type === "Full") {
+                        wLabelArray.push("Playing member");
+                    }
+                    wMember.gender === "M" ?
+                        wLabelArray.push("Mens")
+                    :   wLabelArray.push("Ladies");
+                } /** no email */ else {
+                    if (wHasPhone) {
+                        wLabelArray.push("SMS");
+                    } /** no email, no phone */ else {
+                        wLabelArray.push("None");
+                    }
+                }
+                let wLabels = wLabelArray.join(" ::: ") + " ::: * myContacts";
+
+                let wNewRec = {
+                    _id: undefined,
+                    firstName: wMember.firstName,
+                    lastName: wMember.surname,
+                    labels: wLabels,
+                    eMail1Label: wHasEmail ? "*" : "",
+                    eMail1Value: wMember.contactEmail,
+                    eMail2Label: "",
+                    eMail2Value: wMember.altEmail,
+                    phone1Label: "",
+                    phone1Value: wMember.mobilePhone,
+                };
+                let wResult = await saveGoogleMemberRecord(wNewRec);
+                if (wResult && wResult.status) {
+                    let wNewGoogleItem = wResult.savedRecord;
+                    removeFromSet(p2or3, wLstRowId);
+                    updateRecordStore(3, wNewGoogleItem);
+                    showMsg(
+                        4,
+                        0,
+                        `Google member ${wNewGoogleItem.firstName} ${wNewGoogleItem.lastName} added`
+                    );
+                } else {
+                    console.log(
+                        "/page/MaintainMember btnGGLStage4Add saverecord failed, err",
+                        wLstRowId
+                    );
+                    console.log(wResult.error);
+                }
+            } else {
+                console.log(
+                    "/page/MaintainMember btnGGLStage4Add Lst member Not found",
+                    wLstRowId
+                );
+                showMsg(4, 0, `Google member not found`);
+            }
+        } // for loop
+        gSelectLeftStack.length = 0;
+        $w(`#chk${p2or3}`).checked = false;
+        clearSelectStack(3);
+        hideStageWait(4);
+    } catch (err) {
+        console.log(
+            "/page/MaintainMember btnGGLStage4Add_click Try-catch, err"
+        );
+        console.log(err);
+        hideStageWait(4);
+    }
+}
+
+export async function btnGGLStage4Delete_click() {
+    //  This is a Google member that doesnt exist in LST (and hence in Import). It is probably the relic
+    //  of a Past member. Sice these are filtered out of Stage 4 Lst, then he only action to take is to delete
+    //  the Google record to keep everything aligned.
+    //
+    try {
+        //console.log("btnGGLStage4Delete", gStage);
+        const p2or3 = "3";
+        for (let wGGLRowId of gSelectRightStack) {
+            showStageWait(4);
+            let wMember = gWixRecords.find((item) => item._id === wGGLRowId);
+            if (wMember) {
+                await deleteGoogleImportRecord([wGGLRowId]);
+                removeFromSet(p2or3, wGGLRowId);
+                deleteGlobalStore(p2or3, wGGLRowId);
+                showMsg(
+                    4,
+                    0,
+                    `Google member ${wMember.firstName} ${wMember.lastName} deleted`
+                );
+            } else {
+                console.log(
+                    "/page/MaintainMember btnGGLStage4Delete Wix member Not found",
+                    wGGLRowId
+                );
+                showMsg(4, 0, `Google member not found`);
+            }
+        }
+        gSelectRightStack.length = 0;
+        $w(`#chk${p2or3}`).checked = false;
+        clearSelectStack(3);
+        hideStageWait(4);
+    } catch (err) {
+        console.log(
+            "/page/MaintainMember btnGGLStage4Delete_click try-catch error"
+        );
+        console.log(err);
+        hideStageWait(4);
+    }
+}
+
 export async function btnGGLStage4Guest_click() {
     // There is an entry in Google Import but not in Lst. This is the case for members who have left the club
     // but is added to Message Labels so they get Notifications, Needs tochange the Past status to a new Guest status.
 
     try {
         $w("#btnGGLStage4Guest").disable();
-        console.log("Do STge 4 guest");
+        //console.log("Do STge 4 guest");
         let wToday = new Date();
 
         showStageWait(4);
@@ -2930,7 +3099,6 @@ export async function btnGGLStage4Guest_click() {
                 // find Lst record, if any
                 let wFirstName = wGGLEntry.firstName;
                 let wSurname = wGGLEntry.lastName;
-                console.log(wFirstName, wSurname);
                 let wResult = await findLstMemberByFullName(
                     wFirstName,
                     wSurname
@@ -2939,13 +3107,13 @@ export async function btnGGLStage4Guest_click() {
                     let wLstEntrys = wResult.members;
                     if (wLstEntrys.length > 1) {
                         console.log(
-                            `/Page/MaintainMember btnGGLStage4Guest multiple LSt records for ${wFirstName} ${wSurname}`
+                            `/page/MaintainMember btnGGLStage4Guest multiple LSt records for ${wFirstName} ${wSurname}`
                         );
                     } else {
                         let wLstMember = wLstEntrys[0];
                         if (wLstMember.status !== "Past") {
                             console.log(
-                                `/Page/MaintainMember btnGGLStage4Guest Member is a ${wLstMember.status} member, not a Past member`
+                                `/page/MaintainMember btnGGLStage4Guest Member is a ${wLstMember.status} member, not a Past member`
                             );
                             //showError("");
                         } else {
@@ -2958,7 +3126,10 @@ export async function btnGGLStage4Guest_click() {
                         }
                     }
                 } /** wResult */ else {
-                    console.log("/MaintainMember GGL Not found", wGGLRowId);
+                    console.log(
+                        "/page/MaintainMember GGL Not found",
+                        wGGLRowId
+                    );
                     console.log(wResult);
                 }
             } // GGLEntry
@@ -2971,7 +3142,7 @@ export async function btnGGLStage4Guest_click() {
             let wUpdates = wUpdateArray.toString();
             let wErrors = wResult.results.errors.length;
             console.log(
-                `/MaintainMember Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
+                `/page/MaintainMember Bulk Members Save: ${wUpdates} updated, ${wErrors} errors`
             );
             clearSelectStacks();
             showMsg(
@@ -2980,16 +3151,16 @@ export async function btnGGLStage4Guest_click() {
                 `Bulk Members Save: ${String(wUpdateArray.length)} updated, ${wErrors} errors`
             );
         } else {
-            console.log(`/MaintainMember Bulk Members Save: Nothing to update`);
+            console.log(
+                `/page/MaintainMember Bulk Members Save: Nothing to update`
+            );
             showMsg(4, 0, "Nothing to update");
         }
         $w("#btnGGLStage4Guest").enable();
         hideStageWait(4);
-        console.log("gLst");
-        console.log(gLstRecords);
     } catch (err) {
         console.log(
-            "/Page/MaintainMember btnGGLStage4Guest_click try-catch error"
+            "/page/MaintainMember btnGGLStage4Guest_click try-catch error"
         );
         console.log(err);
         hideStageWait(4);
@@ -3002,21 +3173,23 @@ export async function btnGGLStage4Save_click() {
     try {
         $w("#btnGGLStage4Save").disable();
         showStageWait(4);
+        //console.log("btnGGLStage4Save_click");
 
+        //let wResult = true;
         let wResult = await uploadGlobalDataStore(
             loggedInMember._id,
             gGGLRecords
         );
         if (wResult) {
-            console.log("Stage 4 Save Ok");
+            console.log("/page/MaintainMember btnGGLStage4Save age 4 Save Ok");
         } else {
-            console.log("Stage 4 Save Fail");
+            console.log("/page/MaintainMember btnGGLStage4Save Save Fail");
         }
         $w("#btnGGLStage4Save").enable();
         hideStageWait(4);
     } catch (err) {
         console.log(
-            "/Page/MaintainMember btnGGLStage4Save_click try-catch error"
+            "/page/MaintainMember btnGGLStage4Save_click try-catch error"
         );
         console.log(err);
         hideStageWait(4);
@@ -3450,7 +3623,6 @@ async function processRecord(pRec) {
     let wHome = pRec.homePhone;
     let wMobile = pRec.mobilePhone;
     let wLong = "";
-    console.log(wHome, wMobile);
     let wHome2 = wHome;
     let wMobile2 = wMobile;
 
@@ -3482,7 +3654,6 @@ async function processRecord(pRec) {
         wLong = "Wrong code";
     }
     pRec.mobilePhone = wMobile2;
-    console.log(wHome2, wMobile2, wLong);
 }
 
 export function showStageWait(pStage) {
@@ -3528,7 +3699,7 @@ export function showMsg(pStage, pNo, pMsg = "") {
         return;
     } catch (err) {
         console.log(
-            "MaintainMember showMsg Try-catch fail, stage, No, err",
+            "/page/MaintainMember showMsg Try-catch fail, stage, No, err",
             pStage,
             pNo
         );
