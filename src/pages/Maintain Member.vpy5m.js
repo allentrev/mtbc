@@ -1213,37 +1213,32 @@ export async function doStage1() {
     // Arrays containing elements common to A, B, and C
     try {
         $w("#imgSyncWait").show();
+        gStage = "Lst-Imp";
+        clearMessage();
         resetCommand();
-        gMessages.length = 0;
-        showMessage(gStage);
-        $w("#tblProgress").rows = gMessages;
-        showMessage("Loading Lst Members"); //A
-        let promiseA = loadLstMembersData();
-        showMessage("Loading Wix Members"); //C
-        let promiseC = loadWixMembersData();
-        showMessage("Loading Import Members"); //B
-        let promiseB = loadImpMembersData();
+        showMessage(gStage); // 1
+        showMessage("Loading Lst Members"); // 2
+        let promiseA = loadLstMembersData().then(() => messageDone(2));
+        showMessage("Loading Wix Members"); // 3
+        let promiseC = loadWixMembersData().then(() => messageDone(3));
+        showMessage("Loading Import Members"); // 4
+        let promiseB = loadImpMembersData().then(() => messageDone(4));
         Promise.all([promiseA, promiseB, promiseC]).then(async () => {
+            showMessage("Reconcile Lst with Import"); // 5
             if (reconcileMTBCValues()) {
-                messageDone(0);
+                messageDone(5);
                 let wLstActiveRecords = getActiveLstMembers(gLstRecords);
                 const onlyA = unique(wLstActiveRecords, gImpRecords);
                 const onlyB = unique(gImpRecords, wLstActiveRecords);
                 //console.log("Stage 1 onlyA, onlyB");
                 //console.log(onlyA);
                 //console.log(onlyB);
-                if (onlyA.length > 0 || onlyB.length > 0) {
-                    showMessage("Reconcile Lst with Import");
-                    reconcileDatasets(onlyA, onlyB);
-                } else {
-                    $w("#boxLstCompare").expand();
-                    $w("#txtRefresh").expand();
-                    gStage = "Field-Values";
-                    messageDone(3);
-                }
+                reconcileDatasets(onlyA, onlyB);
+                messageDone(6);
+                messageDone(7);
             } else {
-                showMessage("MTBC Max Value disparity");
-                messageDone(5);
+                showMessage("MTBC Max Value disparity"); // 6
+                messageDone(6);
             }
             $w("#imgSyncWait").hide();
         });
@@ -1255,49 +1250,48 @@ export async function doStage1() {
 }
 
 export async function doStage2() {
+    $w("#imgSyncWait").show();
+    gStage = "Field-Values";
+    clearMessage();
     resetCommand();
-    gMessages.length = 0;
-    showMessage(gStage);
-    $w("#tblProgress").rows = gMessages;
-    showMessage("Loading Lst Members"); //A
-    let promiseA = loadLstMembersData();
-    showMessage("Loading Import Members"); //B
-    let promiseB = loadImpMembersData();
+    showMessage(gStage); // 1
+    showMessage("Loading Lst Members"); // 2
+    let promiseA = loadLstMembersData().then(() => messageDone(2));
+    showMessage("Loading Import Members"); // 3
+    let promiseB = loadImpMembersData().then(() => messageDone(3));
     Promise.all([promiseA, promiseB]).then(async () => {
-        showMessage("Synchronise Lst field values");
-        synchroniseFieldValues();
-        gStage = "Lst-Wix";
-        messageDone(3);
-        showMessage("Sync done " + gStage);
+        showMessage("Synchronise Lst field values"); // 4
+        synchroniseFieldValues()
+            .then(() => {
+                messageDone(4);
+                $w("#imgSyncWait").hide();
+            })
+            .catch((err) => {
+                console.log("Error", err);
+                $w("#imgSyncWait").hide();
+            });
     });
 }
 
 export async function doStage3() {
     try {
         $w("#imgSyncWait").show();
+        gStage = "Lst-Wix";
+        clearMessage();
         resetCommand();
-        gMessages.length = 0;
-        showMessage(gStage);
-        $w("#tblProgress").rows = gMessages;
-        showMessage("Loading Lst Members"); //A
-        let promiseA = loadLstMembersData();
-        showMessage("Loading Wix Members"); //C
-        let promiseC = loadWixMembersData();
+        showMessage(gStage); // 1
+        showMessage("Loading Lst Members"); // 2
+        let promiseA = loadLstMembersData().then(() => messageDone(2));
+        showMessage("Loading Wix Members"); // 3
+        let promiseC = loadWixMembersData().then(() => messageDone(3));
 
         Promise.all([promiseA, promiseC]).then(() => {
-            gStage = "Lst-Wix";
-            messageDone(3);
             clearSelectStacks();
-            showMessage("Reconcile Lst with Wix");
+            showMessage("Reconcile Lst with Wix"); //4
             let wLstActiveRecords = getActiveLstMembers(gLstRecords);
             const onlyC = unique(gWixRecords, wLstActiveRecords);
             const onlyD = unique(wLstActiveRecords, gWixRecords);
-            if (onlyC.length > 0 || onlyD.length > 0) {
-                reconcileDatasets(onlyD, onlyC);
-            } else {
-                gStage = "Lst-GGL";
-                messageDone(4);
-            }
+            reconcileDatasets(onlyD, onlyC);
             $w("#imgSyncWait").hide();
         });
     } catch (err) {
@@ -1309,32 +1303,29 @@ export async function doStage3() {
 
 export async function doStage4() {
     try {
+        gStage = "Lst-GGL";
         $w("#imgSyncWait").show();
+        clearMessage();
         resetCommand();
-        gMessages.length = 0;
-        showMessage(gStage);
-        $w("#tblProgress").rows = gMessages;
-        showMessage("Loading Lst Members"); //A
-        let promiseA = loadLstMembersData();
-        showMessage("Loading Google Members"); //E
-        let promiseC = loadGGLMembersData();
+        showMessage(gStage); // 1
+        showMessage("Loading Lst Members"); // 2
+        let promiseA = loadLstMembersData().then(() => messageDone(2));
+        showMessage("Loading Google Members"); // 3
+        let promiseC = loadGGLMembersData().then(() => messageDone(3));
 
         Promise.all([promiseA, promiseC]).then(() => {
-            gStage = "Lst-GGL";
             clearSelectStacks();
             //console.log(gLstRecords);
             //console.log(gGGLRecords);
-            messageDone(3);
-            showMessage("Reconcile Lst with Google");
+            messageDone(3); //4
             let wLstActiveRecords = getActiveLstMembers(gLstRecords);
             const onlyC = unique(gGGLRecords, wLstActiveRecords);
             const onlyD = unique(wLstActiveRecords, gGGLRecords);
-            if (onlyC.length > 0 || onlyD.length > 0) {
-                reconcileDatasets(onlyD, onlyC);
-            } else {
-                gStage = "End";
-                messageDone(4);
-            }
+            //if (onlyC.length > 0 || onlyD.length > 0) {
+            reconcileDatasets(onlyD, onlyC);
+            //} else {
+            messageDone(4);
+            // }
             $w("#imgSyncWait").hide();
         });
     } catch (err) {
@@ -1378,8 +1369,6 @@ function reconcileMTBCValues() {
             let wWixMaxValue = getMTBCMaxValue(gWixRecords);
             if (wLstMaxValue === wWixMaxValue) {
                 showMessage("MTBC values agree");
-                messageDone(4);
-                messageDone(5);
                 return true;
             } else {
                 showMessage(
@@ -1422,6 +1411,10 @@ function reconcileDatasets(pA, pB) {
         $w("#txt2None").collapse();
         $w("#txt3None").collapse();
         $w("#txtRefresh").expand();
+        $w("#boxStage1Commands").collapse();
+        $w("#boxStage3Commands").collapse();
+        $w("#boxStage4Commands").collapse();
+
         return;
     }
     if (gStage === "Lst-Imp") {
@@ -1482,6 +1475,9 @@ async function synchroniseFieldValues() {
     let wChangeList = [];
     let wActiveLstMembers = getActiveLstMembers(gLstRecords);
     //let wLstMember = gLstRecords[1];
+    let wCount = 1;
+    $w("#pBarLoading").expand();
+    $w("#pBarLoading").targetValue = wActiveLstMembers.length;
     for (let wLstMember of wActiveLstMembers) {
         let wLstIn;
         let wImpIn;
@@ -1577,6 +1573,11 @@ async function synchroniseFieldValues() {
                 `/page/MaintainMember synchroniseFieldValues Cant find member ${wLstMember.key}`
             );
         }
+        //console.log(
+        //    `Processed ${wCount} of ${wActiveLstMembers.length} records`
+        //        );
+        wCount++;
+        $w("#pBarLoading").value = wCount;
     } // for of gLstRecords
     if (wChangeList && wChangeList.length > 0) {
         let wParams = {
@@ -1606,7 +1607,12 @@ async function synchroniseFieldValues() {
             );
             console.log(wResult.error);
         }
+    } else {
+        console.log(
+            "/page/MaintainMember synchroniseFieldValues Nothing to change"
+        );
     }
+    $w("#pBarLoading").collapse();
     return true;
 }
 
@@ -1841,7 +1847,7 @@ function removeFromSet(p2or3, pId) {
             $w("#txt2None").collapse();
             $w("#txt3None").collapse();
             $w("#boxStage1Commands").collapse();
-            messageDone(3);
+            messageDone(3); // put Done on last message
         } else {
             $w("#txtRefresh").collapse();
         }
@@ -1976,10 +1982,11 @@ async function loadWixMembersData() {
         }
         //console.log("gWixRecords");
         //console.log(gWixRecords);
-        gStage === "Lst-Imp" ? messageDone(2) : messageDone(3);
+        return true;
     } catch (err) {
         console.log("/page/MaintainMember loadWixMemberData Try-catch, err");
         console.log(err);
+        return false;
     }
 }
 
@@ -1991,13 +1998,13 @@ async function loadLstMembersData() {
         for (let wMember of gLstRecords) {
             wMember.key = wMember.fullName;
         }
-        messageDone(1);
+        return true;
         //console.log("pLstRecords");
         //console.log(gLstRecords);
     } catch (err) {
         console.log("/page/MaintainMember loadLstMembersData Try-catch, err");
         console.log(err);
-        $w("#imgSyncWait").hide();
+        return false;
     }
 }
 
@@ -2005,13 +2012,13 @@ async function loadImpMembersData() {
     //  Record key is _id
     try {
         gImpRecords = await getAllImportMembers();
-        messageDone(2);
+        return true;
         //console.log("pImpRecords");
         //console.log(gImpRecords);
     } catch (err) {
         console.log("/page/MaintainMember loadImpMembersData try-catch, err");
         console.log(err);
-        $w("#imgSyncWait").hide();
+        return false;
     }
 }
 
@@ -2021,11 +2028,11 @@ async function loadGGLMembersData() {
         gGGLRecords = await getAllGoogleMembers();
         //console.log("loadGGLMembersData, gGGL");
         //console.log(gGGLRecords);
-        messageDone(2);
+        return true;
     } catch (err) {
         console.log("/page/MaintainMember loadGGLMembersData Try-catch, err");
         console.log(err);
-        $w("#imgSyncWait").hide();
+        return false;
     }
 }
 
@@ -2050,13 +2057,30 @@ function showMessage(pMsg) {
     $w("#tblProgress").rows = gMessages;
 }
 
-function messageDone(p2or3) {
-    //let wMsgCount = gMessages.length;
-    ///let wMsg = gMessages[wMsgCount - 1];
-    let wMsg = gMessages[p2or3];
-    if (wMsg) {
-        wMsg.status = "Done";
-        $w("#tblProgress").rows = gMessages;
+function clearMessage() {
+    gMessages.length = 0;
+    $w("#tblProgress").rows = gMessages;
+}
+
+function messageDone(pIndex) {
+    if (pIndex > gMessages.length) {
+        console.log(
+            "/page/MaintainMember messageDone overflow, index, length",
+            pIndex,
+            gMessages.length
+        );
+    } else {
+        let wMsg = gMessages.find((item) => item.idx === String(pIndex));
+        if (wMsg) {
+            wMsg.status = "Done";
+            $w("#tblProgress").rows = gMessages;
+        } else {
+            console.log(
+                "/page/MaintainMember messageDone cant find message, index, length",
+                pIndex,
+                gMessages.length
+            );
+        }
     }
 }
 
@@ -2789,7 +2813,7 @@ export async function btnNameAmend3Save_click() {
             updateRecordStore("3", wSavedRecord);
             clearSelectStacks();
             $w("#boxNameAmend").collapse();
-            showMsg(4, 0, `Google name ${wFirstName} ${wSurname} updated`);
+            showMsg(3, 0, `Google name ${wFirstName} ${wSurname} updated`);
             hideStageWait(4);
         } else {
             console.log(
@@ -2877,7 +2901,7 @@ export async function btnLstStage3Register_click() {
             } else {
                 console.log(
                     "/page/MaintainMember btnLst3Register Member Not found",
-                    wLsttMemberId
+                    wLstRowId
                 );
                 showMsg(3, 0, `New Wix member: not found`);
             }
@@ -3051,9 +3075,9 @@ export async function btnGGLStage4Delete_click() {
         const p2or3 = "3";
         for (let wGGLRowId of gSelectRightStack) {
             showStageWait(4);
-            let wMember = gWixRecords.find((item) => item._id === wGGLRowId);
+            let wMember = gGGLRecords.find((item) => item._id === wGGLRowId);
             if (wMember) {
-                await deleteGoogleImportRecord([wGGLRowId]);
+                await deleteGoogleImportRecord(wGGLRowId);
                 removeFromSet(p2or3, wGGLRowId);
                 deleteGlobalStore(p2or3, wGGLRowId);
                 showMsg(
@@ -3063,7 +3087,7 @@ export async function btnGGLStage4Delete_click() {
                 );
             } else {
                 console.log(
-                    "/page/MaintainMember btnGGLStage4Delete Wix member Not found",
+                    "/page/MaintainMember btnGGLStage4Delete GGL member Not found",
                     wGGLRowId
                 );
                 showMsg(4, 0, `Google member not found`);
@@ -3109,13 +3133,22 @@ export async function btnGGLStage4Guest_click() {
                         console.log(
                             `/page/MaintainMember btnGGLStage4Guest multiple LSt records for ${wFirstName} ${wSurname}`
                         );
+                        showMsg(
+                            4,
+                            0,
+                            `Multiple entries for ${wFirstName} ${wSurname}. Correct manually`
+                        );
                     } else {
                         let wLstMember = wLstEntrys[0];
                         if (wLstMember.status !== "Past") {
                             console.log(
                                 `/page/MaintainMember btnGGLStage4Guest Member is a ${wLstMember.status} member, not a Past member`
                             );
-                            //showError("");
+                            showMsg(
+                                4,
+                                0,
+                                `Member ${wFirstName} ${wSurname} not a Past member. Correct manually`
+                            );
                         } else {
                             wLstMember.status = "Active";
                             wLstMember.type = "Guest";
@@ -3127,10 +3160,14 @@ export async function btnGGLStage4Guest_click() {
                     }
                 } /** wResult */ else {
                     console.log(
-                        "/page/MaintainMember GGL Not found",
-                        wGGLRowId
+                        `/page/MaintainMember btnGGLStage4Guest Cannot find Lst member for ${wFirstName} ${wSurname}`
                     );
                     console.log(wResult);
+                    showMsg(
+                        4,
+                        0,
+                        `MCannot find Lst for ${wFirstName} ${wSurname}. Correct manually`
+                    );
                 }
             } // GGLEntry
         } //for loop
