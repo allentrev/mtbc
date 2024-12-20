@@ -1324,12 +1324,12 @@ function formatImportSet(pMembers) {
         wNewItem.gender = wMember.gender;
         wNewItem.player = wFullName;
         wNewItem.fullName = wFullName;
-        wNewItem.eMail1Label = wMember.eMail1Label || null;
-        wNewItem.eMail1Value =
-            wMember.eMail1Value ? wMember.eMail1Value.toLowerCase() : null;
-        wNewItem.eMail2Label = wMember.eMail2Label || null;
-        wNewItem.eMail2Value =
-            wMember.eEmail2Value ? wMember.eMail2Value.toLowerCase() : null;
+        wNewItem.email1Label = wMember.email1Label || null;
+        wNewItem.email1Value =
+            wMember.email1Value ? wMember.email1Value.toLowerCase() : null;
+        wNewItem.email2Label = wMember.email2Label || null;
+        wNewItem.email2Value =
+            wMember.eEmail2Value ? wMember.email2Value.toLowerCase() : null;
         wNewItem.phone1Label = wMember.phone1Label || null;
         wNewItem.phone1Value = wMobilePhone || null;
         wNewItem.labels = wMember.labels || null;
@@ -1416,10 +1416,10 @@ export async function saveGoogleRecord(pDataset, pRec) {
             firstName: pRec.firstName,
             lastName: pRec.lastName,
             labels: formatLabelsFromLabelArray(pRec.gender, pRec.labelArray),
-            eMail1Label: pRec.eMail1Label,
-            eMail1Value: pRec.eMail1Value,
-            eMail2Label: pRec.eMail2Label,
-            eMail2Value: pRec.eMail2Value,
+            email1Label: pRec.email1Label,
+            email1Value: pRec.email1Value,
+            email2Label: pRec.email2Label,
+            email2Value: pRec.email2Value,
             phone1Label: pRec.phone1Label,
             phone1Value: pRec.phone1Value,
         };
@@ -1525,10 +1525,10 @@ export async function uploadGlobalDataStore(pUserId, pGlobal) {
                     item.gender,
                     item.labelArray
                 ),
-                eMail1Label: item.eMail1Label,
-                eMail1Value: item.eMail1Value,
-                eMail2Label: item.eMail2Label,
-                eMail2Value: item.eMail2Value,
+                email1Label: item.email1Label,
+                email1Value: item.email1Value,
+                email2Label: item.email2Label,
+                email2Value: item.email2Value,
                 phone1Label: item.phone1Label,
                 phone1Value: item.phone1Value,
             };
@@ -1571,10 +1571,10 @@ export async function saveGoogleMemberRecord(pRec) {
             firstName: pRec.firstName,
             lastName: pRec.lastName,
             labels: pRec.labels,
-            eMail1Label: pRec.eMail1Label,
-            eMail1Value: pRec.eMail1Value,
-            eMail2Label: pRec.eMail2Label,
-            eMail2Value: pRec.eMail2Value,
+            email1Label: pRec.email1Label,
+            email1Value: pRec.email1Value,
+            email2Label: pRec.email2Label,
+            email2Value: pRec.email2Value,
             phone1Label: pRec.phone1Label,
             phone1Value: pRec.phone1Value,
         };

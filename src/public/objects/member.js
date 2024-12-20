@@ -23,6 +23,7 @@ export const STATUS = Object.freeze({
 export const TYPE = Object.freeze({
     FULL: "Full",
     SOCIAL: "Social",
+    LIFE: "Life",
     TEST: "Test",
     GUEST: "Guest",
 });
