@@ -151,9 +151,10 @@ export function formPhoneString(pType, pPhoneNumber) {
     if (
         pPhoneNumber === "" ||
         pPhoneNumber === null ||
-        pPhoneNumber === undefined
+        pPhoneNumber === undefined ||
+        pPhoneNumber === "no phone #"
     ) {
-        return `no ${pType} #`;
+        return `no phone #`;
     }
     let wTemp = pPhoneNumber.replace(/-/g, "");
     let wNum = wTemp.replace(/\s+/g, "");

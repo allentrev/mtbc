@@ -326,8 +326,11 @@ function loadRptMemberList($item, itemData, index) {
         $item("#chkMemberListSelect").hide();
     } else {
         let wMobilePhone =
-            itemData.mobilePhone === "no phone #" ?
-                ""
+            (
+                itemData.mobilePhone === "no phone #" ||
+                itemData.mobilePhone === ""
+            ) ?
+                "no phone #"
             :   hyphenatePhoneNumber(itemData.mobilePhone);
         $item("#lblMemberListFirstName").text = itemData.firstName;
         $item("#lblMemberListSurname").text = itemData.surname;
@@ -474,12 +477,18 @@ function populateEdit(pTarget) {
                 $w("#btnMemberAConvert").show();
             }
             wMobilePhone =
-                wSelected.mobilePhone === "no phone #" ?
-                    ""
+                (
+                    wSelected.mobilePhone === "no phone #" ||
+                    wSelected.mobilePhone === ""
+                ) ?
+                    "no phone #"
                 :   hyphenatePhoneNumber(wSelected.mobilePhone);
             wHomePhone =
-                wSelected.homePhone === "no phone #" ?
-                    ""
+                (
+                    wSelected.homePhone === "no phone #" ||
+                    wSelected.homePhone === ""
+                ) ?
+                    "no phone #"
                 :   hyphenatePhoneNumber(wSelected.homePhone);
             $w("#drpMemberEditNewStatus").options = wStatusOptions;
             $w("#drpMemberEditNewStatus").value = wSelected.status;
@@ -602,7 +611,7 @@ export async function btnMemberASave_click() {
         const wContactEmail =
             $w("#inpMemberEditContactEmail").value.trim() || "";
         const wContactMobile =
-            $w("#inpMemberEditMobilePhone").value.trim() || "";
+            $w("#inpMemberEditMobilePhone").value.trim() || "no phone #";
         let wContactPref = $w("#rgpMemberEditContactPref").value;
         const wLoginEmail = $w("#inpMemberEditLoginEmail").value.trim() || "";
         const wUsername = $w("#inpMemberEditUsername").value.trim() || "";
@@ -663,7 +672,10 @@ export async function btnMemberASave_click() {
                 return;
             }
         }
-        if (wContactEmail === "" && wContactMobile === "") {
+        if (
+            wContactEmail === "" &&
+            (wContactMobile === "" || wContactMobile === "no phone #")
+        ) {
             $w("#rgpMemberEditContactPref").value === "N";
             wContactPref = "N";
         }
@@ -1147,9 +1159,10 @@ function hyphenatePhoneNumber(pPhoneNumber) {
     if (
         pPhoneNumber === null ||
         pPhoneNumber === "" ||
-        pPhoneNumber === undefined
+        pPhoneNumber === undefined ||
+        pPhoneNumber === "no phone #"
     )
-        return "";
+        return "no phone #";
     let wNumber = pPhoneNumber.trim();
     let wNumberNoSpaces = wNumber.replace(/\s/g, "");
     let wModifiedNumber = wNumberNoSpaces.replaceAll("-", "");
