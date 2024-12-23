@@ -81,8 +81,6 @@ $w.onReady(async function () {
             showError(1);
             return;
         }
-        console.log("Dummy");
-
         $w("#lblListName").onDblClick((event) => doLblListMemberClick(event));
         $w("#lblListTCName").onDblClick((event) => doLblListMemberClick(event));
         $w("#btnContactCardClose").onClick((event) =>

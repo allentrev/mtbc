@@ -906,6 +906,7 @@ export function showDashboard() {
         },
     ];
 
+    // @ts-ignore
     $w("#tblMemberDashboard").rows = wRow;
 }
 
@@ -1677,122 +1678,210 @@ async function synchroniseLstGGLFieldValues() {
     // record has a valid value.
     //
     //
-    let wFieldNames = ["email1Value", "email2Value", "phone1Value"];
+    let wLstFieldNames = ["contactEmail", "altEmail", "mobilePhone"];
+    let wGGLFieldNames = ["email1Value", "email2Value", "phone1Value"];
 
+    let wLstChangeList = [];
+    let wGGLChangeList = [];
     let wChangeList = [];
     let wActiveLstMembers = getActiveAndGuestLstMembers(gLstRecords);
-    //let wLstMember = gLstRecords[1];
     let wCount = 1;
     $w("#pBarLoading").expand();
     $w("#pBarLoading").targetValue = wActiveLstMembers.length;
     for (let wLstMember of wActiveLstMembers) {
         let wLstIn;
-        let wImpIn;
+        let wGGLIn;
         let wLst = "";
-        let wImp = "";
-        let wChanged = false;
+        let wGGL = "";
+        let wLstChanged = false;
+        let wGGLChanged = false;
         let wMsg = "";
-        let wImpMember = gImpRecords.find(
+
+        let wGGLMember = gGGLRecords.find(
             (item) => item.key === wLstMember.key
         );
-        if (wImpMember) {
-            for (let i = 0; i < 7; i++) {
-                let wFK = wFieldNames[i];
-                wLstIn = wLstMember[wFK];
-                wImpIn = wImpMember[wFK];
+        //console.log("Lst & GGL", wLstMember.key);
+        //console.log(wLstMember);
+        //console.log(wGGLMember);
+
+        if (wGGLMember) {
+            for (let i = 0; i < 3; i++) {
+                let wLstFK = wLstFieldNames[i];
+                let wGGLFK = wGGLFieldNames[i];
+                //console.log("SLG", wLstFK, wGGLFK);
+                wLstIn = wLstMember[wLstFK];
+                wGGLIn = wGGLMember[wGGLFK];
                 wLst = wLstIn && wLstIn.length > 0 ? wLstIn.trim() : null;
-                wImp = wImpIn && wImpIn.length > 0 ? wImpIn.trim() : null;
-                if (wFK.includes("Phone")) {
-                    if (wImpIn && wImpIn.length === 6) {
-                        wLst = wLst.slice(-6);
-                    }
-                    if (!wImp) {
-                        wLst = "no phone #";
-                    }
-                    wImp = wImp ? wImp.replace(/-/g, "") : null;
-                    wImp = wImp === "0" ? "no phone #" : wImp;
+                wGGL = wGGLIn && wGGLIn.length > 0 ? wGGLIn.trim() : null;
+                if (wLstIn === "no phone #" || wLstIn === "nophone#") {
+                    wLst = null;
                 }
-                if (wLst !== wImp) {
-                    if (wImp === "" || wImp === null || wImp === undefined) {
-                        // Import field does not have a value
-                        wLst = wFK.includes("Phone") ? "no phone #" : null;
-                    } else {
-                        // Import field does have a value
-                        wChanged = true;
-                        if (wLst) {
-                            if (wImp) {
-                                wMsg =
-                                    wMsg +
-                                    `field ${wFK} changed from ${wLst} to ${wImp}\n`;
-                            } else {
-                                wMsg =
-                                    wMsg +
-                                    `field ${wFK} changed from ${wLst} to null\n`;
-                            }
-                        } else {
-                            if (wImp) {
-                                wMsg =
-                                    wMsg +
-                                    `field ${wFK} changed from null to ${wImp}\n`;
-                            } else {
-                                wMsg =
-                                    wMsg +
-                                    `field ${wFK} not changed - is null\n`;
-                            }
-                        }
-                        wLst = wImp;
-                    }
-                } else {
-                    if (wLst && wLst.length < wLstIn.length) {
-                        if (wFK !== "homePhone") {
-                            // trim took place at top of loop
-                            wChanged = true;
-                            wMsg =
-                                wMsg +
-                                `field ${wFK} trimmed from ${String(wLstIn.length)} to ${String(
-                                    wLst.length
-                                )}\n`;
-                        }
-                    }
+                if (wGGLIn === "no phone #" || wGGLIn === "nophone#") {
+                    wGGL = null;
                 }
-                wLstMember[wFK] = wLst;
-            } // for i 1 to 7 loop
-            if (wChanged) {
-                //save record
-                let wResult = await saveRecord("lstMembers", wLstMember);
-                //let wResult = {"status": true};
-                if (wResult && wResult.status) {
-                    let wOut =
-                        `The following changes were made to ${wLstMember.key}'s Lst record:\n` +
-                        wMsg +
-                        "\n";
-                    wChangeList.push(wOut);
-                } else {
-                    console.log(
-                        "/page/MaintainMember synchroniseLstGGLFieldValues sendMsg failed, error"
-                    );
-                    console.log(wResult.error);
+
+                if (/** if different */ wLst !== wGGL) {
+                    if (
+                        /** Lst Empty, GGL full */ wLst === "" ||
+                        wLst === null ||
+                        wLst === undefined ||
+                        wLst === "no phone #" ||
+                        wLst === "nophone#"
+                    ) {
+                        // do GGL -> LSt
+                        wLst = wGGL;
+                        wMsg =
+                            wMsg +
+                            `${wLstMember.key} Lst field ${wLstFK} changed from null to ${wLst}\n`;
+                        wLstChanged = true;
+                    } /** Lst full, GGL empty */ else if (
+                        wGGL === "" ||
+                        wGGL === null ||
+                        wGGL === undefined
+                    ) {
+                        // do Lst -> GGL
+                        wGGL = wLst;
+                        wMsg =
+                            wMsg +
+                            `${wLstMember.key} GGL field ${wGGLFK} changed from null to ${wLst}\n`;
+                        wGGLChanged = true;
+                    } /** Lst full, GGL full */ else {
+                        // do LSt
+                        wGGL = wLst;
+                        wMsg =
+                            wMsg +
+                            `${wLstMember.key} GGL field ${wGGLFK} changed from ${wGGL} to ${wLst}\n`;
+                        wGGLChanged = true;
+                    }
+                } /** if same */ else {
+                    // do nothing
                 }
-                wChanged = false;
+                wLstMember[wLstFK] = wLst;
+                wGGLMember[wGGLFK] = wGGL;
+            } // for field name loop
+            if (wLstChanged) {
+                wLstChangeList.push(wLstMember);
+            }
+            if (wGGLChanged) {
+                wGGLChangeList.push(wGGLMember);
             }
         } else {
             console.log(
-                `/page/MaintainMember synchroniseLstGGLFieldValues Cant find member ${wLstMember.key}`
+                `/page/MaintainMember synchroniseLstGGLFieldValues Cant find GGL member ${wGGLMember.key}`
             );
         }
-        //console.log(
-        //    `Processed ${wCount} of ${wActiveLstMembers.length} records`
-        //        );
+        wChangeList.push(wMsg);
+        console.log(wLstMember.player, wMsg);
         wCount++;
         $w("#pBarLoading").value = wCount;
     } // for of gLstRecords
+
+    //console.log("Now do updates, Lst, GGl");
+    //console.log(wLstChangeList);
+    //console.log(wGGLChangeList);
+    let wGGLUpdateList = wGGLChangeList.map((item) => {
+        return {
+            _id: item._id,
+            firstName: item.firstName,
+            lastName: item.lastName,
+            phone1Label: item.phone1Label,
+            phone1Value: item.phone1Value,
+            email1Label: item.email1Label,
+            email1Value: item.email1Value,
+            email2Label: item.email2Label,
+            email2Value: item.email2Value,
+            labels: item.labels,
+        };
+    });
+
+    let wLstUpdateList = wLstChangeList.map((item) => {
+        return {
+            id: item._id,
+            firstName: item.firstName,
+            surname: item.surname,
+            mobilePhone: item.mobilePhone,
+            homePhone: item.homePhone,
+            loginEmail: item.loginEmail,
+            type: item.type,
+            wixId: item.wixId,
+            gender: item.gender,
+            locker: item.locker,
+            username: item.username,
+            photo: item.photo,
+            addrLine1: item.addrLine1,
+            addrLine2: item.addrLine2,
+            town: item.town,
+            postCode: item.postCode,
+            contactpref: item.contactpref,
+            dateLeft: item.dateLeft,
+            allowshare: item.allowshare,
+            status: item.status,
+        };
+    });
+    //console.log(wGGLUpdateList);
+    //console.log(wLstupdateList);
+
+    if (wLstUpdateList && wLstUpdateList.length > 0) {
+        let wResult = await bulkSaveRecords("lstMembers", wLstUpdateList);
+        let wInserts = wResult.results.inserted;
+        let wUpdates = wResult.results.updated;
+        let wErrors = wResult.results.errors.length;
+        console.log(
+            `/page/MaintainMember synchroniseLstGGL Lst Bulk Members Save: ${wInserts} inserted, ${wUpdates} updated, ${wErrors} errors`
+        );
+    }
+
+    if (wGGLUpdateList && wGGLUpdateList.length > 0) {
+        let wResult = await bulkSaveRecords("lstGoogleImport", wGGLUpdateList);
+        let wInserts = wResult.results.inserted;
+        let wUpdates = wResult.results.updated;
+        let wErrors = wResult.results.errors.length;
+        console.log(
+            `/page/MaintainMember synchroniseLstGGL GGL Bulk Members Save: ${wInserts} inserted, ${wUpdates} updated, ${wErrors} errors`
+        );
+    }
+
     if (wChangeList && wChangeList.length > 0) {
-        //dontothing
-    } else {
+        let wParams = {
+            changeList: wChangeList,
+        };
+        let wResult = { status: false };
+        if (gTest) {
+            wResult.status = true;
+        } else {
+            wResult = await sendMsgToJob(
+                "E",
+                ["WEB"],
+                null,
+                false,
+                "MemberAmendFieldValues",
+                wParams
+            );
+        }
+
+        if (wResult && wResult.status) {
+            console.log(
+                "/page/MaintainMember synchroniseLstGGLFieldValues sendMsg OK"
+            );
+        } else {
+            console.log(
+                "/page/MaintainMember synchroniseLstGGLFieldValues sendMsg failed, error"
+            );
+            console.log(wResult.error);
+        }
+    }
+
+    if (
+        wLstChangeList &&
+        wLstChangeList.length === 0 &&
+        wGGLChangeList &&
+        wGGLChangeList.length === 0
+    ) {
         console.log(
             "/page/MaintainMember synchroniseLstGGLFieldValues Nothing to change"
         );
     }
+
     $w("#pBarLoading").collapse();
     return true;
 }
@@ -1972,6 +2061,7 @@ function configureStage4Commands(p2or3, pLeftCount, pRightCount) {
 function removeFromSet(p2or3, pId) {
     // @ts-ignore
     try {
+        // @ts-ignore
         let wRpt = $w(`#rpt${p2or3}`);
         // @ts-ignore
         let wTxtNone = $w(`#txt${p2or3}None`);
@@ -2179,9 +2269,9 @@ async function loadLstMembersData() {
         for (let wMember of gLstRecords) {
             wMember.key = wMember.fullName;
         }
-        return true;
         //console.log("pLstRecords");
         //console.log(gLstRecords);
+        return true;
     } catch (err) {
         console.log("/page/MaintainMember loadLstMembersData Try-catch, err");
         console.log(err);
@@ -2628,7 +2718,6 @@ function updateRecordStore(p2or3, pRec) {
                             ]);
                             gLstRecords = [...wSortedData];
                         } else {
-                            S;
                             wRecordItem.status = pRec.status;
                             wSortedData = _.orderBy(wRecordData, [
                                 "lastName",
@@ -3875,6 +3964,7 @@ async function processRecord(pRec) {
         }
     }
     if (wMobile.startsWith("01628")) {
+        // eslint-disable-next-line no-unused-vars
         wLong = "Wrong code";
     }
     pRec.mobilePhone = wMobile2;
