@@ -11,6 +11,7 @@ import {
     deleteImportMemberRecord,
     uploadGlobalDataStore,
 } from "backend/backMember.jsw";
+import { loadStandingData } from "backend/backSystem.jsw";
 
 import { saveImportMemberRecord } from "backend/backMember.jsw";
 import { findLstMemberByFullName } from "backend/backMember.jsw";
@@ -89,11 +90,21 @@ let gTest = false;
 // for testing ------	------------------------------------------------------------------------
 
 const isLoggedIn = gTest ? true : authentication.loggedIn();
-const gYear = new Date().getFullYear();
+let gDateAudit;
 
 $w.onReady(async function () {
     try {
         let status;
+        let [wAuditYear, wAuditMonth, wAuditDay, wAuditHour, wAuditMin] =
+            await loadStandingData("Member");
+        gDateAudit = new Date(
+            wAuditYear,
+            wAuditMonth - 1,
+            wAuditDay,
+            wAuditHour,
+            wAuditMin
+        );
+        console.log("Date of audit is ", gDateAudit);
 
         //$w('#lblHdr1').text = `The following table summarises something....${gYear} season`;
         // for testing ------	------------------------------------------------------------------------
@@ -934,7 +945,15 @@ export function updateDashboard() {
         //day: 'numeric',
         year: "numeric",
     };
-    const wYearStart = new Date(gYear - 1, 8, 1);
+    const wToday = new Date();
+    let wYearStart = gDateAudit;
+    let wPreviousAudit = new Date(gDateAudit);
+    wPreviousAudit.setFullYear(gDateAudit.getFullYear() - 1);
+    if (wToday >= gDateAudit) {
+        wYearStart = wPreviousAudit;
+    }
+    console.log("Dashboard date ", wYearStart);
+
     const wMembers = getEntity("Member");
 
     const wActiveMembers = wMembers.filter(
@@ -3291,10 +3310,10 @@ export async function btnGGLStage4Add_click() {
                 if (wHasEmail) {
                     wLabelArray.push("All members");
                     if (wMember.type === "Full") {
-                        wLabelArray.push("Playing member");
+                        wLabelArray.push("Playing members");
                     }
                     wMember.gender === "M" ?
-                        wLabelArray.push("Mens")
+                        wLabelArray.push("Men")
                     :   wLabelArray.push("Ladies");
                 } /** no email */ else {
                     if (wHasPhone) {
