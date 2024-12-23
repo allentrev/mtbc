@@ -710,6 +710,9 @@ export async function btnMemberASave_click() {
 
         wMember.locker =
             $w("#inpMemberEditLocker").value.split(",").map(Number) || [];
+        if (wMember.locker[0] === 0) {
+            wMember.locker = [];
+        }
         let wPhoto = $w("#imgMemberEditPhoto").src;
         if (wPhoto === "") {
             wPhoto =
