@@ -129,7 +129,7 @@ export async function loadStandingData(pPage) {
         case "Open Day":
             wIds = ["SD030", "SD031", "SD032"];
             break;
-        case "Member":
+        case "Maintain Member":
             wIds = ["SD036", "SD037", "SD038", "SD039", "SD040"];
             break;
         default:
