@@ -95,15 +95,7 @@ let gDateAudit;
 $w.onReady(async function () {
     try {
         let status;
-        let [wAuditYear, wAuditMonth, wAuditDay, wAuditHour, wAuditMin] =
-            await loadStandingData("Member");
-        gDateAudit = new Date(
-            wAuditYear,
-            wAuditMonth - 1,
-            wAuditDay,
-            wAuditHour,
-            wAuditMin
-        );
+        gDateAudit = await setAuditDate();
         console.log("Date of audit is ", gDateAudit);
 
         //$w('#lblHdr1').text = `The following table summarises something....${gYear} season`;
@@ -189,6 +181,9 @@ $w.onReady(async function () {
         );
         $w("#btnMemberASave").onClick(() => btnMemberASave_click());
         $w("#btnMemberACancel").onClick((event) => btnCancel_click(event));
+        //$w("#btnMemberAToMembersMenu").onClick(() =>
+        //    wixLocation.to("/membersMenu")
+        //);
         $w("#btnMemberAToSync").onClick(() => btnMemberAToSync_click());
         $w("#btnMemberAToLocker").onClick(() => btnMemberAToLocker_click());
         $w("#btnMemberAConvert").onClick(() => btnMemberAConvert_click());
@@ -949,7 +944,12 @@ export function updateDashboard() {
     let wYearStart = gDateAudit;
     let wPreviousAudit = new Date(gDateAudit);
     wPreviousAudit.setFullYear(gDateAudit.getFullYear() - 1);
-    if (wToday >= gDateAudit) {
+    console.log(wToday);
+    console.log(wYearStart);
+    console.log(gDateAudit);
+    console.log(wPreviousAudit);
+    if (wToday < gDateAudit) {
+        console.log("Today is before the audit");
         wYearStart = wPreviousAudit;
     }
     console.log("Dashboard date ", wYearStart);
@@ -3543,6 +3543,96 @@ export async function btnGGLStage4Save_click() {
         hideStageWait("4");
     }
 }
+//====== Other Member functions --------------------------------------------------------------------------------
+//
+export async function setAuditDate() {
+    console.log("SetAUditDate");
+    let [wYear, wMonth, wDay, wHour, wMin] =
+        await loadStandingData("Maintain Member");
+
+    console.log("setAuditDate2");
+    console.log(wYear, wMonth, wDay, wHour, wMin);
+
+    let wAuditYear = parseInt(wYear, 10);
+    let wAuditMonth = parseInt(wMonth, 10);
+    let wAuditDay = parseInt(wDay, 10);
+    let wAuditHour = parseInt(wHour, 10);
+    let wAuditMin = parseInt(wMin, 10);
+    if (wAuditMonth < 1 || wAuditMonth > 12) {
+        wAuditMonth = 9;
+    }
+    if (wAuditDay < 1 || wAuditDay > 31) {
+        wAuditDay = 1;
+    }
+    if (wAuditHour < 0 || wAuditHour > 23) {
+        wAuditHour = 10;
+    }
+    if (wAuditMin < 0 || wAuditMin > 59) {
+        wAuditMin = 0;
+    }
+    console.log(wAuditYear, wAuditMonth, wAuditDay, wAuditHour, wAuditMin);
+
+    let wAudit = new Date(
+        wAuditYear,
+        wAuditMonth - 1,
+        wAuditDay,
+        wAuditHour,
+        wAuditMin
+    );
+
+    return wAudit;
+}
+
+export function showStageWait(pStage) {
+    let wImgName = `#imgStage${pStage}Wait`;
+    // @ts-ignore
+    let wImg = $w(wImgName);
+    wImg.show();
+}
+
+export function hideStageWait(pStage) {
+    let wImgName = `#imgStage${pStage}Wait`;
+    // @ts-ignore
+    let wImg = $w(wImgName);
+    wImg.hide();
+}
+
+export function showMsg(pStage, pNo, pMsg = "") {
+    try {
+        let wMsg = [
+            "Records deleted",
+            "There was a problem deleting this competitiong",
+            "Please correct input errors shown",
+            "Competition created",
+            "",
+        ];
+
+        let wMsgName = `#lblStage${pStage}Msg`;
+        let wImgName = `#imgStage${pStage}Wait`;
+        // @ts-ignore
+        let wLblMsg = $w(wMsgName);
+        // @ts-ignore
+        let wImg = $w(wImgName);
+        if (pNo === 0) {
+            wLblMsg.text = pMsg;
+        } else {
+            wLblMsg.text = wMsg[pNo - 1];
+        }
+        wLblMsg.show();
+        wImg.hide();
+        setTimeout(() => {
+            wLblMsg.hide();
+        }, 4000);
+        return;
+    } catch (err) {
+        console.log(
+            "/page/MaintainMember showMsg Try-catch fail, stage, No, err",
+            pStage,
+            pNo
+        );
+        console.log(err);
+    }
+}
 
 //====== Locker Handling ========================================================================================
 //
@@ -4005,56 +4095,6 @@ async function processRecord(pRec) {
     pRec.mobilePhone = wMobile2;
 }
 
-export function showStageWait(pStage) {
-    let wImgName = `#imgStage${pStage}Wait`;
-    // @ts-ignore
-    let wImg = $w(wImgName);
-    wImg.show();
-}
-
-export function hideStageWait(pStage) {
-    let wImgName = `#imgStage${pStage}Wait`;
-    // @ts-ignore
-    let wImg = $w(wImgName);
-    wImg.hide();
-}
-
-export function showMsg(pStage, pNo, pMsg = "") {
-    try {
-        let wMsg = [
-            "Records deleted",
-            "There was a problem deleting this competitiong",
-            "Please correct input errors shown",
-            "Competition created",
-            "",
-        ];
-
-        let wMsgName = `#lblStage${pStage}Msg`;
-        let wImgName = `#imgStage${pStage}Wait`;
-        // @ts-ignore
-        let wLblMsg = $w(wMsgName);
-        // @ts-ignore
-        let wImg = $w(wImgName);
-        if (pNo === 0) {
-            wLblMsg.text = pMsg;
-        } else {
-            wLblMsg.text = wMsg[pNo - 1];
-        }
-        wLblMsg.show();
-        wImg.hide();
-        setTimeout(() => {
-            wLblMsg.hide();
-        }, 4000);
-        return;
-    } catch (err) {
-        console.log(
-            "/page/MaintainMember showMsg Try-catch fail, stage, No, err",
-            pStage,
-            pNo
-        );
-        console.log(err);
-    }
-}
 /**
  * ------------------------------Array function examples --------------------------------
     // Arrays containing elements from A and B, not C
