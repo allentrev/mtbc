@@ -944,15 +944,9 @@ export function updateDashboard() {
     let wYearStart = gDateAudit;
     let wPreviousAudit = new Date(gDateAudit);
     wPreviousAudit.setFullYear(gDateAudit.getFullYear() - 1);
-    console.log(wToday);
-    console.log(wYearStart);
-    console.log(gDateAudit);
-    console.log(wPreviousAudit);
     if (wToday < gDateAudit) {
-        console.log("Today is before the audit");
         wYearStart = wPreviousAudit;
     }
-    console.log("Dashboard date ", wYearStart);
 
     const wMembers = getEntity("Member");
 
@@ -3546,12 +3540,8 @@ export async function btnGGLStage4Save_click() {
 //====== Other Member functions --------------------------------------------------------------------------------
 //
 export async function setAuditDate() {
-    console.log("SetAUditDate");
     let [wYear, wMonth, wDay, wHour, wMin] =
         await loadStandingData("Maintain Member");
-
-    console.log("setAuditDate2");
-    console.log(wYear, wMonth, wDay, wHour, wMin);
 
     let wAuditYear = parseInt(wYear, 10);
     let wAuditMonth = parseInt(wMonth, 10);
@@ -3570,7 +3560,6 @@ export async function setAuditDate() {
     if (wAuditMin < 0 || wAuditMin > 59) {
         wAuditMin = 0;
     }
-    console.log(wAuditYear, wAuditMonth, wAuditDay, wAuditHour, wAuditMin);
 
     let wAudit = new Date(
         wAuditYear,
