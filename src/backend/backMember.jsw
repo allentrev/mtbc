@@ -1572,7 +1572,7 @@ export async function saveGoogleMemberRecord(pRec) {
             firstName: pRec.firstName,
             lastName: pRec.lastName,
             labels: pRec.labels,
-            email1Label: pRec.email1Label,
+            email1Label: pRec.email1Label,wix dev
             email1Value: pRec.email1Value,
             email2Label: pRec.email2Label,
             email2Value: pRec.email2Value,

@@ -1003,7 +1003,7 @@ export function getTargetParameters(pTarget) {
             wOrder = ["desc"];
             break;
         case "Label":
-            wSort = ["_title"];
+            wSort = ["title"];
             wOrder = ["desc"];
             break;
         case "StandingData":
@@ -1466,7 +1466,7 @@ export function updateGlobalDataStore(pRec, pTarget) {
                 break;
             case "Label":
                 wSelectedItem.title = pRec.title;
-                wSelectedItem.count = pRec.count;
+                wSelectedItem.description = pRec.description;
                 break;
             case "StandingData":
                 wSelectedItem.webPage = pRec.webPage;
@@ -2217,7 +2217,12 @@ export function resetSection(pTarget) {
     }
 
     $w(`#box${pTarget}Edit`).collapse();
-    $w(`#box${pTarget}Prime`).collapse();
+    if (pTarget === "Label") {
+        $w(`#boxLabelPrime`).expand();
+        $w("#boxLabelContent").collapse();
+    } else {
+        $w(`#box${pTarget}Prime`).collapse();
+    }
     if (pTarget === "LiveComp") {
         $w(`#box${pTarget}Create`).collapse();
         $w(`#box${pTarget}PrimeEdit`).collapse();
@@ -2444,7 +2449,11 @@ export function configureScreen(pTarget) {
             $w(wbtnUpdate).hide();
             $w(wbtnSave).hide();
             $w(wbtnCancel).show();
-            $w(wBoxPrime).collapse();
+            if (pTarget === "Label") {
+                $w(wBoxPrime).expand();
+            } else {
+                $w(wBoxPrime).collapse();
+            }
             $w(wBoxEdit).collapse;
             break;
         case 1:
@@ -2473,7 +2482,8 @@ export function configureScreen(pTarget) {
                 pTarget === "RefEvent" ||
                 pTarget === "CanEvent" ||
                 pTarget === "Officer" ||
-                pTarget === "Member"
+                pTarget === "Member" ||
+                pTarget === "Label"
             ) {
                 $w(wBoxPrime).expand();
             } else {
