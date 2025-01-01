@@ -71,15 +71,27 @@ export async function buildMemberCache() {
     let wMembers = await getAllMembers();
     gLocalNameCache = wMembers.map((item) => {
         return {
-            id: item._id,
+            _id: item._id,
+            memberId: item._id,
             fullName: item.fullName,
+            firstName: item.firstName,
+            surname: item.surname
         };
     });
     return true;
 }
 
+export function getMemberLocally(pId) {
+    let wMember = gLocalNameCache.find((item) => item.memberId === pId);
+    if (wMember) {
+        return {"status": true, "member": wMember, "error": null};
+    } else {
+        return {"status": true, "member": {}, "error": `Couldnt find member ${pId}`};
+    }
+}
+
 export function getFullNameLocally(pId) {
-    let wMember = gLocalNameCache.find((item) => item.id === pId);
+    let wMember = gLocalNameCache.find((item) => item.memberId === pId);
     if (wMember) {
         return [true, wMember.fullName];
     } else {

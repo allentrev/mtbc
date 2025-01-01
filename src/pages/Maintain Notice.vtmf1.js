@@ -17,12 +17,17 @@ import {
 } from "backend/backNotices.web.js";
 
 import { isLabelUnique } from "backend/backNotices.web.js";
-import { getLabelTableRows } from "backend/backNotices.web.js";
+import { doesLabelExist } from "backend/backNotices.web.js";
+import { getNoticeTableContent } from "backend/backNotices.web.js";
+import { initialiseReferenceLabels } from "backend/backNotices.web.js";
+
 
 import { saveRecord } from "backend/backEvents.jsw";
 import { bulkSaveRecords } from "backend/backEvents.jsw";
+import { bulkDeleteRecords } from "backend/backNotices.web";
 import { deleteRecord } from "backend/backEvents.jsw";
 import { buildMemberCache } from "public/objects/member";
+import { getMemberLocally } from "public/objects/member";
 import { getFullNameLocally } from "public/objects/member";
 
 //------------------------------------------ Entity Imports ---------------------------------------
@@ -63,6 +68,10 @@ import {
     hideGoToButtons,
     populateEdit,
 } from "public/objects/entity";
+import { findLabelByKey } from "backend/backNotices.web.js";
+import { btnDelete_click } from "public/objects/entity";
+import { deleteGlobalDataStore } from "public/objects/entity";
+import { initialiseRinksArray } from "public/objects/booking";
 
 const COLOUR = Object.freeze({
     FREE: "rgba(207,207,155,0.5)",
@@ -152,8 +161,8 @@ $w.onReady(async function () {
 
         // Notice Section Notice handlers
         //$w("#strNotice").onViewportEnter((event) => strNotice_viewportEnter(event));
-        $w("#btnNoticeACreate").onClick((event) => doBtnCreateClick(event));
-        $w("#btnNoticeAUpdate").onClick((event) => doBtnUpdateClick(event));
+        $w("#btnNoticeACreate").onClick((event) => doBtnNoticeACreateClick(event));
+        $w("#btnNoticeAUpdate").onClick((event) => doBtnNoticeAUpdateClick(event));
         $w("#btnNoticeADelete").onClick((event) =>
             btnDelete_click(loggedInMember.lstId, event)
         );
@@ -161,7 +170,7 @@ $w.onReady(async function () {
         $w("#btnNoticeACancel").onClick((event) => btnCancel_click(event));
         $w("#btnNoticeAToLabel").onClick(() => btnNoticeAToLabel_click());
         $w("#btnNoticeACancellation").onClick((event) =>
-            doBtnCancellationClick(event)
+            doBtnNoticeACancellationClick(event)
         );
 
         //$w('#btnEventAPrime').onClick((event) => btnEventAPrime_click(event));
@@ -195,20 +204,20 @@ $w.onReady(async function () {
         $w("#btnNoticeEditPhotoClose").onClick(() =>
             btnNoticeEditPhotoClose_click()
         );
-        $w("#drpNoticeEditLabel").onClick((event) =>
+        $w("#drpNoticeEditLabel").onClick((event) =>            //does nothing, this is only part of input process
             drpNoticeEditLabel_click(event)
         );
-        $w("#btnNoticeEditSelectAdd").onClick(() =>
-            btnNoticeEditSelectAdd_click()
+        $w("#btnNoticeEditContentOpen").onClick(() =>           // just opens box
+            btnNoticeEditContentOpen_click()
         );
-        $w("#btnNoticeEditSelectRemove").onClick(() =>
-            btnNoticeEditSelectRemove_click()
+        $w("#btnNoticeEditContentAdd").onClick(() =>
+            btnNoticeEditContentAdd_click()
         );
-        $w("#btnNoticeEditLabelExpand").onClick(() =>
-            btnNoticeEditLabelExpand_click()
+        $w("#btnNoticeEditContentSubtract").onClick(() =>
+            btnNoticeEditContentSubtract_click()
         );
-        $w("#btnNoticeEditLabelClose").onClick(() =>
-            btnNoticeEditLabelClose_click()
+        $w("#btnNoticeEditContentClose").onClick(() =>
+            btnNoticeEditContentClose_click()
         );
         //$w('#drpNoticeEditHomeAway').onChange((event) => doDrpNoticeEditRinksChange(event));
         //$w('#tpkNoticeEditStartTime').onChange((event) => doDrpNoticeEditRinksChange(event));
@@ -217,13 +226,11 @@ $w.onReady(async function () {
 
         // Label Section event handlers
         //
-        $w("#btnLabelACreate").onClick((event) => doBtnLabelCreateClick(event));
-        $w("#btnLabelAUpdate").onClick((event) => doBtnLabelUpdateClick(event));
-        $w("#btnLabelADelete").onClick((event) =>
-            btnDelete_click(loggedInMember.lstId, event)
-        );
-        $w("#btnLabelASave").onClick((event) => btnLabelASave_click(event));
-        $w("#btnLabelACancel").onClick((event) => btnCancel_click(event));
+        $w("#btnLabelACreate").onClick((event) => doBtnLabelACreateClick(event));
+        $w("#btnLabelAUpdate").onClick((event) => doBtnLabelAUpdateClick(event));
+        $w("#btnLabelADelete").onClick((event) => doBtnLabelADeleteClick(event));
+        $w("#btnLabelASave").onClick(() => btnLabelASave_click());
+        $w("#btnLabelACancel").onClick((event) => doBtnLabelACancelClick(event));
         $w("#btnLabelAToNotice").onClick(() => btnLabelAToNotice_click());
 
         $w("#chkLabelListSelect").onClick((event) => chkSelect_click(event));
@@ -242,8 +249,8 @@ $w.onReady(async function () {
         $w("#inpLabelEditTitle").onChange((event) =>
             inpLabelEditTitle_change(event)
         );
-        $w("#tblLabelEditObjects").onRowSelect((event) =>
-            btnLabelEditObjects_onRowSelect(event)
+        $w("#tblLabelEditContent").onRowSelect((event) =>
+            btnLabelEditContent_onRowSelect(event)
         );
         $w("#btnLabelPrimeImport").onClick(() => btnLabelPrimeImport_click());
         $w("#btnLabelPrimeExport").onClick(() => btnLabelPrimeExport_click());
@@ -253,9 +260,9 @@ $w.onReady(async function () {
         $w("#btnLabelEditContentClose").onClick(() =>
             btnLabelEditContentClose_click()
         );
-        $w("#btnLabelContentAdd").onClick(() => btnLabelContentAdd_click());
-        $w("#btnLabelContentSubtract").onClick(() =>
-            btnLabelContentSubtract_click()
+        $w("#btnLabelOtherContentAdd").onClick(() => btnLabelOtherContentAdd_click());
+        $w("#btnLabelOtherContentSubtract").onClick(() =>
+            btnLabelOtherContentSubtract_click()
         );
 
         //----------------------------Repeaters section-------------------------------------------
@@ -278,7 +285,7 @@ $w.onReady(async function () {
     }
 });
 
-// ------------------------------------------------ Load Data --------------------------------------------------------
+//====== Load Data -----------------------------------------------------------------------------------------------------
 //
 export async function loadListData() {
     try {
@@ -342,8 +349,8 @@ export async function loadLabelData() {
         console.log(err);
     }
 }
-// ------------------------------------------------ Load Repeaters ----------------------------------------------------------
 //
+//====== Load Repeaters -----------------------------------------------------------------------------------------------
 
 function loadRptNoticeList($item, itemData, index) {
     let wTargetType = "A";
@@ -397,18 +404,20 @@ function loadRptLabelList($item, itemData, index) {
     }
 }
 
-// ------------------------------------------------ Load Dropdowns-----------------------------------------------
-//
+//====== Load Dropdowns----------------------------------------------------------------------------------------
+
 
 async function loadNoticeEditLabel() {
     //  used in the Notice Edit box
 
-    const wResults = await getLabelOptions();
+    const wResults = await getAllLabels();
     if (wResults && wResults.status) {
         let wLabels = wResults.labels;
         let wOptions = wLabels.map((item) => {
+            let wLabel = (item.description === null || item.description === "" || item.description === undefined) ? item.title :
+             item.title + " " + item.description.substring(0, 30);
             return {
-                label: item.title + " (" + String(item.count) + ")",
+                label: wLabel,
                 value: item.title,
             };
         });
@@ -456,102 +465,17 @@ async function populateNoticeEditDropDowns() {
 
 //====== Notice Events ================================================
 //
-export async function doBtnCreateClick(event) {
+export async function doBtnNoticeACreateClick(event) {
     btnCreate_click(event);
     await clearNoticeEdit();
 }
-export async function doBtnUpdateClick(event) {
+export async function doBtnNoticeAUpdateClick(event) {
     btnUpdate_click(event);
     showError("Notice", 44);
     await populateNoticeEdit();
 }
-export async function doBtnCancellationClick(event) {
-    btnCancellation_click(event);
-    await populateNoticeEdit();
-}
 
-export function btnNoticeAToLabel_click() {
-    $w("#secNotice").collapse();
-    //$w("#secSync").collapse();
-    $w("#secLabel").expand();
-    //loadLabels();
-}
-export async function drpNoticeFilterType_change(event) {
-    showWait("Notice");
-    let wType = event.target.value;
-    //let wStatus = $w('#drpMemberFilterChoice').value;
-    //displayMemberTableData(wType, wStatus);
-    hideWait("Notice");
-}
-
-function doDrpNoticeEditTargetTypeChange(event) {
-    let wTargetType = event.target.value;
-    configureBoxes(wTargetType);
-}
-
-async function btnNoticeEditSummary_click() {
-    showWait("Notice");
-    $w("#btnNoticeEditSummary").disable();
-    let wText = $w("#inpNoticeEditMessage").value;
-    let wNoSentences = wText.length > 100 ? Math.round(wText.length / 100) : 1;
-    console.log("Length =", wText.length, "Sentenaces = ", wNoSentences);
-    let wResult = await summariseText(wText, wNoSentences);
-    console.log(wResult);
-    if (wResult && wResult.status) {
-        console.log("IN mainm result");
-        $w("#inpNoticeEditSummary").value = wResult.summary;
-        $w("#grpNoticeEditSummary").expand();
-        $w("#btnNoticeEditSummary").enable();
-    } else {
-        console.log("MaintainNotice btnNoticeEditSummary summarise error, err");
-        console.log(wResult.error);
-        $w("#inpNoticeEditSummary").value = "";
-        $w("#grpNoticeEditSummary").collapse();
-        $w("#btnNoticeEditSummary").enable();
-    }
-    hideWait("Notice");
-}
-
-function btnNoticeEditLabelExpand_click() {
-    $w("#boxNoticeEditSelect").expand();
-}
-
-function btnNoticeEditLabelClose_click() {
-    $w("#boxNoticeEditSelect").collapse();
-}
-
-function doInpNoticeEditMessageChange(event) {
-    let wText = event.target.value;
-    if (wText.length > 160) {
-        $w("#btnNoticeEditSummary").expand();
-    } else {
-        $w("#btnNoticeEditSummary").collapse();
-        $w("#grpNoticeEditSummary").collapse();
-    }
-}
-
-function btnNoticeEditPhotoAdd_click() {
-    $w("#boxNoticeEditPhoto").expand();
-    $w("#btnNoticeEditPhotoAdd").collapse();
-    $w("#btnNoticeEditPhotoClose").expand();
-}
-
-function btnNoticeEditPhotoClose_click() {
-    $w("#boxNoticeEditPhoto").collapse();
-    $w("#btnNoticeEditPhotoAdd").expand();
-    $w("#btnNoticeEditPhotoClose").collapse();
-}
-
-export function doNoticeViewChange(event) {
-    let wView = event.target.value;
-    doNoticeView(wView);
-}
-export function btnNoticeAToB_click(event) {
-    //$w('#strEvent').collapse();
-    //$w('#cstrpKennetTeams').expand();
-}
-
-export async function btnDelete_click(pUserId, event) {
+export async function btnNoticeDelete_click(pUserId, event) {
     setMode(MODE.DELETE);
 
     let wTarget = getTarget(event, "A");
@@ -593,7 +517,86 @@ export async function btnDelete_click(pUserId, event) {
     hideWait(wTarget);
 }
 
-export async function btnNoticeASave_click(event) {
+export async function doBtnNoticeACancellationClick(event) {
+    btnCancellation_click(event);
+    await populateNoticeEdit();
+}
+
+export function btnNoticeAToLabel_click() {
+    $w("#secNotice").collapse();
+    //$w("#secSync").collapse();
+    $w("#secLabel").expand();
+    //loadLabels();
+}
+export async function drpNoticeFilterType_change(event) {
+    showWait("Notice");
+    let wType = event.target.value;
+    //let wStatus = $w('#drpMemberFilterChoice').value;
+    //displayMemberTableData(wType, wStatus);
+    console.log("drpNoticeFilterType_change", wType);
+    hideWait("Notice");
+}
+
+function doDrpNoticeEditTargetTypeChange(event) {
+    let wTargetType = event.target.value;
+    configureBoxes(wTargetType);
+}
+
+async function btnNoticeEditSummary_click() {
+    showWait("Notice");
+    $w("#btnNoticeEditSummary").disable();
+    let wText = $w("#inpNoticeEditMessage").value;
+    let wNoSentences = wText.length > 100 ? Math.round(wText.length / 100) : 1;
+    console.log("Length =", wText.length, "Sentenaces = ", wNoSentences);
+    let wResult = await summariseText(wText, wNoSentences);
+    console.log(wResult);
+    if (wResult && wResult.status) {
+        console.log("IN mainm result");
+        $w("#inpNoticeEditSummary").value = wResult.summary;
+        $w("#grpNoticeEditSummary").expand();
+        $w("#btnNoticeEditSummary").enable();
+    } else {
+        console.log("MaintainNotice btnNoticeEditSummary summarise error, err");
+        console.log(wResult.error);
+        $w("#inpNoticeEditSummary").value = "";
+        $w("#grpNoticeEditSummary").collapse();
+        $w("#btnNoticeEditSummary").enable();
+    }
+    hideWait("Notice");
+}
+
+function doInpNoticeEditMessageChange(event) {
+    let wText = event.target.value;
+    if (wText.length > 160) {
+        $w("#btnNoticeEditSummary").expand();
+    } else {
+        $w("#btnNoticeEditSummary").collapse();
+        $w("#grpNoticeEditSummary").collapse();
+    }
+}
+
+function btnNoticeEditPhotoAdd_click() {
+    $w("#boxNoticeEditPhoto").expand();
+    $w("#btnNoticeEditPhotoAdd").collapse();
+    $w("#btnNoticeEditPhotoClose").expand();
+}
+
+function btnNoticeEditPhotoClose_click() {
+    $w("#boxNoticeEditPhoto").collapse();
+    $w("#btnNoticeEditPhotoAdd").expand();
+    $w("#btnNoticeEditPhotoClose").collapse();
+}
+
+export function doNoticeViewChange(event) {
+    let wView = event.target.value;
+    doNoticeView(wView);
+}
+export function btnNoticeAToB_click(event) {
+    //$w('#strEvent').collapse();
+    //$w('#cstrpKennetTeams').expand();
+}
+
+export async function btnNoticeASave_click() {
     try {
         showWait("Notice");
         $w("#btnNoticeASave").disable();
@@ -759,346 +762,6 @@ export async function btnNoticeASave_click(event) {
     }
 }
 
-function formTransmitToList() {
-    let wTableData = $w("#tblNoticeEditSelect").rows;
-    let wList = wTableData.map((item) => {
-        return (
-            //      `${item.name}<${item.email}>,`
-            item.memberId
-        );
-    });
-    return wList;
-}
-
-export async function drpNoticeChoiceChange(event) {
-    showWait("Notice");
-    updatePagination("Notice");
-    hideWait("Notice");
-}
-
-// Note that the following variables are also used in the Label section
-let wSelectedRow = 0;
-let wTableRows = [];
-
-export function tblNoticeEditSelect_onRowSelect(event) {
-    wSelectedRow = event.rowIndex; // 2  console.log("Row select, id", wId);
-    wTableRows = $w("#tblNoticeEditSelect").rows;
-}
-
-export async function drpNoticeEditLabel_click(event) {
-    let wValue = event.target.value;
-}
-
-export async function btnNoticeEditSelectAdd_click() {
-    let wParams = {
-        seeds: "N",
-        mix: "X",
-        type: 1,
-        noTeams: 12,
-    };
-    wTableRows = $w("#tblNoticeEditSelect").rows;
-
-    let wMembers = await wixWindow.openLightbox(
-        "lbxSelectManyMembers",
-        wParams
-    );
-    try {
-        if (wMembers) {
-            if (wMembers.length > 0) {
-                for (let wMember of wMembers) {
-                    let wTableEntry = {
-                        _id: undefined,
-                        memberId: wMember._id,
-                        name: wMember.player,
-                        email: wMember.contactEmail,
-                    };
-                    wTableRows.push(wTableEntry);
-                }
-                tblNoticeEditSelectExpand();
-                $w("#tblNoticeEditSelect").rows = wTableRows;
-            }
-        }
-    } catch (err) {
-        console.log("MaintainNotice btnNoticeEditSelectAdd try-catch, err");
-        console.log(err);
-    }
-}
-
-export async function btnNoticeEditSelectRemove_click() {
-    try {
-        wTableRows = $w("#tblNoticeEditSelect").rows;
-
-        let wSelectedRowData = wTableRows[wSelectedRow];
-        console.log("Table length = ", wTableRows.length);
-        let wId = wSelectedRowData._id;
-        wTableRows.splice(wSelectedRow, 1);
-
-        if (wTableRows.length === 0) {
-            tblNoticeEditSelectCollapse();
-        } else {
-            tblNoticeEditSelectExpand();
-            $w("#tblNoticeEditSelect").rows = wTableRows;
-        }
-        wSelectedRow = 0;
-    } catch (err) {
-        console.log("MaintainNotice btnNoticeEditSelectRemove try-catch, err");
-        console.log(err);
-    }
-}
-
-export async function cstrpNotice_viewportEnter(event) {
-    //await displayEventTableData(gEvents);
-}
-//////////////////////////////
-export function doNoticeView(pTarget) {
-    if (pTarget === "P") {
-        $w("#chkNoticeListSelectAll").collapse();
-        $w("#btnNoticeListTop").collapse();
-        $w("#rptNoticeList").collapse();
-    } else {
-        $w("#chkNoticeListSelectAll").expand();
-        $w("#btnNoticeListTop").expand();
-        $w("#rptNoticeList").expand();
-    }
-}
-
-export function strNotice_viewportEnter(event) {
-    console.log("Viewport");
-    console.log(event);
-    //displayMemberTableData($w('#drpMemberListTypeChoice').value, $w('#drpMemberListStatusChoice').value);
-}
-// ================================================= Notice Supporting Functions =================================================
-//
-export async function clearNoticeEdit() {
-    $w("#drpNoticeEditTargetType").value = "A";
-    configureBoxes("A");
-
-    $w("#inpNoticeEditTitle").value = "";
-    $w("#rgpNoticeEditUrgent").value = "N";
-    $w("#rgpNoticeEditPublish").value = "Y";
-    $w("#rgpNoticeEditTransmit").value = "Y";
-    $w("#drpNoticeEditTargetType").value = "All";
-    $w("#drpNoticeEditLabel").selectedIndex = 0;
-    $w("#imgNoticeEditPicture").src = null;
-    $w("#tblNoticeEditSelect").rows = [];
-    $w("#tblNoticeEditSelect").collapse();
-    $w("#lblNoticeEditNone").expand();
-    $w("#grpNoticeEditSummary").collapse();
-    $w("#btnNoticeEditSummary").collapse();
-    $w("#btnNoticeEditSelectAdd").enable();
-    $w("#btnNoticeEditSelectRemove").enable();
-
-    $w("#drpNoticeEditStatus").value = "O";
-    $w("#inpNoticeEditMessage").value = "";
-    $w("#inpNoticeEditSummary").value = "";
-    $w("#inpNoticeEditTitle").focus();
-}
-
-function configureBoxes(pTargetType) {
-    switch (pTargetType) {
-        case "A":
-            $w("#rgpNoticeEditPublish").disable();
-            $w("#rgpNoticeEditTransmit").disable();
-            $w("#boxNoticeEditLabel").collapse();
-            $w("#boxNoticeEditSelect").collapse();
-            $w("#rgpNoticeEditPublish").value = "Y";
-            $w("#rgpNoticeEditTransmit").value = "N";
-            break;
-        case "L":
-            $w("#rgpNoticeEditPublish").disable();
-            $w("#rgpNoticeEditTransmit").disable();
-            $w("#boxNoticeEditLabel").expand();
-            $w("#boxNoticeEditSelect").collapse();
-            $w("#rgpNoticeEditPublish").value = "N";
-            $w("#rgpNoticeEditTransmit").value = "Y";
-            break;
-        case "S":
-            $w("#rgpNoticeEditPublish").disable();
-            $w("#rgpNoticeEditTransmit").disable();
-            $w("#boxNoticeEditLabel").collapse();
-            $w("#boxNoticeEditSelect").expand();
-            $w("#tblNoticeEditSelect").collapse();
-            $w("#rgpNoticeEditPublish").value = "N";
-            $w("#rgpNoticeEditTransmit").value = "Y";
-            break;
-        default:
-            $w("#rgpNoticeEditPublish").disable();
-            $w("#rgpNoticeEditTransmit").disable();
-            $w("#boxNoticeEditLabel").collapse();
-            $w("#boxNoticeEditSelect").collapse();
-            $w("#rgpNoticeEditPublish").value = "Y";
-            $w("#rgpNoticeEditTransmit").value = "N";
-            console.log(
-                "pages/MaintainNotice drpNoticeEditTargetTypeChange Invalid Target Type, ",
-                pTargetType
-            );
-            break;
-    }
-}
-
-function tblNoticeEditSelectExpand() {
-    $w("#tblNoticeEditSelect").expand();
-    //$w('#tblNoticeEditSelect').rows = [];
-    $w("#lblNoticeEditNone").collapse();
-}
-
-function tblNoticeEditSelectCollapse() {
-    $w("#tblNoticeEditSelect").collapse();
-    $w("#tblNoticeEditSelect").rows = [];
-    $w("#lblNoticeEditNone").expand();
-}
-
-export async function populateNoticeEdit() {
-    let wSelectedRecord = getSelectedItem("Notice");
-    configureBoxes(wSelectedRecord.targetType);
-
-    $w("#drpNoticeEditStatus").value = wSelectedRecord.status;
-    $w("#drpNoticeEditTargetType").value = wSelectedRecord.targetType;
-    $w("#btnNoticeEditSelectAdd").enable();
-    $w("#btnNoticeEditSelectRemove").enable();
-
-    //$w('#tblNoticeEditSelect').rows = wTableData;
-    loadNoticeEditSelectFromDB(wSelectedRecord);
-
-    let wPrecis = wSelectedRecord.summary;
-    if (wPrecis && wPrecis.length > 0) {
-        $w("#inpNoticeEditSummary").value = wPrecis;
-        $w("#grpNoticeEditSummary").expand();
-        $w("#btnNoticeEditSummary").expand();
-    } else {
-        $w("#inpNoticeEditSummary").value = "";
-        $w("#grpNoticeEditSummary").collapse();
-        $w("#btnNoticeEditSummary").collapse();
-    }
-
-    $w("#inpNoticeEditTitle").value = wSelectedRecord.title;
-    $w("#rgpNoticeEditUrgent").value = wSelectedRecord.urgent;
-    $w("#rgpNoticeEditPublish").value = wSelectedRecord.web;
-    $w("#rgpNoticeEditTransmit").value = wSelectedRecord.send;
-    $w("#inpNoticeEditMessage").value = wSelectedRecord.message;
-    $w("#imgNoticeEditPicture").src = wSelectedRecord.src;
-
-    $w("#inpNoticeEditTitle").focus();
-}
-
-async function loadNoticeEditSelectFromDB(pRec) {
-    // if .type = "S", then use the list of memberIds in .target" to form list of entries in tblNticeEditSelect
-    // if .type = "L", then use the <label> in .target, to form list of entries in tblNoticeEditSelect, and
-    //                  disable +/- buttons to prevent change
-    let wTableData = [];
-    let name = "";
-    let email = "";
-    let wTarget = pRec.target;
-    let wTargetType = pRec.targetType;
-    let wTargetMemberList = [];
-
-    if (wTarget && wTarget.length > 0) {
-        if (wTargetType === "L") {
-            let wLabelKey = wTarget[0].slice(1, -1);
-            $w("#drpNoticeEditLabel").value = wLabelKey;
-            $w("#btnNoticeEditSelectAdd").disable();
-            $w("#btnNoticeEditSelectRemove").disable();
-            let wResult = await getLabelTableRows(wLabelKey);
-            if (wResult && wResult.status) {
-                wTargetMemberList = [...wResult.rows];
-            } else {
-                console.log(
-                    `MaintainNotice loadNoticeEditSelectFrom error readinglabel ${wLabelKey}`
-                );
-            }
-        } else {
-            wTargetMemberList = [...wTarget];
-        }
-        let wTableRows = [];
-        if (wTargetMemberList && wTargetMemberList.length > 0) {
-            for (let wMemberId of wTargetMemberList) {
-                let [status, wName] = await getFullNameLocally(wMemberId);
-                if (status) {
-                    let wEntry = { _id: wMemberId, name: wName };
-                    wTableRows.push(wEntry);
-                }
-            }
-        }
-        if (wTableRows && wTableRows.length > 0) {
-            $w("#tblNoticeEditSelect").rows = wTableRows;
-            $w("#tblNoticeEditSelect").expand();
-            $w("#lblNoticeEditNone").collapse();
-        } else {
-            $w("#tblNoticeEditSelect").rows = [];
-            $w("#tblNoticeEditSelect").collapse();
-            $w("#lblNoticeEditNone").expand();
-        }
-    }
-}
-
-/** I THINK THIS IS DEPRECTAED
-async function processRecord(pTarget, pItem) {
-  //console.log("Process Record pItem");
-  //console.log(pItem);
-
-  let wReturn = {
-    NoticeUpdate: {},
-    NoticeBookings: [],
-  };
-  let wNoticeUpdate = {};
-  let wSavedRec = {};
-
-  let wTownTeamsInLeague = {};
-  let wNoticeBookings = [];
-  let wId = "";
-  let wBookingsToSave = [];
-  let res;
-  let wResult;
-  let wResult2;
-  //let wLeagueKey = "";
-  //let wLeagueDivision = 0;
-  switch (pTarget) {
-    case "Notice":
-      wReturn = await processNoticeRecord(pItem);
-      wNoticeUpdate = wReturn.NoticeUpdate;
-      wNoticeBookings = wReturn.NoticeBookings;
-      //console.log("case Notice - Notice Update + bookings returned");
-      //console.log(wNoticeUpdate);
-      //console.log(wNoticeBookings);
-      wResult = await saveRecord("lstNotices", wNoticeUpdate);
-      if (wResult.status) {
-        wSavedRec = wResult.savedRecord;
-        //console.log("wId = ", wId);
-        if (wNoticeBookings) {
-          if (wNoticeBookings.length > 0) {
-            // 
-            //        wBookingsToSave = wNoticeBookings.map(item => {
-            //            let wItem = { ...item };
-            //            wItem.NoticeId = wSavedRec._id;
-            //            return wItem;
-            //        })
-            let wResult = await processNoticeBookings(
-              wSavedRec._id,
-              wNoticeBookings
-            );
-          }
-        }
-      } else {
-        if (wResult.savedRecord) {
-          console.log(
-            "/page/MaintainNotice ProcessRecord, save failed, savedRecord",
-            wResult.savedRecord
-          );
-        } else {
-          console.log(
-            "/page/MaintainNotice ProcessRecord, save failed, error",
-            wResult.error
-          );
-        }
-      }
-      //console.log("Res of builk booking");
-      //console.log(res);
-      break;
-  }
-  return wSavedRec;
-}
-*/
-
 export function btnUpload_click(event) {
     $w("#txtNoticeErrMsg").hide();
     if ($w("#uplNoticeEditPhoto").value.length > 0) {
@@ -1130,25 +793,372 @@ export function btnClear_click(event) {
     $w("#imgNoticeEditPicture").src = null;
 }
 
+export async function drpNoticeChoiceChange(event) {
+    showWait("Notice");
+    updatePagination("Notice");
+    hideWait("Notice");
+}
+//====== Notice Event: Content Handling section----------------------------------------------------------------
+//
+// Note that the following variables are also used in the Label section
+let gSelectedRow = 0;
+let gContentRows = [];
+
+export async function drpNoticeEditLabel_click(event) {
+    let wValue = event.target.value;
+    console.log("drpNoticeEditLabel", wValue)
+}
+
+function btnNoticeEditContentOpen_click() {
+    $w("#boxNoticeEditContent").expand();
+}
+
+function btnNoticeEditContentClose_click() {
+    $w("#boxNoticeEditContent").collapse();
+}
+
+export function tblNoticeEditContent_onRowSelect(event) {
+    gSelectedRow = event.rowIndex; // 2  console.log("Row select, id", wId);
+    gContentRows = $w("#tblNoticeEditContent").rows;
+}
+
+export async function btnNoticeEditContentAdd_click() {
+    let wParams = {
+        seeds: "N",
+        mix: "X",
+        type: 1,
+        noTeams: 12,
+    };
+    gContentRows = $w("#tblNoticeEditContent").rows;
+
+    let wMembers = await wixWindow.openLightbox(
+        "lbxSelectManyMembers",
+        wParams
+    );
+    try {
+        if (wMembers) {
+            if (wMembers.length > 0) {
+                for (let wMember of wMembers) {
+                    let wTableEntry = {
+                        _id: undefined,
+                        memberId: wMember._id,
+                        name: wMember.player,
+                        email: wMember.contactEmail,
+                    };
+                    gContentRows.push(wTableEntry);
+                }
+                tblNoticeEditContentExpand();
+                let wOrderedRows = _.orderBy(gContentRows, ["name"]);
+                $w("#tblNoticeEditContent").rows = wOrderedRows;
+            }
+        }
+    } catch (err) {
+        console.log("MaintainNotice btnNoticeEditContentAdd try-catch, err");
+        console.log(err);
+    }
+}
+
+export async function btnNoticeEditContentSubtract_click() {
+    try {
+        gContentRows = $w("#tblNoticeEditContent").rows;
+
+        let gSelectedRowData = gContentRows[gSelectedRow];
+        console.log("Table length = ", gContentRows.length);
+        let wId = gSelectedRowData._id;
+        gContentRows.splice(gSelectedRow, 1);
+
+        if (gContentRows.length === 0) {
+            tblNoticeEditContentCollapse();
+        } else {
+            tblNoticeEditContentExpand();
+            $w("#tblNoticeEditContent").rows = gContentRows;
+        }
+        gSelectedRow = 0;
+    } catch (err) {
+        console.log("MaintainNotice btnNoticeEditContentSubtract try-catch, err");
+        console.log(err);
+    }
+}
+export function doNoticeView(pTarget) {
+    if (pTarget === "P") {
+        $w("#chkNoticeListSelectAll").collapse();
+        $w("#btnNoticeListTop").collapse();
+        $w("#rptNoticeList").collapse();
+    } else {
+        $w("#chkNoticeListSelectAll").expand();
+        $w("#btnNoticeListTop").expand();
+        $w("#rptNoticeList").expand();
+    }
+}
+
+export function strNotice_viewportEnter(event) {
+    console.log("Viewport");
+    console.log(event);
+    //displayMemberTableData($w('#drpMemberListTypeChoice').value, $w('#drpMemberListStatusChoice').value);
+}
+//====== Notice Supporting Functions -------------------------------------------------------------------------------------
+//
+
+function formTransmitToList() {
+    let wTableData = $w("#tblNoticeEditContent").rows;
+    let wList = wTableData.map((item) => {
+        return (
+            //      `${item.name}<${item.email}>,`
+            item.memberId
+        );
+    });
+    return wList;
+}
+
+export async function clearNoticeEdit() {
+    $w("#drpNoticeEditTargetType").value = "A";
+    configureBoxes("A");
+
+    $w("#inpNoticeEditTitle").value = "";
+    $w("#rgpNoticeEditUrgent").value = "N";
+    $w("#rgpNoticeEditPublish").value = "Y";
+    $w("#rgpNoticeEditTransmit").value = "Y";
+    $w("#drpNoticeEditTargetType").value = "All";
+    $w("#drpNoticeEditLabel").selectedIndex = 0;
+    $w("#imgNoticeEditPicture").src = null;
+    $w("#tblNoticeEditContent").rows = [];
+    $w("#tblNoticeEditContent").collapse();
+    $w("#lblNoticeEditNone").expand();
+    $w("#grpNoticeEditSummary").collapse();
+    $w("#btnNoticeEditSummary").collapse();
+    $w("#btnNoticeEditContentAdd").enable();
+    $w("#btnNoticeEditContentSubtract").enable();
+
+    $w("#drpNoticeEditStatus").value = "O";
+    $w("#inpNoticeEditMessage").value = "";
+    $w("#inpNoticeEditSummary").value = "";
+    $w("#inpNoticeEditTitle").focus();
+}
+
+function configureBoxes(pTargetType) {
+    switch (pTargetType) {
+        case "A":
+            $w("#rgpNoticeEditPublish").disable();
+            $w("#rgpNoticeEditTransmit").disable();
+            $w("#boxNoticeEditLabel").collapse();
+            $w("#boxNoticeEditContent").collapse();
+            $w("#rgpNoticeEditPublish").value = "Y";
+            $w("#rgpNoticeEditTransmit").value = "N";
+            break;
+        case "L":
+            $w("#rgpNoticeEditPublish").disable();
+            $w("#rgpNoticeEditTransmit").disable();
+            $w("#boxNoticeEditLabel").expand();
+            $w("#boxNoticeEditContent").collapse();
+            $w("#rgpNoticeEditPublish").value = "N";
+            $w("#rgpNoticeEditTransmit").value = "Y";
+            break;
+        case "S":
+            $w("#rgpNoticeEditPublish").disable();
+            $w("#rgpNoticeEditTransmit").disable();
+            $w("#boxNoticeEditLabel").collapse();
+            $w("#boxNoticeEditContent").expand();
+            $w("#tblNoticeEditContent").collapse();
+            $w("#rgpNoticeEditPublish").value = "N";
+            $w("#rgpNoticeEditTransmit").value = "Y";
+            break;
+        default:
+            $w("#rgpNoticeEditPublish").disable();
+            $w("#rgpNoticeEditTransmit").disable();
+            $w("#boxNoticeEditLabel").collapse();
+            $w("#boxNoticeEditContent").collapse();
+            $w("#rgpNoticeEditPublish").value = "Y";
+            $w("#rgpNoticeEditTransmit").value = "N";
+            console.log(
+                "pages/MaintainNotice drpNoticeEditTargetTypeChange Invalid Target Type, ",
+                pTargetType
+            );
+            break;
+    }
+}
+
+function tblNoticeEditContentExpand() {
+    $w("#tblNoticeEditContent").expand();
+    //$w('#tblNoticeEditContent').rows = [];
+    $w("#lblNoticeEditNone").collapse();
+}
+
+function tblNoticeEditContentCollapse() {
+    $w("#tblNoticeEditContent").collapse();
+    $w("#tblNoticeEditContent").rows = [];
+    $w("#lblNoticeEditNone").expand();
+}
+
+export async function populateNoticeEdit() {
+    let wSelectedRecord = getSelectedItem("Notice");
+    configureBoxes(wSelectedRecord.targetType);
+
+    $w("#drpNoticeEditStatus").value = wSelectedRecord.status;
+    $w("#drpNoticeEditTargetType").value = wSelectedRecord.targetType;
+    $w("#btnNoticeEditContentAdd").enable();
+    $w("#btnNoticeEditContentSubtract").enable();
+
+    //$w('#tblNoticeEditContent').rows = wTableData;
+    await parseNoticeEditLabel(wSelectedRecord);
+
+    let wPrecis = wSelectedRecord.summary;
+    if (wPrecis && wPrecis.length > 0) {
+        $w("#inpNoticeEditSummary").value = wPrecis;
+        $w("#grpNoticeEditSummary").expand();
+        $w("#btnNoticeEditSummary").expand();
+    } else {
+        $w("#inpNoticeEditSummary").value = "";
+        $w("#grpNoticeEditSummary").collapse();
+        $w("#btnNoticeEditSummary").collapse();
+    }
+
+    $w("#inpNoticeEditTitle").value = wSelectedRecord.title;
+    $w("#rgpNoticeEditUrgent").value = wSelectedRecord.urgent;
+    $w("#rgpNoticeEditPublish").value = wSelectedRecord.web;
+    $w("#rgpNoticeEditTransmit").value = wSelectedRecord.send;
+    $w("#inpNoticeEditMessage").value = wSelectedRecord.message;
+    $w("#imgNoticeEditPicture").src = wSelectedRecord.src;
+
+    $w("#inpNoticeEditTitle").focus();
+}
+
+async function parseNoticeEditLabel(pRec) {
+    // if .type = "S", then use the list of memberIds in .target" to form list of entries in tblNticeEditSelect
+    // if .type = "L", then use the <label> in .target, to form list of entries in tblNoticeEditContent, and
+    //                  disable +/- buttons to prevent change
+    let wTableData = [];
+    let name = "";
+    let email = "";
+    let wTarget = pRec.target;
+    let wTargetType = pRec.targetType;
+    let wTargetMemberList = [];
+    console.log(wTarget, wTargetType);
+
+    if (wTarget && wTarget.length > 0) {
+        if (wTargetType === "L") {
+            let wLabelKey = wTarget[0].slice(1, -1);    // get contents between <  & >
+            console.log("Content key = ", wLabelKey);
+            $w("#drpNoticeEditLabel").value = wLabelKey;
+            /**
+            $w("#btnNoticeEditContentAdd").disable();
+            $w("#btnNoticeEditContentSubtract").disable();
+            let wResult = await getNoticeTableContent(wLabelKey);
+            if (wResult && wResult.status) {
+                wTargetMemberList = [...wResult.rows];
+            } else {
+                console.log(
+                    `MaintainNotice loadNoticeEditSelectFrom error readinglabel ${wLabelKey}`
+                );
+            }
+            */
+        } else {
+            wTargetMemberList = [...wTarget];
+        }
+        let gContentRows = [];
+        if (wTargetMemberList && wTargetMemberList.length > 0) {
+            for (let wMemberId of wTargetMemberList) {
+                let [status, wName] = await getFullNameLocally(wMemberId);
+                if (status) {
+                    let wEntry = { _id: wMemberId, name: wName };
+                    gContentRows.push(wEntry);
+                }
+            }
+        }
+        if (gContentRows && gContentRows.length > 0) {
+            $w("#tblNoticeEditContent").rows = gContentRows;
+            $w("#tblNoticeEditContent").expand();
+            $w("#lblNoticeEditNone").collapse();
+        } else {
+            $w("#tblNoticeEditContent").rows = [];
+            $w("#tblNoticeEditContent").collapse();
+            $w("#lblNoticeEditNone").expand();
+        }
+    }
+}
+
+
 //====== Label Section============================================================
 //
-export async function doBtnLabelCreateClick(event) {
+export async function doBtnLabelACreateClick(event) {
     btnCreate_click(event);
     await clearLabelEdit();
 }
-export async function doBtnLabelUpdateClick(event) {
+export async function doBtnLabelAUpdateClick(event) {
     btnUpdate_click(event);
     await populateLabelEdit();
 }
+
+export async function doBtnLabelACancelClick(event) {
+    btnCancel_click(event);
+    await clearContentPanel();
+}
+
+export async function doBtnLabelADeleteClick() {
+    try {
+        //btnDelete_click(loggedInMember._id, event);
+        showWait("Label");
+        const wResult1 = await initialiseReferenceLabels();
+        const wReferenceList = wResult1.list;
+        
+        let wLabelsToDelete = []; 
+        let wSelectedStack = [...getSelectStack()];
+        wLabelsToDelete = wSelectedStack.filter ( item => 
+            !wReferenceList.includes(item)
+        )
+        if (wLabelsToDelete.length !== wSelectedStack.length){
+            showError("Label", 49)
+        }
+
+        let wLabelMembersToDelete = [];
+
+        for (let wLabelId of wLabelsToDelete){
+            let wResult = await getLabelMembersSet(wLabelId);
+            if (wResult && wResult.status) {
+                let wLabelMembers = wResult.labelMembers;
+                for (let wLabelMember of wLabelMembers){
+                    wLabelMembersToDelete.push (wLabelMember._id);
+                }
+            }
+        } // for loop
+
+        let wResult = false;
+
+        if (wLabelMembersToDelete.length > 0){
+            wResult = await bulkDeleteRecords("doBtnLabelADelete", loggedInMember.lstid, "lstLabelMember", wLabelMembersToDelete);
+            if (wResult){
+                console.log(`/page/MaintainNotice doBtnLabelDelete: LabelMembers deleted ${wResult}`)
+            } else {
+                console.log("/page/MaintainNotice doBtnLabelADeleteClick lstLabelMembers delete failed");
+            }
+        } else {
+            console.log(`/page/MaintainNotice doBtnLabelADeleteClick No LstLabelMembers ro delete`)
+        }
+
+        if (wLabelsToDelete.length > 0) {
+            wResult = await bulkDeleteRecords("doBtnLabelADelete", loggedInMember.lstId, "lstLabels", wLabelsToDelete);
+            deleteGlobalDataStore(wLabelsToDelete, "Label");
+            updatePagination("Label");
+        } else {
+            console.log("/page/MaintainNotice doBtnLabelADeleteClick No lstLabel to delete");
+        }
+        showError("Label", 1)
+        resetSection("Label");
+        hideWait("Label");
+    }
+    catch (err) {
+        console.log("/page/MaintainNotice doBtnLabelADeleteClick try-catch, err");
+        console.log(err);
+    }
+}
+
 export async function inpLabelEditTitle_change(event) {
     if (getMode() !== MODE.CREATE) {
         return;
     }
     let wKey = event.target.value;
-    console.log(`Key = [${wKey}]`);
     let wTest = await isLabelUnique(wKey);
     if (getMode() === MODE.CREATE && wTest) {
-        $w("#btnLabelPrimeAdd").enable();
+        $w("#btnLabelOtherContentAdd").enable();
     } else {
         showError("Label", 43);
         $w("#inpLabelEditTitle").focus();
@@ -1161,12 +1171,40 @@ export async function btnLabelASave_click() {
         $w("#btnLabelASave").disable();
         //-------------------------------------VALIDATIONS-----------------------------------
         if (!$w("#inpLabelEditTitle").valid) {
-            showError("Label", 22);
+            showError("Label", 45);
             hideWait("Label");
             $w("#inpLabelEditTitle").focus();
             return;
         }
+
+        //FIXME  - can only enter new key if create. 
+        if (getMode() === MODE.CREATE){
+            if (! await isLabelUnique($w("#inpLabelEditTitle").value)) {
+                showError("Label", 43);
+                $w("#inpLabelEditTitle").focus();
+                hideWait("Label");
+                return;
+            }
+            console.log("btnLabelASave, passed CREATE Title unique");
+        } else if (getMode() === MODE.UPDATE) {
+            let wOldKey = $w("#lblLabelEditOldTitle").text;
+            let wNewKey = $w("#inpLabelEditTitle").value.trim();
+            if (wNewKey !== wOldKey) {
+                if (await doesLabelExist(wNewKey)) {
+                    showError("Label", 46);
+                    $w("#inpLabelEditTitle").focus();
+                    hideWait("Label");
+                    return;
+                }
+            }
+        } /** Not Create or Update */ else {
+            showError("Label", 47);
+            hideWait("Label");
+            return
+        }
+
         //-------------------------------------Main section----------------------------------
+        console.log("btnLabelASave, main");
         let wLabel = {
             _id: "",
             title: $w("#inpLabelEditTitle").value,
@@ -1220,7 +1258,6 @@ export async function btnLabelASave_click() {
             console.log(wResult.savedRecord);
             console.log(wResult.error);
         }
-
         resetSection("Label");
         $w("#btnLabelASave").enable();
         hideWait("Label");
@@ -1234,23 +1271,19 @@ export async function btnLabelASave_click() {
     }
 }
 
-export async function doBtnLabelCancellationClick(event) {
-    btnCancellation_click(event);
-}
-
 export async function btnLabelAToNotice_click() {
     await loadNoticeEditLabel();
     $w("#secNotice").expand();
     //$w("#secSync").collapse();
     $w("#secLabel").collapse();
 }
+//====== Label Event: Content Handling section----------------------------------------------------------------
+//
 
-export function btnLabelEditObjects_onRowSelect(event) {
+export function btnLabelEditContent_onRowSelect(event) {
     let rowData = event.rowData; // {"fName": "John", "lName": "Doe"}
-    wSelectedRow = event.rowIndex; // 2  console.log("Row select, id", wId);
-    wTableRows = $w("#tblLabelEditObjects").rows;
-    console.log("Row select, id", wSelectedRow);
-    console.log(rowData);
+    gSelectedRow = event.rowIndex; // 2  console.log("Row select, id", wId);
+    gContentRows = $w("#tblLabelEditContent").rows;
 }
 
 export async function btnLabelPrimeImport_click() {
@@ -1262,35 +1295,40 @@ export async function btnLabelPrimeExport_click() {
 }
 
 export async function btnLabelEditContentOpen_click() {
+    showWait("Label");
     $w("#boxLabelEditContents").expand();
     $w("#boxLabelContent").expand();
     let wRec = getSelectedItem("Label");
     const wLabelId = wRec._id;
     let wResult = await getLabelMembersSet(wLabelId);
     if (wResult && wResult.status) {
-        let wMembers = wResult.members;
-        if (wMembers.length > 0) {
-            let wMemberDetails = await getMemberDetails(wMembers);
-            $w("#tblLabelEditObjects").rows = wMemberDetails;
-            $w("#tblLabelEditObjects").expand();
+        let wLabelMembers = wResult.labelMembers;
+        if (wLabelMembers.length > 0) {
+            let wMemberDetails = await getMemberDetails(wLabelMembers);
+            $w("#tblLabelEditContent").rows = wMemberDetails;
+            $w("#tblLabelEditContent").expand();
             $w("#lblLabelEditNone").collapse();
         } else {
-            $w("#tblLabelEditObjects").collapse();
+            $w("#tblLabelEditContent").collapse();
             $w("#lblLabelEditNone").expand();
         }
     }
+    hideWait("Label");
 }
 
-function getMemberDetails(pMemberIds) {
+function getMemberDetails(pLabelMembers) {
     let wMemberDetails = [];
-    for (let wMemberId of pMemberIds) {
-        let [status, wFullName] = getFullNameLocally(wMemberId);
-        if (status) {
-            wMemberDetails.push(wFullName);
+    for (let wLabelMember of pLabelMembers) {
+        let wMemberId = wLabelMember.memberId;
+        let wResult = getMemberLocally(wMemberId);
+        if (wResult && wResult.status){
+            let wMember = wResult.member;
+            let wTableEntry = {"_id": wLabelMember._id, "labelId": wLabelMember.labelId, "name": wMember.firstName + " " + wMember.surname,
+                 "memberId": wMemberId, "firstName": wMember.firstName, "surname": wMember.surname};
+            wMemberDetails.push(wTableEntry);
         } else {
             console.log(
-                "/page/MaintainNotice getMemberDetails failed for ",
-                wMemberId
+                `/page/MaintainNotice getMemberDetails failed for ${wMemberId}`
             );
         }
     }
@@ -1302,15 +1340,21 @@ export async function btnLabelEditContentClose_click() {
     $w("#boxLabelContent").collapse();
 }
 
-export async function btnLabelContentAdd_click() {
+export async function btnLabelOtherContentAdd_click() {
     let wParams = {
         seeds: "N",
         mix: "X",
         type: 1,
         noTeams: 12,
     };
-    wTableRows = $w("#tblLabelEditObjects").rows;
+    if ($w('#tblLabelEditContent').collapsed) {
+        gContentRows = [];
+    } else {
+        gContentRows = $w("#tblLabelEditContent").rows;
+    }
     const wKey = $w("#inpLabelEditTitle").value;
+    const wLabelId = $w("#lblLabelEditLabelId").text;
+
 
     if (getMode() === MODE.CREATE && !isLabelUnique(wKey)) {
         showError("Label", 43);
@@ -1325,60 +1369,95 @@ export async function btnLabelContentAdd_click() {
     try {
         if (wMembers) {
             if (wMembers.length > 0) {
-                let wTableRows = [];
+                showWait("Label");
+                let wContentRows = [];
                 for (let wMember of wMembers) {
+                    let wLabelMemberEntry = {
+                        _id: undefined,
+                        labelId: wLabelId,
+                        memberId: wMember._id,
+                    };
                     let wTableEntry = {
                         _id: undefined,
-                        labelId: wKey,
+                        labelId: wLabelId,
                         memberId: wMember._id,
-                        name: wMember.player,
+                        firstName: wMember.firstName,
+                        surname: wMember.surname,
+                        name: wMember.player
                     };
-                    wTableRows.push(wTableEntry);
+                    const wResult = await saveRecord("lstLabelMember", wLabelMemberEntry);
+                    if (wResult && wResult.status) {
+                        let wSavedRecord = wResult.savedRecord;
+                        wTableEntry._id = wSavedRecord._id;
+                        wContentRows.push(wTableEntry);
+                    } else {
+                        console.log("/page/MaintainNotices btnLabelOtherContentAdd save record fail");
+                    }
+                } //for loop
+                if (wContentRows.length > 0) {
+                    const wTemp = [...gContentRows, ...wContentRows];
+                    const wOrderedRows = _.orderBy(wTemp, ["surname","firstName"]);
+                    $w("#tblLabelEditContent").rows = wOrderedRows;
+                    $w("#tblLabelEditContent").expand();
+                    $w("#lblLabelEditNone").collapse();
+                } else {
+                    $w("#tblLabelEditContent").collapse();
+                    $w("#lblLabelEditNone").expand();
                 }
-                $w("#tblLabelEditObjects").rows = wTableRows;
-            }
-        }
+                hideWait("Label");
+            } //members > 0
+        } // members
     } catch (err) {
         console.log(
-            "/page/MaintainNotice btnLabelContentAdd_click try-catch, err"
+            "/page/MaintainNotice btnLabelOtherContentAdd_click try-catch, err"
         );
         console.log(err);
     }
 }
 
-export async function btnLabelContentSubtract_click() {
+export async function btnLabelOtherContentSubtract_click() {
     try {
-        wTableRows = $w("#tblLabelEditObjects").rows;
+        showWait("Label");
+        gContentRows = $w("#tblLabelEditContent").rows;
 
-        let wSelectedRowData = wTableRows[wSelectedRow];
-        //console.log("Table length = ", wTableRows.length);
-        let wId = wSelectedRowData._id;
-        if (/** allow if > 1 entry */ wTableRows.length > 1) {
-            wTableRows.splice(wSelectedRow, 1);
+        let wSelectedRow = gContentRows[gSelectedRow];
+        //console.log("Table length = ", wLabelSelectTableRows.length);
+        let wLabelMembersId = wSelectedRow._id;
+        if (/** allow if > 1 entry */ gContentRows.length > 1) {
+            gContentRows.splice(gSelectedRow, 1);
 
-            let wResult = await deleteRecord("lstLabels", wId);
+            let wResult = await deleteRecord("lstLabelMember", wLabelMembersId);
             if (wResult) {
-                if (wTableRows.length === 0) {
-                    $w("#tblLabelEditObjects").collapse();
+                if (gContentRows.length === 0) {
+                    $w("#tblLabelEditContent").collapse();
                     $w("#lblLabelEditNone").expand();
                 } else {
                     $w("#lblLabelEditNone").collapse();
-                    $w("#tblLabelEditObjects").rows = wTableRows;
+                    $w("#tblLabelEditContent").rows = gContentRows;
                 }
-                wSelectedRow = 0;
-                updateLabelList(-1);
+                showError("Label",1);
+                gSelectedRow = 0;
             } else {
                 console.log(
-                    "MaintainNotice btnLabelPrimeRemove delete record failed"
+                    "/page/MaintainNotice btnLabelOtherContentSubtract_click delete record failed"
                 );
             }
         } else {
             showError("Label", 42);
         }
+        hideWait("Label");
     } catch (err) {
-        console.log("MaintainNotice btnLabelPrimeRemove try-catch, err");
+        console.log("/page/MaintainNotice btnLabelOtherContentSubtract_click try-catch, err");
         console.log(err);
     }
+}
+
+function clearContentPanel(){
+    $w("#boxLabelEditContents").collapse();
+    $w("#boxLabelContent").collapse();
+    gContentRows.length = 0;
+    gSelectedRow = 0;
+    hideWait("Label");
 }
 
 /**
@@ -1426,13 +1505,15 @@ export function doLabelView(pTarget) {
 export async function clearLabelEdit() {
     $w("#inpLabelEditTitle").value = "";
     $w("#lblLabelEditLabelId").text = "";
+    $w("#lblLabelEditOldTitle").text = "";
     $w("#inpLabelEditTitle").enable();
     $w("#inpLabelEditDescription").value = "";
-    //$w(`#tblLabelEditObjects`).rows = [];
-    //$w("#tblLabelEditObjects").collapse();
-    $w("#lblLabelEditNone").collapse();
+    $w(`#tblLabelEditContent`).rows = [];
+    $w("#tblLabelEditContent").collapse();
+    $w("#lblLabelEditNone").expand();
     $w("#boxLabelPrime").collapse();
     $w("#inpLabelEditTitle").focus();
+
 }
 
 export async function populateLabelEdit() {
@@ -1440,6 +1521,8 @@ export async function populateLabelEdit() {
 
     const wKey = wSelectedRecord.title;
     $w("#lblLabelEditLabelId").text = wSelectedRecord._id;
+    $w("#lblLabelEditOldTitle").text = wKey;
+
     $w("#inpLabelEditTitle").value = wKey;
     $w("#inpLabelEditDescription").value = wSelectedRecord.description;
 
@@ -1447,7 +1530,7 @@ export async function populateLabelEdit() {
     let wResult = await getLabelObjects(wKey);
     if (wResult && wResult.status) {
         if (wResult.objects.length > 0) {
-            $w("#tblLabelEditObjects").rows = wResult.objects.map((item) => {
+            $w("#tblLabelEditContent").rows = wResult.objects.map((item) => {
                 return {
                     _id: item._id,
                     title: item.title,
@@ -1456,16 +1539,16 @@ export async function populateLabelEdit() {
                     memberId: item.memberId,
                 };
             });
-            $w("#tblLabelEditObjects").expand();
+            $w("#tblLabelEditContent").expand();
             $w("#lblLabelEditNone").collapse();
             $w("#boxLabelPrime").expand();
             $w("#btnLabelPrimeRemove").enable();
         } else {
-            $w("#tblLabelEditObjects").collapse();
+            $w("#tblLabelEditContent").collapse();
             $w("#lblLabelEditNone").expand();
         }
     } else {
-        $w("#tblLabelEditObjects").collapse();
+        $w("#tblLabelEditContent").collapse();
         $w("#lblLabelEditNone").expand();
     }
   */
@@ -1484,8 +1567,8 @@ function updateLabelList(pDelta) {
             wLabel._id = wKeyNoSpaces;
             wLabel.title = wKey;
             wLabel.count = pDelta;
-            $w("#tblLabelEditObjects").rows = wTableRows;
-            $w("#tblLabelEditObjects").expand();
+            $w("#tblLabelEditContent").rows = wLabelSelectTableRows;
+            $w("#tblLabelEditContent").expand();
             $w("#lblLabelEditNone").collapse();
         } else {
             let wRec = getSelectedItem("Label");

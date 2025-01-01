@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable no-undef */
 /**
  * These are generic routines that are shared across all entities.
@@ -1004,7 +1005,6 @@ export function getTargetParameters(pTarget) {
             break;
         case "Label":
             wSort = ["title"];
-            wOrder = ["desc"];
             break;
         case "StandingData":
             wSort = ["refKey"];
@@ -2862,7 +2862,7 @@ export function showError(pTarget, pErrNo, pErrMsg = "") {
             "Number of matches is mandatory", //30
             "League or Team name must be > 4 characters",
             "Team Key must be at least 2 characters long",
-            "Ref Key invlid format. Must be of form SDnnn",
+            "Ref Key invalid format. Must be of form SDnnn",
             "Field must be entered",
             "RefKey mist be at least 3 characters long and unique", // 35
             "Must specify an email address for preference E or B",
@@ -2874,6 +2874,11 @@ export function showError(pTarget, pErrNo, pErrMsg = "") {
             "A label cannot be empty",
             "Label Title must be Unique",
             "A Notice update will NOT re-send that message",
+            "Invalid Label",    //45
+            "Label already exists",
+            "Invalid state",
+            "Label doeas not exist",
+            "Cannot delete reserved labels",
             "",
         ];
         let wControlName = `#txt${pTarget}ErrMsg`;

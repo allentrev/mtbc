@@ -1,11 +1,11 @@
 {
     "devDependencies": {
-        "@eslint/js": "^9.16.0",
+        "@eslint/js": "^9.17.0",
         "@wix/cli": "^1.0.0",
         "@wix/eslint-plugin-cli": "^1.0.0",
         "eslint": "^8.57.1",
-        "eslint-plugin-react": "^7.37.2",
-        "globals": "^15.13.0",
+        "eslint-plugin-react": "^7.37.3",
+        "globals": "^15.14.0",
         "prettier": "3.4.2",
         "react": "16.14.0"
     },

@@ -14,7 +14,7 @@ import wixData from "wix-data";
 import _ from "lodash";
 
 import { sendCreateMemberConfirmationEmail } from "backend/email.jsw";
-import { saveRecord } from "./backEvents.jsw";
+import { saveRecord } from "backend/backEvents.jsw";
 
 //
 //  New file
@@ -90,7 +90,7 @@ export async function updateWixMember(pRec) {
         .catch((error) => {
             console.error(
                 "/backend/backMember UpdateWixMember/updateMember catch error",
-                error
+                error,
             );
             return false;
         });
@@ -123,7 +123,7 @@ export async function createWixMember(pRec) {
         .catch((error) => {
             console.error(
                 "/backend/backMember CreateWixMember/createMember catch error",
-                error
+                error,
             );
             return false;
         });
@@ -134,7 +134,7 @@ export async function deleteWixMembers(pIds) {
         for (let wId of pIds) {
             let wResult = await members.deleteMember(wId);
             console.log(
-                `/backend/backMember deleteWWixMembers deleted wixMember ${wId}`
+                `/backend/backMember deleteWWixMembers deleted wixMember ${wId}`,
             );
         }
         return true;
@@ -284,8 +284,9 @@ export async function createMember(pIsAudit, pMember) {
     let wLstRec = {
         _id: undefined,
         username: pMember.username,
-        loginEmail:
-            pMember.loginEmail ? pMember.loginEmail.toLowerCase() : null,
+        loginEmail: pMember.loginEmail
+            ? pMember.loginEmail.toLowerCase()
+            : null,
         surname: pMember.surname,
         firstName: pMember.firstName,
         gender: pMember.gender,
@@ -294,8 +295,9 @@ export async function createMember(pIsAudit, pMember) {
         dateLeft: pMember.dateLeft,
         allowshare: pMember.allowshare || "Y",
         contactpref: pMember.contactpref || "N",
-        contactEmail:
-            pMember.contactEmail ? pMember.contactEmail.toLowerCase() : null,
+        contactEmail: pMember.contactEmail
+            ? pMember.contactEmail.toLowerCase()
+            : null,
         altEmail: pMember.altEmail ? pMember.altEmail.toLowerCase() : null,
         homePhone: pMember.homePhone,
         mobilePhone: pMember.mobilePhone,
@@ -340,7 +342,7 @@ export async function createMember(pIsAudit, pMember) {
                 let wTokenA = registerResult.sessionToken;
                 let wTokenB = wWixRec.password;
                 console.log(
-                    `/backend/backMember createMember Wix Register complete for ${wName} with ${wWixId}`
+                    `/backend/backMember createMember Wix Register complete for ${wName} with ${wWixId}`,
                 );
                 wLstRec.wixId = wWixId;
                 //------------------ Update Wix Memnber -------------------------------
@@ -350,11 +352,11 @@ export async function createMember(pIsAudit, pMember) {
                 let wRoleText = "Member";
                 let [assignRoleStatus, assignRoleResult] = await assignRole(
                     wRoleId,
-                    wWixId
+                    wWixId,
                 );
                 if (assignRoleStatus) {
                     console.log(
-                        `/backend/backMember createMember Assigned role ${wRoleText} to ${wName}`
+                        `/backend/backMember createMember Assigned role ${wRoleText} to ${wName}`,
                     );
                     //------------------ Create LST Member ---------------------------
                     wLstRec.wixId = wWixId;
@@ -373,13 +375,13 @@ export async function createMember(pIsAudit, pMember) {
                                 await createMTBCMember(wMTBCRec);
                             if (!wMTBCStatus) {
                                 console.log(
-                                    "/backend/backMember createMember MTBC record failed, err"
+                                    "/backend/backMember createMember MTBC record failed, err",
                                 );
                                 console.log(wMTBCReult);
                             }
                         } else {
                             console.log(
-                                "/backend/backMember createMember Using WIX loginEmail method"
+                                "/backend/backMember createMember Using WIX loginEmail method",
                             );
                         }
                         //------------------ Send Email confirmation -------------------------------
@@ -396,10 +398,9 @@ export async function createMember(pIsAudit, pMember) {
                             targetName:
                                 pMember.firstName + " " + pMember.surname,
                             isAudit: pIsAudit,
-                            loginEmail:
-                                pMember.loginEmail ?
-                                    pMember.loginEmail.toLowerCase()
-                                :   null,
+                            loginEmail: pMember.loginEmail
+                                ? pMember.loginEmail.toLowerCase()
+                                : null,
                             username: pMember.username,
                             loginMethod: wLoginMethod,
                         };
@@ -416,7 +417,7 @@ export async function createMember(pIsAudit, pMember) {
                                 null,
                                 false,
                                 "OffLineRegistrationConfirmation",
-                                wParams
+                                wParams,
                             );
                         } else {
                             /** 
@@ -431,12 +432,12 @@ export async function createMember(pIsAudit, pMember) {
                                 null,
                                 false,
                                 "MemberRegistrationConfirmation",
-                                wParams
+                                wParams,
                             );
                         }
                         if (wResult && wResult.status) {
                             console.log(
-                                `/backend/backMember createMember Email sent response for ${wName}`
+                                `/backend/backMember createMember Email sent response for ${wName}`,
                             );
                             return {
                                 status: true,
@@ -445,7 +446,7 @@ export async function createMember(pIsAudit, pMember) {
                             };
                         } /** sendEnail */ else {
                             console.log(
-                                `/backend/backMember createMember Email sent failed for ${wName}`
+                                `/backend/backMember createMember Email sent failed for ${wName}`,
                             );
                             return {
                                 status: false,
@@ -455,7 +456,7 @@ export async function createMember(pIsAudit, pMember) {
                         }
                     } /** create LST Member */ else {
                         console.log(
-                            `backend/backMember createMember create LST failed for ${wName}`
+                            `backend/backMember createMember create LST failed for ${wName}`,
                         );
                         return {
                             status: false,
@@ -466,7 +467,7 @@ export async function createMember(pIsAudit, pMember) {
                 }
                 /** assignRoleStatus */ {
                     console.log(
-                        `/backend/backMember createMember Assign Role failed for ${wName}`
+                        `/backend/backMember createMember Assign Role failed for ${wName}`,
                     );
                     return {
                         status: false,
@@ -477,7 +478,7 @@ export async function createMember(pIsAudit, pMember) {
             } /** registerStatus */ else {
                 console.log(
                     `/backend/backMember createMember register status `,
-                    registerResult.message
+                    registerResult.message,
                 );
                 return {
                     status: false,
@@ -488,7 +489,7 @@ export async function createMember(pIsAudit, pMember) {
         } /** uswrname is unique */ else {
             console.log(
                 `/backend/backMember createMember username not unqiue `,
-                pMember.username
+                pMember.username,
             );
             return {
                 status: false,
@@ -516,7 +517,7 @@ export async function isUnique(pUsername) {
         }
     } catch (error) {
         console.log(
-            "/backend/backMember isUnique TryCatch [" + pUsername + "], "
+            "/backend/backMember isUnique TryCatch [" + pUsername + "], ",
         );
         console.log(error);
         return false;
@@ -545,7 +546,7 @@ export async function isUnique(pUsername) {
 export async function collateMemberDetails(pTest, pMember) {
     if (!pMember) {
         console.warn(
-            "backend/backMember collateMemberDetails pMember undefined"
+            "backend/backMember collateMemberDetails pMember undefined",
         );
         return [false, null, []];
     }
@@ -598,8 +599,9 @@ export function createLstMember(pRec) {
         dateLeft: pRec.dateLeft,
         allowshare: pRec.allowshare || "Y",
         contactpref: pRec.contactpref || "E",
-        contactEmail:
-            pRec.contactEmail ? pRec.contactEmail.toLowerCase() : null,
+        contactEmail: pRec.contactEmail
+            ? pRec.contactEmail.toLowerCase()
+            : null,
         altEmail: pRec.altEmail ? pRec.altEmail.toLowerCase() : null,
         homePhone: pRec.homePhone,
         mobilePhone: pRec.mobilePhone,
@@ -616,7 +618,7 @@ export function createLstMember(pRec) {
         .insert("lstMembers", toInsert)
         .then((lstMember) => {
             console.log(
-                `/backend/backMember createLstMember Created lst user ${pRec.firstName} ${pRec.surname} with Id ${lstMember._id}`
+                `/backend/backMember createLstMember Created lst user ${pRec.firstName} ${pRec.surname} with Id ${lstMember._id}`,
             );
             return [true, lstMember];
         })
@@ -699,16 +701,18 @@ export function updateLstMember(pRec) {
                 item.type = pRec.type;
                 item.status = pRec.status;
                 item.dateLeft =
-                    pRec.dateLeft instanceof Date && !isNaN(pRec.dateLeft) ?
-                        pRec.dateLeft
-                    :   null;
+                    pRec.dateLeft instanceof Date && !isNaN(pRec.dateLeft)
+                        ? pRec.dateLeft
+                        : null;
                 item.homePhone = pRec.homePhone;
                 item.mobilePhone = pRec.mobilePhone;
                 item.wixId = pRec.wixId;
-                item.contactEmail =
-                    pRec.contactEmail ? pRec.contactEmail.toLowerCase() : null;
-                item.altEmail =
-                    pRec.altEmail ? pRec.altEmail.toLowerCase() : null;
+                item.contactEmail = pRec.contactEmail
+                    ? pRec.contactEmail.toLowerCase()
+                    : null;
+                item.altEmail = pRec.altEmail
+                    ? pRec.altEmail.toLowerCase()
+                    : null;
                 item.contactpref = pRec.contactpref;
                 item.allowshare = pRec.allowshare;
                 wixData.update("lstMembers", item, wOptions);
@@ -738,7 +742,7 @@ export function deleteLstMember(pId) {
         .then((item) => {
             console.log(
                 "/backend/backMember deleteLstMember deleted member",
-                pId
+                pId,
             );
             return true;
         })
@@ -784,7 +788,7 @@ export async function getAllActiveMembersContact() {
                 .filter((item) => item.contactpref === "E")
                 .map(
                     (item) =>
-                        `${item.firstName} ${item.surname}<${item.contactEmail}>`
+                        `${item.firstName} ${item.surname}<${item.contactEmail}>`,
                 );
             let wNoContactMembers = wMembers
                 .filter((item) => item.contactpref === "N")
@@ -814,13 +818,13 @@ export async function getAllActiveMembersContact() {
             ];
         } else {
             console.log(
-                "/backend/BackMember getAllActiveMembersContact Found no members"
+                "/backend/BackMember getAllActiveMembersContact Found no members",
             );
             return [];
         }
     } catch (err) {
         console.log(
-            "/backend/BackMember getAllActiveMembersContact Try-catch err"
+            "/backend/BackMember getAllActiveMembersContact Try-catch err",
         );
         console.log(err);
         return [];
@@ -845,7 +849,7 @@ export async function findLstMemberByWixId(pUserId) {
         console.log(
             "/backend/backMember findLstMemberByWixId TryCatch [" +
                 pUserId +
-                "], "
+                "], ",
         );
         console.log(error);
         return [false, error];
@@ -867,7 +871,7 @@ export async function findLstMemberByLoginEmail(pLoginEmail) {
     } catch (error) {
         console.log(
             "/backend/backMember findLstMemberByEmail TryCatch for login = " +
-                pLoginEmail
+                pLoginEmail,
         );
         console.log(error);
         return [false, {}];
@@ -888,7 +892,7 @@ export async function findLstMemberByUsername(pUsername) {
     } catch (error) {
         console.log(
             "/backend/backMember findLstMemberByUsername TryCatch for login = " +
-                pUsername
+                pUsername,
         );
         console.log(error);
         return [false, {}];
@@ -908,7 +912,7 @@ export async function findLstMemberBySurname(pName) {
         }
     } catch (error) {
         console.log(
-            "/backend/backMember findLstMemberBySurname TryCatch " + error
+            "/backend/backMember findLstMemberBySurname TryCatch " + error,
         );
     }
 }
@@ -931,7 +935,7 @@ export async function findLstMemberByFullName(pFirstName, pSurname) {
         }
     } catch (error) {
         console.log(
-            "/backend/backMember findLstMemberBySurname TryCatch, err "
+            "/backend/backMember findLstMemberBySurname TryCatch, err ",
         );
         console.log(error);
     }
@@ -959,7 +963,7 @@ export async function findLstMember(pUserId) {
             .find();
         if (results.items.length === 0) {
             console.log(
-                `/backend/backMember findLstMember No member found for [${pUserId}]`
+                `/backend/backMember findLstMember No member found for [${pUserId}]`,
             );
             return {
                 status: false,
@@ -968,7 +972,7 @@ export async function findLstMember(pUserId) {
             };
         } else if (results.items.length > 1) {
             console.log(
-                `/backend/backMember findLstMember Found ${results.items.length} members for [${pUserId}]`
+                `/backend/backMember findLstMember Found ${results.items.length} members for [${pUserId}]`,
             );
             return {
                 status: true,
@@ -980,7 +984,7 @@ export async function findLstMember(pUserId) {
         }
     } catch (error) {
         console.log(
-            `/backend/backMember findLstMember TryCatch for [${pUserId}]`
+            `/backend/backMember findLstMember TryCatch for [${pUserId}]`,
         );
         console.log(error);
         return { status: false, member: {}, error: error };
@@ -1006,8 +1010,9 @@ export async function getAllMembers() {
                     _createdDate: item._createdDate,
                     _updatedDate: item._updatedDate,
                     username: item.username,
-                    loginEmail:
-                        item.loginEmail ? item.loginEmail.toLowerCase() : null,
+                    loginEmail: item.loginEmail
+                        ? item.loginEmail.toLowerCase()
+                        : null,
                     firstName: item.firstName,
                     surname: item.surname,
                     lastName: item.surname,
@@ -1019,12 +1024,12 @@ export async function getAllMembers() {
                     fullName: item.firstName + " " + item.surname,
                     contactpref: item.contactpref || "E",
                     allowshare: item.allowshare || "Y",
-                    contactEmail:
-                        item.contactEmail ?
-                            item.contactEmail.toLowerCase()
-                        :   null,
-                    altEmail:
-                        item.altEmail ? item.altEmail.toLowerCase() : null,
+                    contactEmail: item.contactEmail
+                        ? item.contactEmail.toLowerCase()
+                        : null,
+                    altEmail: item.altEmail
+                        ? item.altEmail.toLowerCase()
+                        : null,
                     mobilePhone: wMobilePhone || null,
                     homePhone: wHomePhone || null,
                     locker: item.locker || [],
@@ -1055,7 +1060,7 @@ export async function getEmailAddress(pUserId) {
         } else {
             console.log(
                 "/backend/backMember GetEmailAddress Error: cant find Lst Member record " +
-                    pUserId
+                    pUserId,
             );
             return false;
         }
@@ -1081,37 +1086,29 @@ export async function getAllImportMembers() {
             let dlist = wRecords.map((item) => {
                 let wLocker = [];
                 let wMobilePhone =
-                    (
-                        item.mobile === " " ||
-                        item.mobile === null ||
-                        item.mobile === undefined
-                    ) ?
-                        null
-                    :   item.mobile.trim().replace(/\s+/g, "");
+                    item.mobile === " " ||
+                    item.mobile === null ||
+                    item.mobile === undefined
+                        ? null
+                        : item.mobile.trim().replace(/\s+/g, "");
                 let wHomePhone =
-                    (
-                        item.home === " " ||
-                        item.home === null ||
-                        item.home === undefined
-                    ) ?
-                        null
-                    :   item.home.trim().replace(/\s+/g, "");
+                    item.home === " " ||
+                    item.home === null ||
+                    item.home === undefined
+                        ? null
+                        : item.home.trim().replace(/\s+/g, "");
                 let wLoc1 =
-                    (
-                        item.loc1 === " " ||
-                        item.loc1 === null ||
-                        item.loc1 === undefined
-                    ) ?
-                        null
-                    :   parseInt(item.loc1, 10);
+                    item.loc1 === " " ||
+                    item.loc1 === null ||
+                    item.loc1 === undefined
+                        ? null
+                        : parseInt(item.loc1, 10);
                 let wLoc2 =
-                    (
-                        item.loc2 === " " ||
-                        item.loc2 === null ||
-                        item.loc2 === undefined
-                    ) ?
-                        null
-                    :   parseInt(item.loc2, 10);
+                    item.loc2 === " " ||
+                    item.loc2 === null ||
+                    item.loc2 === undefined
+                        ? null
+                        : parseInt(item.loc2, 10);
                 if (wLoc1 && wLoc2) {
                     wLocker = [wLoc1, wLoc2];
                 }
@@ -1145,8 +1142,9 @@ export async function getAllImportMembers() {
                     contactpref: null,
                     allowshare: null,
                     contactEmail: item.email ? item.email.toLowerCase() : null,
-                    altEmail:
-                        item.altEmail ? item.altEmail.toLowerCase() : null,
+                    altEmail: item.altEmail
+                        ? item.altEmail.toLowerCase()
+                        : null,
                     mobilePhone: wMobilePhone || null,
                     homePhone: wHomePhone || null,
                     locker: wLocker,
@@ -1183,15 +1181,15 @@ export async function getAllGoogleMembers() {
 
         if (wRecords.length > 0) {
             let wCouples = wRecords.filter(
-                (item) => item.firstName && item.firstName.includes("&")
+                (item) => item.firstName && item.firstName.includes("&"),
             );
             let wSingles = wRecords.filter(
-                (item) => item.firstName && !item.firstName.includes("&")
+                (item) => item.firstName && !item.firstName.includes("&"),
             );
             let wUpdatedSingles = await setGenderInSingles(wSingles);
             let wMergedImportSet = await addCouplesSetToImportSet(
                 wUpdatedSingles,
-                wCouples
+                wCouples,
             );
 
             wAllGoogleMembers = formatImportSet(wMergedImportSet);
@@ -1218,7 +1216,7 @@ async function setGenderInSingles(pMembers) {
             //);
             wMember.gender = await getGender(
                 wMember.firstName,
-                wMember.lastName
+                wMember.lastName,
             );
         }
         wSinglesSet.push(wMember);
@@ -1242,12 +1240,12 @@ async function addCouplesSetToImportSet(pImport, pCouples) {
             wNewRecord1.labelArray = formLabelArrayfromLabel(wCouple.labels);
             wNewRecord1.gender = await getGender(
                 wFirstPerson,
-                wCouple.lastName
+                wCouple.lastName,
             );
             wImportSet.push(wNewRecord1);
             let wResult = await saveGoogleRecord(
                 "lstGoogleImport",
-                wNewRecord1
+                wNewRecord1,
             );
             if (wResult && wResult.status) {
                 wNewRecord2.firstName = wSecondPerson;
@@ -1255,11 +1253,11 @@ async function addCouplesSetToImportSet(pImport, pCouples) {
                 wNewRecord2.labelArray = wNewRecord1.labelArray;
                 wNewRecord2.gender = await getGender(
                     wSecondPerson,
-                    wCouple.lastName
+                    wCouple.lastName,
                 );
                 wResult = await saveGoogleRecord(
                     "lstGoogleImport",
-                    wNewRecord2
+                    wNewRecord2,
                 );
                 if (wResult && wResult.status) {
                     let wId = wResult.savedRecord._id;
@@ -1267,13 +1265,13 @@ async function addCouplesSetToImportSet(pImport, pCouples) {
                     wImportSet.push(wNewRecord2);
                 } else {
                     console.log(
-                        `/backend/backMember getAllGoogleMembers second save: couple (${wFirstName}) record failed`
+                        `/backend/backMember getAllGoogleMembers second save: couple (${wFirstName}) record failed`,
                     );
                     return;
                 }
             } else {
                 console.log(
-                    `/backend/backMember getAllGoogleMembers first save: couple (${wFirstName}) record failed`
+                    `/backend/backMember getAllGoogleMembers first save: couple (${wFirstName}) record failed`,
                 );
                 return;
             }
@@ -1326,11 +1324,13 @@ function formatImportSet(pMembers) {
         wNewItem.player = wFullName;
         wNewItem.fullName = wFullName;
         wNewItem.email1Label = wMember.email1Label || null;
-        wNewItem.email1Value =
-            wMember.email1Value ? wMember.email1Value.toLowerCase() : null;
+        wNewItem.email1Value = wMember.email1Value
+            ? wMember.email1Value.toLowerCase()
+            : null;
         wNewItem.email2Label = wMember.email2Label || null;
-        wNewItem.email2Value =
-            wMember.eEmail2Value ? wMember.email2Value.toLowerCase() : null;
+        wNewItem.email2Value = wMember.eEmail2Value
+            ? wMember.email2Value.toLowerCase()
+            : null;
         wNewItem.phone1Label = wMember.phone1Label || null;
         wNewItem.phone1Value = wMobilePhone || null;
         wNewItem.labels = wMember.labels || null;
@@ -1390,13 +1390,13 @@ export async function saveImportMemberRecord(pRec) {
         } else {
             console.log(
                 `/backend/backMember saveImportMemberRecord Save failed in: Result=`,
-                savedRec
+                savedRec,
             );
             return { status: false, savedRecord: savedRec, error: null };
         }
     } catch (error) {
         console.log(
-            `/backend/backMember saveImportMemberRecord TryCatch, error`
+            `/backend/backMember saveImportMemberRecord TryCatch, error`,
         );
         console.log(error);
         return { status: false, savedRecord: null, error: error };
@@ -1430,13 +1430,13 @@ export async function saveGoogleRecord(pDataset, pRec) {
         } else {
             console.log(
                 `/backend/backMember saveGoogleRecord Save failed in dataset ${pDataset}: Result=`,
-                savedRec
+                savedRec,
             );
             return { status: false, savedRecord: savedRec, error: null };
         }
     } catch (error) {
         console.log(
-            `/backend/backMember saveGoogleRecord TryCatch in dataset ${pDataset} + error`
+            `/backend/backMember saveGoogleRecord TryCatch in dataset ${pDataset} + error`,
         );
         console.log(error);
         return { status: false, savedRecord: null, error: error };
@@ -1456,18 +1456,18 @@ export async function deleteImportMemberRecord(pId) {
             if (item) {
                 console.log(
                     "/backend/backMember deleteImportMemberRecord deleted member",
-                    pId
+                    pId,
                 );
             } else {
                 console.log(
-                    "/backend/backMember deleteImportMemberRecord null return "
+                    "/backend/backMember deleteImportMemberRecord null return ",
                 );
             }
             return true;
         })
         .catch((err) => {
             console.log(
-                "/backend/backMember deleteImportMemberRecord catch err"
+                "/backend/backMember deleteImportMemberRecord catch err",
             );
             console.log(err);
             return false;
@@ -1497,7 +1497,7 @@ export async function deleteAllGoogleImport(pUserId) {
                 pUserId,
                 "lstGoogleImport",
                 false,
-                wIds
+                wIds,
             );
             if (!wStatus) {
                 return true;
@@ -1524,7 +1524,7 @@ export async function uploadGlobalDataStore(pUserId, pGlobal) {
                 lastName: item.lastName,
                 labels: formatLabelsFromLabelArray(
                     item.gender,
-                    item.labelArray
+                    item.labelArray,
                 ),
                 email1Label: item.email1Label,
                 email1Value: item.email1Value,
@@ -1537,12 +1537,12 @@ export async function uploadGlobalDataStore(pUserId, pGlobal) {
         let wResult = await bulkSaveRecords("lstGoogleImport", wUpdateSet);
         console.log(
             `backend/backMember uploadGlobalDtaStore bulk save status is ${wResult.status}: ${wResult.results.inserted}
-             inserted ${wResult.results.updated} updated ${wResult.results.errors.length} errors`
+             inserted ${wResult.results.updated} updated ${wResult.results.errors.length} errors`,
         );
         return true;
     } catch (err) {
         console.log(
-            "/backend/backMember uploadGlobalDataStore, try-catch, err"
+            "/backend/backMember uploadGlobalDataStore, try-catch, err",
         );
         console.log(err);
         return false;
@@ -1572,7 +1572,7 @@ export async function saveGoogleMemberRecord(pRec) {
             firstName: pRec.firstName,
             lastName: pRec.lastName,
             labels: pRec.labels,
-            email1Label: pRec.email1Label,wix dev
+            email1Label: pRec.email1Label,
             email1Value: pRec.email1Value,
             email2Label: pRec.email2Label,
             email2Value: pRec.email2Value,
@@ -1585,13 +1585,13 @@ export async function saveGoogleMemberRecord(pRec) {
         } else {
             console.log(
                 `/backend/backMember saveGoogleMemberRecord Save failed in: Result=`,
-                savedRec
+                savedRec,
             );
             return { status: false, savedRecord: savedRec, error: null };
         }
     } catch (error) {
         console.log(
-            `/backend/backMember saveGoogleMemberRecord TryCatch, error`
+            `/backend/backMember saveGoogleMemberRecord TryCatch, error`,
         );
         console.log(error);
         return { status: false, savedRecord: null, error: error };
@@ -1606,23 +1606,24 @@ export async function deleteGoogleImportRecord(pId) {
     };
 
     return wixData
-        .remove("lstGoogleImport", pId, wOptions)
+        .remove("wix dev
+            Import", pId, wOptions)
         .then((item) => {
             if (item) {
                 console.log(
                     "/backend/backMember deleteGoogleImportRecord deleted member",
-                    pId
+                    pId,
                 );
             } else {
                 console.log(
-                    "/backend/backMember deleteGoogleImportRecord null return "
+                    "/backend/backMember deleteGoogleImportRecord null return ",
                 );
             }
             return true;
         })
         .catch((err) => {
             console.log(
-                "/backend/backMember deleteGoogleImportRecord catch err"
+                "/backend/backMember deleteGoogleImportRecord catch err",
             );
             console.log(err);
             return false;
@@ -1648,7 +1649,7 @@ export function createMTBCMember(pRec) {
         .insert("lstMTBC", toInsert, wOptions)
         .then((lstMTBC) => {
             console.log(
-                `/backend/backMember createMTBCMember Created MTBC user ${pRec.lstId}`
+                `/backend/backMember createMTBCMember Created MTBC user ${pRec.lstId}`,
             );
             return [true, lstMTBC];
         })
@@ -1678,7 +1679,7 @@ export async function findMTBCMember(pLstId) {
         }
     } catch (error) {
         console.log(
-            "/backend/backMember findMTBCMember TryCatch for id = " + pLstId
+            "/backend/backMember findMTBCMember TryCatch for id = " + pLstId,
         );
         console.log(error);
         return { status: false, member: null, error: `TryCatch for ${pLstId}` };
@@ -1698,25 +1699,25 @@ export async function updateMTBCMemberToken(pLstId, pToken) {
             if (res) {
                 console.log(
                     "/backend/backMember updateMTBCMemberToken Success for",
-                    pLstId
+                    pLstId,
                 );
                 return true;
             } else {
                 console.log(
-                    "/backend/backMember updateMTBCMemberToken Failed to update MTBC token"
+                    "/backend/backMember updateMTBCMemberToken Failed to update MTBC token",
                 );
                 return false;
             }
         } else {
             console.log(
-                "/backend/backMember updateMTBCMemberToken MTBC update failed"
+                "/backend/backMember updateMTBCMemberToken MTBC update failed",
             );
             return false;
         }
     } catch (error) {
         console.log(
             "/backend/backMember updateMTBCMemberToken TryCatch for id = " +
-                pLstId
+                pLstId,
         );
         console.log(error);
         return false;
@@ -1727,14 +1728,14 @@ export function getLoginToken(pLstMember, pHashedPassword) {
     return doMTBCAuthenticate(pLstMember._id, pHashedPassword)
         .then((isAuthenticated) => {
             console.log(
-                "/backend/backMember getLoginToken then from doMTBCAuthenticatiin, isAuthenticated"
+                "/backend/backMember getLoginToken then from doMTBCAuthenticatiin, isAuthenticated",
             );
             if (isAuthenticated) {
                 return authentication
                     .generateSessionToken(pLstMember.loginEmail.toLowerCase())
                     .then((result) => {
                         console.log(
-                            "/backend/backMember getLoginToken then from Authentication.generateSS, result"
+                            "/backend/backMember getLoginToken then from Authentication.generateSS, result",
                         );
                         //console.log(result);
                         return {
@@ -1745,7 +1746,7 @@ export function getLoginToken(pLstMember, pHashedPassword) {
                     })
                     .catch((err) => {
                         console.log(
-                            "/backend/backMember getLoginToken Authenticate generateSS catch err, err"
+                            "/backend/backMember getLoginToken Authenticate generateSS catch err, err",
                         );
                         console.log(err);
                         return {
@@ -1756,7 +1757,7 @@ export function getLoginToken(pLstMember, pHashedPassword) {
                     });
             } else {
                 console.log(
-                    "/backend/backMember getLoginToken Failed authentication"
+                    "/backend/backMember getLoginToken Failed authentication",
                 );
                 return {
                     sessionToken: null,
@@ -1767,7 +1768,7 @@ export function getLoginToken(pLstMember, pHashedPassword) {
         })
         .catch((err) => {
             console.log(
-                "/backend/backMember getLoginToken lstAuthenticate catch err, err"
+                "/backend/backMember getLoginToken lstAuthenticate catch err, err",
             );
             console.log(err);
             return {
@@ -1785,20 +1786,20 @@ export async function doMTBCAuthenticate(pLstId, pHashedPassword) {
                 if (response.member.tokenB === pHashedPassword) {
                     console.log(
                         "/backend/backMember doMTBCAuthentication valid password for ",
-                        pLstId
+                        pLstId,
                     );
                     return true;
                 } else {
                     console.log(
                         "/backend/backMember doMTBCAuthentication invalid password for ",
-                        pLstId
+                        pLstId,
                     );
                     return false;
                 }
             } else {
                 console.log(
                     "/backend/backMember doMTBCAuthentication invalid return from findMember for ",
-                    pLstId
+                    pLstId,
                 );
                 return false;
             }
@@ -1806,7 +1807,7 @@ export async function doMTBCAuthenticate(pLstId, pHashedPassword) {
         .catch((err) => {
             console.log(
                 "/backend/backMember doMTBCAuthentication catch error, err for ",
-                pLstId
+                pLstId,
             );
             console.log(err);
             return false;
@@ -1884,8 +1885,10 @@ const unique = (array, ...excludeArrays) => {
     return array.filter(
         (item) =>
             !excludeArrays.some((excludeArray) =>
-                excludeArray.some((excludeItem) => excludeItem.key === item.key)
-            )
+                excludeArray.some(
+                    (excludeItem) => excludeItem.key === item.key,
+                ),
+            ),
     );
 };
 export function test2(pIn) {
@@ -1901,28 +1904,31 @@ export function test2(pIn) {
 
     // Arrays containing elements from A and B, not C
     const AandBnotC = A.filter(
-        (a) => B.some((b) => b.key === a.key) && !C.some((c) => c.key === a.key)
+        (a) =>
+            B.some((b) => b.key === a.key) && !C.some((c) => c.key === a.key),
     );
     //console.log("Only Wix and Lst, not Imp");
     //console.log(AandBnotC);
 
     // Arrays containing elements from B and C, not A
     const BandCnotA = B.filter(
-        (b) => C.some((c) => c.key === b.key) && !A.some((a) => a.key === b.key)
+        (b) =>
+            C.some((c) => c.key === b.key) && !A.some((a) => a.key === b.key),
     );
     //console.log("Only Lst and Imp, not Wix");
     //console.log(BandCnotA);
 
     // Arrays containing elements from A and C, not B
     const AandCnotB = A.filter(
-        (a) => C.some((c) => c.key === a.key) && !B.some((b) => b.key === a.key)
+        (a) =>
+            C.some((c) => c.key === a.key) && !B.some((b) => b.key === a.key),
     );
     //console.log("Only Wix and Imp, not LSt");
     //console.log(AandCnotB);
 
     // Arrays containing elements common to A, B, and C
     const AandBandC = A.filter(
-        (a) => B.some((b) => b.key === a.key) && C.some((c) => c.key === a.key)
+        (a) => B.some((b) => b.key === a.key) && C.some((c) => c.key === a.key),
     );
     //console.log("In all");
     //console.log(AandBandC);
