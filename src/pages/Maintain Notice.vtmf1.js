@@ -12,6 +12,7 @@ import { summariseText } from "backend/backNotices.web.js";
 import { getAllLabels } from "backend/backNotices.web.js";
 import { getLabelObjects } from "backend/backNotices.web.js";
 import {
+    getAllLabelMembers,
     getMemberLabelsSet,
     getLabelMembersSet,
 } from "backend/backNotices.web.js";
@@ -21,7 +22,7 @@ import { doesLabelExist } from "backend/backNotices.web.js";
 import { getNoticeTableContent } from "backend/backNotices.web.js";
 import { initialiseReferenceLabels } from "backend/backNotices.web.js";
 
-
+import { getAllGoogleMembers }   from 'backend/backMember.jsw';
 import { saveRecord } from "backend/backEvents.jsw";
 import { bulkSaveRecords } from "backend/backEvents.jsw";
 import { bulkDeleteRecords } from "backend/backNotices.web";
@@ -71,7 +72,8 @@ import {
 import { findLabelByKey } from "backend/backNotices.web.js";
 import { btnDelete_click } from "public/objects/entity";
 import { deleteGlobalDataStore } from "public/objects/entity";
-import { initialiseRinksArray } from "public/objects/booking";
+import { initialiseRinksArray, w_time_slots } from "public/objects/booking";
+import { getAllImportMembers } from "../backend/backMember.jsw";
 
 const COLOUR = Object.freeze({
     FREE: "rgba(207,207,155,0.5)",
@@ -79,6 +81,8 @@ const COLOUR = Object.freeze({
     NOT_IN_USE: "rgba(180,180,180, 0.3)",
     BOOKED: "#F2BF5E",
 });
+
+let gAction = "Entity"; // can also be Import or Export ; controls Load Repeater shape
 
 //====== -----------------------------------------------------------------------------------------------------
 
@@ -393,14 +397,32 @@ function loadRptNoticeList($item, itemData, index) {
 }
 
 function loadRptLabelList($item, itemData, index) {
-    if (index === 0) {
-        $item("#lblLabelListTitle").text = "Label";
-        //$item("#lblLabelListPopulation").text = "No of Entries";
-        $item("#chkLabelListSelect").hide();
+    if (gAction === "Entity") {
+        $w('#lblLabelListGGLCount').collapse();
+        $w('#lblLabelListLstCount').collapse();
+        if (index === 0) {
+            $item("#lblLabelListTitle").text = "Label";
+            //$item("#lblLabelListPopulation").text = "No of Entries";
+            $item("#chkLabelListSelect").hide();
+        } else {
+            $item("#chkLabelListSelect").show();
+            $item("#lblLabelListTitle").text = itemData.title;
+            //$item("#lblLabelListPopulation").text = String(itemData.count);
+        }
     } else {
-        $item("#chkLabelListSelect").show();
-        $item("#lblLabelListTitle").text = itemData.title;
-        //$item("#lblLabelListPopulation").text = String(itemData.count);
+        $w('#lblLabelListGGLCount').expand();
+        $w('#lblLabelListLstCount').expand();
+        if (index === 0) {
+            $item("#lblLabelListTitle").text = "Label";
+            $item('#lblLabelListGGLCount').text = "#GGL";
+            $item('#lblLabelListLstCount').text = "#Lst";
+            $item("#chkLabelListSelect").hide();
+        } else {
+            $item("#chkLabelListSelect").show();
+            $item('#lblLabelListGGLCount').text = itemData.GGLCount;
+            $item('#lblLabelListLstCount').text = itemData.LstCount;
+            $item("#lblLabelListTitle").text = itemData.title;
+        }
     }
 }
 
@@ -1288,10 +1310,41 @@ export function btnLabelEditContent_onRowSelect(event) {
 
 export async function btnLabelPrimeImport_click() {
     console.log("btnLabelPrimeImport");
+    gAction = "Import";
+    let wAllLabels = [];
+    let wAllLabelMemberRows = [];
+    
+    let wResult = await getAllLabels();
+    if (wResult && wResult.status){
+        wAllLabels = wResult.labels;
+        wResult = await getAllLabelMembers();
+        if (wResult && wResult.status){
+            wAllLabelMemberRows = wResult.rows;
+        }
+    }
+    let wToDisplay = [{"_id": "ID01" , "title": "Heading", "GGLCount": "0", "LstCount": "0"}];
+    for (let wLabel of wAllLabels){
+        let wId = wLabel.labelId;
+        let wSet = wAllLabelMemberRows.filter ( item => item.labelid === wId);
+        let wCount = wSet.length || 0;
+        let wEntry = {"_id": wLabel._id , "title": wLabel.title, "GGLCount": "2", "LstCount": "0"};
+        wToDisplay.push(wEntry);
+    }
+    $w('#rptLabelList').data = [];
+    $w('#rptLabelList').data = wToDisplay;
+    console.log(wToDisplay);
+    console.log(wAllLabels);
+    console.log(wAllLabelMemberRows);
+
+    let wALLGoogleRows = await getAllGoogleMembers();
+    console.log(wALLGoogleRows);
+
 }
 
 export async function btnLabelPrimeExport_click() {
     console.log("btnLabelPrimeExport");
+    gAction = "Export";
+
 }
 
 export async function btnLabelEditContentOpen_click() {
@@ -1477,6 +1530,7 @@ export function doLabelViewChange(event) {
 
 async function loadLabels() {
     const wResult = await getAllLabels();
+    gAction = "Entity";
     if (wResult && wResult.status) {
         const wLabels = wResult.labels;
         if (wLabels.length > 0) {

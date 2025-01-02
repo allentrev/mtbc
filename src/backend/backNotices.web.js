@@ -158,6 +158,21 @@ export const getAllLabels = webMethod(Permissions.Anyone, async () => {
     }
 });
 
+export const getAllLabelMembers = webMethod(Permissions.Anyone, async () => {
+    try {
+        const results = await wixData
+            .query("lstLabelMember")
+            .ascending("labelId")
+            .ascending("memberId")
+            .find();
+        return { status: true, rows: results.items, error: null };
+    } catch (err) {
+        console.log(`/backend/backNotices getAllLabels Try-catch, err`);
+        console.log(err);
+        return { status: false, rows: null, error: err };
+    }
+});
+
 export const getLabelObjects = webMethod(Permissions.Anyone, async (pKey) => {
     try {
         const results = await wixData

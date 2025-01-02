@@ -1265,13 +1265,13 @@ async function addCouplesSetToImportSet(pImport, pCouples) {
                     wImportSet.push(wNewRecord2);
                 } else {
                     console.log(
-                        `/backend/backMember getAllGoogleMembers second save: couple (${wFirstName}) record failed`,
+                        `/backend/backMember getAllGoogleMembers second save: couple (${wFirstPerson}) record failed`,
                     );
                     return;
                 }
             } else {
                 console.log(
-                    `/backend/backMember getAllGoogleMembers first save: couple (${wFirstName}) record failed`,
+                    `/backend/backMember getAllGoogleMembers first save: couple (${wFirstPerson}) record failed`,
                 );
                 return;
             }
@@ -1382,7 +1382,7 @@ export async function saveImportMemberRecord(pRec) {
         const wLoc1 = String(parseInt(pRec.locker[0], 10));
         let wLoc2 = String(parseInt(pRec.locker[1], 10));
         if (wLoc2 === "0") {
-            wLoc2 = null;
+            wLoc2 = "";
         }
         let savedRec = await wixData.save("lstMemberImport", pNewRec, options);
         if (savedRec) {
@@ -1606,8 +1606,7 @@ export async function deleteGoogleImportRecord(pId) {
     };
 
     return wixData
-        .remove("wix dev
-            Import", pId, wOptions)
+        .remove("lstGoogleImport", pId, wOptions)
         .then((item) => {
             if (item) {
                 console.log(

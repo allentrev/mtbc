@@ -26,6 +26,6 @@
         "postinstall": "wix sync-types",
         "dev": "wix dev",
         "lint": "eslint .",
-        "lint-fx": "eslint --fix"
+        "lint-fx": "eslint --fix ."
     }
 }
